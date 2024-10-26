@@ -1,0 +1,1 @@
+// service: api, database등 외부와 연결하는 코드
