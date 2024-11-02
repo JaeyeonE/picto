@@ -1,7 +1,7 @@
-import 'package:picto/models/user_info.dart';
+import 'package:picto/models/common/user.dart';
 
 class ProfileFavoritesModel {
-  final UserInfo userList;
+  final User userList;
   final bool isFavorite;
 
   ProfileFavoritesModel({
