@@ -8,5 +8,4 @@ class ProfileModel {
     required this.user,
     required this.photoList,
   });
-
 }
