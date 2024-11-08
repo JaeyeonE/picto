@@ -1,7 +1,7 @@
 import 'package:picto/models/common/user.dart';
 
 class BlockedList {
-  final User userList;
+  final List<User> userList;
   final bool blocked;
   
   BlockedList({

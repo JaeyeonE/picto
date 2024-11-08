@@ -1,4 +1,4 @@
-class UserInfo{
+class User{
   final String userName;
   final String userId;
   final String userBio;
@@ -6,7 +6,7 @@ class UserInfo{
   final String title;
   final bool isPrivate;
 
-  UserInfo({
+  User({
     required this.userName,
     required this.userId,
     required this.userBio,
