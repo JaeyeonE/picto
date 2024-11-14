@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:picto/services/folder_service.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_list.dart'; 
+import 'package:picto/widgets/screen_custom/folder/folder_header.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,24 +22,10 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         home: Scaffold(
-          appBar: AppBar(
-            title: const Text('TEAM 200대의 공유 폴더'),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                // 뒤로가기 처리
-              },
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.more_vert),
-                onPressed: () {
-                  // 메뉴 처리
-                },
-              ),
-            ],
+          appBar: FolderHeader(
+            logoPath: 'assets/common/picto_letter_logo.png',
           ),
-          body: const FolderListView(),  // 우리가 만든 위젯
+          body: const FolderList(),  // 우리가 만든 위젯
         ),
       ),
     );

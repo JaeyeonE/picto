@@ -1,5 +1,8 @@
 import 'package:dio/dio.dart';
 
+import 'package:picto/models/common/user.dart';
+import 'package:picto/models/common/photo.dart';
+
 class FolderService {
   final Dio _dio = Dio();
   
@@ -32,13 +35,44 @@ class FolderService {
     ];
   }
 
-  Future<List<String>> getPhotos() async {
+  Future<List<String>> getPhotos(String folderName) async {
     try {
-      final response = await _dio.get('your_api_endpoint/folders');
+      final response = await _dio.get('your_api_endpoint/folders/$folderName');
       return List<String>.from(response.data['folderList']);
     } catch (e) {
       print('Error in getFolders: $e');
       return [];
     }
+  }
+
+  Future<List<Photo>> getPhotosTest(String folderName) async {
+    return [
+      Photo(
+        user: User(
+          userName: "user1",
+          userId: "test123",
+          userBio: "test bio",
+          userProfile: "assets/testimage/profile1.jpg",
+          title: "Photographer",
+          isPrivate: false,
+        ),
+        photo: "assets/testimage/water.jpg",
+        description: "test explanation",
+        likes: 20,
+      ),
+      Photo(
+        user: User(
+          userName: "user2",
+          userId: "test1233",
+          userBio: "test bio2",
+          userProfile: "assets/testimage/proflie2.jpg",
+          title: "Photographer2",
+          isPrivate: false,
+        ),
+        photo: "assets/testimage/sunscreen.jpg",
+        description: "test explanation2",
+        likes: 30,
+      )
+    ];
   }
 }

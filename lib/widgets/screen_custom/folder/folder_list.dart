@@ -3,15 +3,16 @@ import 'package:provider/provider.dart';
 
 // import 폴더 아이콘
 import 'package:picto/viewmodles/folder_view_model.dart';
+import 'photo_list.dart';
 
-class FolderListView extends StatefulWidget {
-  const FolderListView({super.key});
+class FolderList extends StatefulWidget {
+  const FolderList({super.key});
 
   @override
-  State<FolderListView> createState() => _FolderListViewState();
+  State<FolderList> createState() => _FolderListState();
 }
 
-class _FolderListViewState extends State<FolderListView> {
+class _FolderListState extends State<FolderList> {
   @override
   void initState() {
     super.initState(); // 폴더 목록 로드
@@ -68,25 +69,35 @@ class _FolderListViewState extends State<FolderListView> {
   }
 
   Widget _buildFolder(String folderName){
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.folder, size: 40, color: Colors.blue),
-          const SizedBox(height: 8),
-          Text(
-            folderName,
-            style: const TextStyle(fontSize: 12),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PhotoListWidget(folderName: folderName),
           ),
-        ],
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.folder, size: 40, color: Colors.blue),
+            const SizedBox(height: 8),
+            Text(
+              folderName,
+              style: const TextStyle(fontSize: 12),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -13,6 +13,7 @@ dependencies:
   dio: ^5.7.0
   http: ^1.2.2
   provider: ^6.1.2
+  flutter_chat_ui: ^1.6.15
 
 dev_dependencies:
   flutter_test:
@@ -27,3 +28,4 @@ flutter:
     - lib/assets/map/
     - lib/assets/navigator/
     - lib/assets/sign_in/
+    - lib/assets/testimage/
