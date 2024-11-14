@@ -14,6 +14,9 @@ dependencies:
   http: ^1.2.2
   provider: ^6.1.2
   flutter_chat_ui: ^1.6.15
+  google_maps_flutter: ^2.9.0
+  geocoding: ^3.0.0
+  geolocator: ^13.0.1
 
 dev_dependencies:
   flutter_test:
