@@ -1,5 +1,6 @@
 // /Users/jaeyeon/workzone/picto/lib/widgets/button/SearchInputField.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:dio/dio.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
@@ -8,17 +9,18 @@ class SearchInputField extends StatelessWidget {
  final TextEditingController controller;
  final List<String> selectedTags;
  final Function(LatLng, List<String>) onSearch;  // 콜백 함수 수정
- final String kakaoRestApiKey = "1a34da63eca983b0798f77b2db5242fc";
  final LatLng defaultLocation;
 
+// static으로 변경하여 클래스 레벨에서 API 키 접근
+  static String get kakaoRestApiKey => dotenv.env['KAKAO_REST_API_KEY'] ?? '';
 
- const SearchInputField({
-   super.key,
-   required this.controller,
-   required this.selectedTags,
-   required this.onSearch,
-   required this.defaultLocation,
- });
+  const SearchInputField({  // const 생성자 유지 가능
+    super.key,
+    required this.controller,
+    required this.selectedTags,
+    required this.onSearch,
+    required this.defaultLocation,
+  });
 
  void _processSearch(String searchText) async {
    // 검색어에서 태그와 장소를 분리
@@ -42,15 +44,15 @@ class SearchInputField extends StatelessWidget {
      // 장소가 있는 경우 카카오 로컬 API로 검색
      final dio = Dio();
      try {
-       final response = await dio.get(
-         'https://dapi.kakao.com/v2/local/search/keyword.json',
-         queryParameters: {'query': location},
-         options: Options(
-           headers: {
-             'Authorization': 'KakaoAK $kakaoRestApiKey',
-           },
-         ),
-       );
+      final response = await dio.get(
+        'https://dapi.kakao.com/v2/local/search/keyword.json',
+        queryParameters: {'query': location},
+        options: Options(
+          headers: {
+            'Authorization': 'KakaoAK ${SearchInputField.kakaoRestApiKey}',
+          },
+        ),
+      );
 
        if (response.statusCode == 200 && response.data['documents'].length > 0) {
          final document = response.data['documents'][0];
