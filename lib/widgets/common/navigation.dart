@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:picto/utils/app_color.dart';
 
+import 'package:picto/views/map/map.dart';
+import 'package:picto/views/sign_in/sign_in.dart';
+// 이동할 페이지들의 import 구문 추가
 
 class CustomNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -11,6 +14,43 @@ class CustomNavigationBar extends StatelessWidget {
     required this.selectedIndex,
     required this.onItemSelected,
   });
+
+  void _navigateToScreen(BuildContext context, int index) {
+    if (index == 2 && ModalRoute.of(context)?.settings.name == '/map') {
+      // 현재 맵 화면에서 맵 버튼을 누른 경우 - 현재 위치로 이동하기 위한 처리
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MapScreen()),
+      );
+    } else {
+      Widget screen;
+      switch (index) {
+        case 0:
+          screen = const MapScreen();  // 설정 화면 -> 수정할것
+          break;
+        case 1:
+          screen = const SignIn();     // 실시간 화면 -> 우선 로그인 화면으로 구현
+          break;
+        case 2:
+          screen = const MapScreen();  // 지도 화면
+          break;
+        case 3:
+          screen = const MapScreen();  // 폴더 화면 -> 수정할 것
+          break;
+        case 4:
+          screen = const MapScreen();  // 프로필 화면 -> 수정할 것
+          break;
+        default:
+          screen = const MapScreen();  // 기본값 설정
+          break;
+      }
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => screen),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,20 +70,23 @@ class CustomNavigationBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavItem(0, Icons.settings),
-          _buildNavItem(1, Icons.bar_chart),
-          _buildMapButton(),
-          _buildNavItem(3, Icons.folder_outlined),
-          _buildNavItem(4, Icons.person_outline),
+          _buildNavItem(context, 0, Icons.settings),
+          _buildNavItem(context, 1, Icons.bar_chart),
+          _buildMapButton(context),
+          _buildNavItem(context, 3, Icons.folder_outlined),
+          _buildNavItem(context, 4, Icons.person_outline),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon) {
+  Widget _buildNavItem(BuildContext context, int index, IconData icon) {
     final isSelected = selectedIndex == index;
     return GestureDetector(
-      onTap: () => onItemSelected(index),
+      onTap: () {
+        onItemSelected(index);
+        _navigateToScreen(context, index);
+      },
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: 60,
@@ -55,16 +98,18 @@ class CustomNavigationBar extends StatelessWidget {
               color: isSelected ? AppColors.primary : AppColors.textTertiary,
               size: 24,
             ),
-            // const SizedBox(height: 10),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMapButton() {
+  Widget _buildMapButton(BuildContext context) {
     return GestureDetector(
-      onTap: () => onItemSelected(2),
+      onTap: () {
+        onItemSelected(2);
+        _navigateToScreen(context, 2);
+      },
       child: Container(
         width: 60,
         height: 60,

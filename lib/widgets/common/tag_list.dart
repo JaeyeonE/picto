@@ -18,7 +18,6 @@ class TagSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 50,
-      color: AppColors.white,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -45,7 +44,7 @@ class TagSelector extends StatelessWidget {
                     tag,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: isSelected ? AppColors.selectedTagText : AppColors.unselectedTagText,
+                      color: isSelected ? AppColors.selectedTagText : const Color.fromARGB(255, 76, 76, 92),
                     ),
                   ),
                 ),
