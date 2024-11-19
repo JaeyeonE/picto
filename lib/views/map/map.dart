@@ -31,27 +31,60 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _searchPhotos(LatLng location, List<String> tags) async {
     // TODO: API 구현 후 아래의 목업 데이터를 실제 API 호출로 교체
     /* 실제 API 구현 시 사용할 코드
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final response = await dio.get(
-        '/photos',
-        queryParameters: {
-          'lat': location.latitude,
-          'lng': location.longitude,
-          'count': 50,
-        },
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer ${your_jwt_token}',
-          },
-        ),
-      );
-      
-      if (response.data['isSuccess']) {
-        // 아래의 목업 데이터 처리 로직과 동일하게 구현
+      final userId = await _authService.getUserId();
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 필요합니다.')),
+        );
+        return;
       }
+
+      final photos = await PhotoApi.getPhotos(
+        userId: userId,
+        lat: location.latitude,
+        lng: location.longitude,
+        count: 50,
+        tags: tags,
+      );
+
+      photoMarkers.clear();
+      
+      for (var photo in photos) {
+        photoMarkers.add(
+          Marker(
+            markerId: "photo_${photo.photoId}",
+            latLng: LatLng(photo.lat, photo.lng),
+            markerImageSrc: 'lib/assets/map/photo_marker.png',
+            width: 30,
+            height: 30,
+            infoWindowText: photo.title,
+          ),
+        );
+      }
+
+      setState(() {
+        markers = {...markers, ...photoMarkers};
+      });
+      
+      await mapController?.setCenter(location);
+      mapController?.addMarker(markers: markers.toList());
+
     } catch (e) {
-      print('사진 검색 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('사진 검색 중 오류가 발생했습니다: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
+  }
+
     */
 
     // ==================== 임시 목업 데이터 시작 ====================
