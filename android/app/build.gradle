@@ -27,6 +27,7 @@ android {
     namespace = "com.example.picto"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    compileSdk = 34 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -39,14 +40,9 @@ android {
 
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.picto"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        
-        minSdkVersion flutter.minSdkVersion
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21       // 최소 SDK 버전을 명시적으로 지정
+        targetSdk = 34    // 타겟 SDK 버전을 명시적으로 지정
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }

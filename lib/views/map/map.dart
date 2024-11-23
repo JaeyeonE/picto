@@ -178,14 +178,17 @@ class _MapScreenState extends State<MapScreen> {
 
   void _updateMyLocationMarker(LatLng location) {
     markers.removeWhere((marker) => marker.markerId == "myLocation");
+    
+    //이거 백엔드에 이미지 올려서 불러와야함
+    //const markerUrl = 'https://your-backend.com/assets/markers/my_picto.png'; 
+    
     markers.add(
       Marker(
         markerId: "myLocation",
         latLng: location,
-        // TODO: 마커 이미지 설정 이슈 해결 필요
-        // markerImageSrc: '../../assets/map/refresh_map.png',
-        // width: 30,
-        // height: 30,
+        markerImageSrc: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',  // 테스트용 카카오 기본 마커
+        width: 40,
+        height: 40,
       ),
     );
 
