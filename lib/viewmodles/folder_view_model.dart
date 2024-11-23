@@ -17,6 +17,7 @@ class FolderViewModel extends GetxController {
   final RxnInt _currentFolderId = RxnInt();
   final RxBool _isPhotoList = true.obs;
   final RxBool _isFirst = true.obs;
+  final RxBool _isPhotoMode = true.obs;
 
   FolderViewModel(FolderService folderService)
       : _folderService = Rxn(folderService);
@@ -30,6 +31,7 @@ class FolderViewModel extends GetxController {
   int? get currentFolderId => _currentFolderId.value;
   bool get isPhotoList => _isPhotoList.value;
   bool get isFirst => _isFirst.value;
+  bool get isPhotoMode => _isPhotoMode.value;
 
   // 폴더 목록 로드
   Future<void> loadFolders() async {
@@ -163,4 +165,9 @@ class FolderViewModel extends GetxController {
     _currentFolderId.value = folderId;
     update();
   }
+
+  void toggleViewMode() {
+    _isPhotoMode.value = !_isPhotoMode.value;
+  }
+  
 }
