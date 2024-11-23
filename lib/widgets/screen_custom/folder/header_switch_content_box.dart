@@ -1,5 +1,3 @@
-import 'package:provider/provider.dart';
-
 import 'package:flutter/material.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_list.dart';
@@ -23,8 +21,8 @@ class _ContentViewState extends State<ContentView>{
     return Consumer<FolderViewModel>( // view
       builder: (context, viewModel, child) {
         return viewModel.isFirst
-            ? const FolderList()
-            : const Chat();
+            ? const PhotoList()
+            : Chat();
       },
     );
   }
