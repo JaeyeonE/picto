@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:picto/utils/app_color.dart';
 
 import 'package:picto/views/map/map.dart';
-import 'package:picto/views/sign_in/sign_in.dart';
+import 'package:picto/views/sign_in/welcome_screen.dart';
 // 이동할 페이지들의 import 구문 추가
 
 class CustomNavigationBar extends StatelessWidget {
@@ -29,7 +29,7 @@ class CustomNavigationBar extends StatelessWidget {
           screen = const MapScreen();  // 설정 화면 -> 수정할것
           break;
         case 1:
-          screen = const SignIn();     // 실시간 화면 -> 우선 로그인 화면으로 구현
+          screen = const MapScreen();     // 실시간 화면 -> 우선 로그인 화면으로 구현
           break;
         case 2:
           screen = const MapScreen();  // 지도 화면
