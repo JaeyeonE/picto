@@ -34,5 +34,4 @@ flutter:
     - lib/assets/map/
     - lib/assets/navigator/
     - lib/assets/sign_in/
-
     - lib/assets/testimage/
