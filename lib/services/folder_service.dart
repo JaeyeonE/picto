@@ -89,55 +89,97 @@ class FolderService {
 
 
   // 테스트용 데이터
-  Future<List<Photo>> getPhotosTest(String folderName) async {
+
+  // 테스트용 폴더 목록 조회
+  Future<List<FolderModel>> getFoldersTest() async {
+    // 실제 API 호출처럼 보이도록 지연 추가
     await Future.delayed(const Duration(seconds: 1));
     
     return [
-      Photo(
-        photoId: 21,
-        photoUrl: "s3://picto-test-bucket/picto-photos/20210115_104549.jpg",
-        location: "대구 중구 동인동가 10-13",
-        title: null,
-        lat: 35.86992644701487,
-        lng: 128.60128031467175,
-        registerTime: 1731752705878,
-        uploadTime: 1731752705878,
-        likes: 1188,
-        views: 2745,
-        frameActive: false,
+      FolderModel(
+        folderId: 1,
+        name: "가족 앨범",
+        content: "우리 가족의 소중한 순간들",
+        createdDateTime: 1731752705878,
+        link: "family-album",
       ),
-      Photo(
-        photoId: 84,
-        photoUrl: "s3://picto-test-bucket/picto-photos/20210115_104549.jpg",
-        location: "경북 고령군 다산면 호촌리 149-5",
-        title: null,
-        lat: 35.82745963302326,
-        lng: 128.46394045884807,
-        registerTime: 1731752714106,
-        uploadTime: 1731752714106,
-        likes: 3392,
-        views: 6649,
-        frameActive: false,
+      FolderModel(
+        folderId: 2,
+        name: "여름 휴가 2023",
+        content: "제주도 여행",
+        createdDateTime: 1731752705879,
+        link: "summer-vacation",
+      ),
+      FolderModel(
+        folderId: 3,
+        name: "우리 아이 성장앨범",
+        content: "첫 걸음마부터 초등학교까지",
+        createdDateTime: 1731752705880,
+        link: "baby-growth",
+      ),
+      FolderModel(
+        folderId: 4,
+        name: "반려동물",
+        content: "멍멍이와 함께한 추억",
+        createdDateTime: 1731752705881,
+        link: "pets",
       ),
     ];
   }
 
-
-  Future<List<String>> getFoldersTest() async {
-    // 테스트용 딜레이 (실제 API 호출처럼 보이게)
+  // 테스트용 사진 목록 조회
+  Future<List<Photo>> getPhotosTest(int? folderId) async {
     await Future.delayed(const Duration(seconds: 1));
     
-    // 테스트 데이터
     return [
-      'PICTO',
-      '기록연월',
-      '2023 크리스마스',
-      '가족여행',
-      '친구들',
-      '맛집',
-      '운동',
-      '독서',
-      '영화'
+      Photo(
+        photoId: 1,
+        photoUrl: "https://picsum.photos/300/300?random=1",
+        location: "서울특별시 강남구",
+        title: "가족 나들이",
+        lat: 37.5642135,
+        lng: 127.0016985,
+        registerTime: 1731752705878,
+        uploadTime: 1731752705878,
+        likes: 42,
+        views: 128,
+        frameActive: false,
+        savedDateTime: 1731752705878,
+        generatorId: folderId,
+        userId: 1,
+      ),
+      Photo(
+        photoId: 2,
+        photoUrl: "https://picsum.photos/300/300?random=2",
+        location: "부산광역시 해운대구",
+        title: "바다 여행",
+        lat: 35.1595454,
+        lng: 129.1603321,
+        registerTime: 1731752705879,
+        uploadTime: 1731752705879,
+        likes: 67,
+        views: 203,
+        frameActive: true,
+        savedDateTime: 1731752705879,
+        generatorId: folderId,
+        userId: 1,
+      ),
+      Photo(
+        photoId: 3,
+        photoUrl: "https://picsum.photos/300/300?random=3",
+        location: "제주특별자치도 서귀포시",
+        title: "한라산 등반",
+        lat: 33.3616666,
+        lng: 126.5291666,
+        registerTime: 1731752705880,
+        uploadTime: 1731752705880,
+        likes: 89,
+        views: 341,
+        frameActive: false,
+        savedDateTime: 1731752705880,
+        generatorId: folderId,
+        userId: 1,
+      ),
     ];
   }
 }

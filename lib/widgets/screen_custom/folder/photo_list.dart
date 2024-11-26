@@ -31,16 +31,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: FolderHeader(
-        onBackPressed: (){
-          Navigator.pop(context);
-        },
-        onMenuPressed: () {
-          _showFolderOptions(context);
-        }
-      ),
-   
+    return Scaffold(   
       body: Obx((){
         if (viewModel.photos.isEmpty) {
           return Center(
@@ -161,39 +152,5 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
     );
   }
 
-  void _showFolderOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('edit folder info'),
-            onTap: () {
-              Navigator.pop(context);
-              // go to folder edit view
-            },
-          ),
-          ListTile (
-            leading: const Icon(Icons.people),
-            title: const Text('manage member'),
-            onTap:() {
-              Navigator.pop(context);
-              // go to member management
-            },
-          ),
-          ListTile (
-            leading: const Icon(Icons.delete),
-            title: const Text('delete folder'),
-            onTap: () async {
-              Navigator.pop(context);
-              await viewModel.deleteFolder(widget.folderId);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  
 }

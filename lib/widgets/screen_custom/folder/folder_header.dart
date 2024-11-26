@@ -58,9 +58,47 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: const Icon(Icons.more_vert),
-          onPressed: onMenuPressed,
+          onPressed: () {
+            _showFolderOptions(context);
+          },
         ),
       ],
+    );
+  }
+
+  void _showFolderOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text('edit folder info'),
+            onTap: () {
+              Navigator.pop(context);
+              // go to folder edit view
+            },
+          ),
+          ListTile (
+            leading: const Icon(Icons.people),
+            title: const Text('manage member'),
+            onTap:() {
+              Navigator.pop(context);
+              // go to member management
+            },
+          ),
+          ListTile (
+            leading: const Icon(Icons.delete),
+            title: const Text('delete folder'),
+            onTap: () async {
+              Navigator.pop(context);
+              await viewModel.deleteFolder(viewModel.currentFolderId);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
     );
   }
 

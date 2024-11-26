@@ -37,7 +37,7 @@ class FolderViewModel extends GetxController {
   Future<void> loadFolders() async {
     _isLoading.value = true;
     try {
-      final folders = await _folderService.value?.getFolders();
+      final folders = await _folderService.value?.getFoldersTest();
       _folders.assignAll(folders ?? []);
     } catch (e) {
       print('Error loading folders: $e');
@@ -97,7 +97,7 @@ class FolderViewModel extends GetxController {
   Future<void> loadPhotos(int? folderId) async {
     _isLoading.value = true;
     try {
-      final photos = await _folderService.value?.getPhotos(folderId);
+      final photos = await _folderService.value?.getPhotosTest(folderId);
       _photos.assignAll(photos ?? []);
       _currentFolderId.value = folderId;
     } catch (e) {

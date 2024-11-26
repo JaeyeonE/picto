@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_list.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_header.dart';
 import 'package:picto/widgets/screen_custom/folder/header_switch.dart';
+import 'package:picto/widgets/screen_custom/folder/header_switch_content_box.dart';
 
 class Folder extends StatefulWidget {
-  const Folder({super.key});
+  final int? folderId;
+  const Folder({super.key, this.folderId});
 
   @override
   State<Folder> createState() => _FolderState();
@@ -22,8 +24,10 @@ class _FolderState extends State<Folder> {
         appBar: FolderHeader(),
         body: Column(
           children: [
-            HeaderSwitch(), 
-            FolderList(), 
+            HeaderSwitch(),
+            Expanded(
+              child: ContentView(),
+            )
           ] 
         ),
       )
