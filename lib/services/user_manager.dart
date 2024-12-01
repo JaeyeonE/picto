@@ -1,98 +1,140 @@
-// // lib/services/user_manager.dart
-// import 'package:http/http.dart' as http;
-// import 'dart:convert';
-// import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/user_modles.dart';
+import '../models/common/user.dart';
 
-// import '../models/user_modles.dart';
+class UserManager {
+  static const String baseUrl = 'http://52.79.109.62:8080/user-manager';  
+  static const Map<String, String> headers = {
+    'Content-Type': 'application/json',
+  };
 
-// class UserManager {
-//   static const String baseUrl = 'YOUR_BASE_URL';
-//   static const Map<String, String> headers = {
-//     'Content-Type': 'application/json',
-//   };
+  // 로그인
+  Future<LoginResponse> login(LoginRequest request) async {
+    try {
+      print('Login request data: ${request.toJson()}');
 
-//   // 로그인
-//   Future<LoginResponse> login(LoginRequest request) async {
-//     try {
-//       final response = await http.post(
-//         Uri.parse('$baseUrl/login'),
-//         headers: headers,
-//         body: jsonEncode(request.toJson()),
-//       );
+      final response = await http.post(
+        Uri.parse('$baseUrl/signin'),
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('서버 응답 시간이 초과되었습니다.');
+        },
+      );
 
-//       if (response.statusCode == 200) {
-//         final loginResponse = LoginResponse.fromJson(jsonDecode(response.body));
-//         // 토큰 저장
-//         await _saveToken(loginResponse.accessToken);
-//         return loginResponse;
-//       } else if (response.statusCode == 404) {
-//         throw Exception('사용자를 찾을 수 없습니다.');
-//       } else {
-//         throw Exception('로그인 실패: ${response.statusCode}');
-//       }
-//     } catch (e) {
-//       throw Exception('로그인 오류: $e');
-//     }
-//   }
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
-//   // 회원가입
-//   Future<SignUpResponse> signUp(SignUpRequest request) async {
-//     try {
-//       final response = await http.post(
-//         Uri.parse('$baseUrl/signup'),
-//         headers: headers,
-//         body: jsonEncode(request.toJson()),
-//       );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final loginResponse = LoginResponse.fromJson(jsonDecode(response.body));
+        await _saveToken(loginResponse.accessToken);
+        return loginResponse;
+      } else if (response.statusCode == 404) {
+        throw Exception('이메일 또는 비밀번호가 일치하지 않습니다.');
+      } else {
+        final errorBody = jsonDecode(response.body);
+        throw Exception(errorBody['message'] ?? '로그인에 실패했습니다.');
+      }
+    } catch (e) {
+      print('Login error: $e');
+      throw Exception('로그인 오류: $e');
+    }
+  }
 
-//       if (response.statusCode == 200) {
-//         return SignUpResponse.fromJson(jsonDecode(response.body));
-//       } else if (response.statusCode == 406) {
-//         throw Exception('회원가입 실패: 유효하지 않은 요청입니다.');
-//       } else {
-//         throw Exception('회원가입 실패: ${response.statusCode}');
-//       }
-//     } catch (e) {
-//       throw Exception('회원가입 오류: $e');
-//     }
-//   }
+  // 회원가입
+  Future<SignUpResponse> signUp(SignUpRequest request) async {
+    try {
+      print('SignUp request data: ${request.toJson()}');
 
-//   // 이메일 중복 확인
-//   Future<bool> checkEmail(EmailCheckRequest request) async {
-//     try {
-//       final response = await http.post(
-//         Uri.parse('$baseUrl/check-email'),
-//         headers: headers,
-//         body: jsonEncode(request.toJson()),
-//       );
+      final response = await http.post(
+        Uri.parse('$baseUrl/signup'),
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('서버 응답 시간이 초과되었습니다.');
+        },
+      );
 
-//       if (response.statusCode == 200) {
-//         final checkResponse = EmailCheckResponse.fromJson(jsonDecode(response.body));
-//         return checkResponse.result;
-//       } else if (response.statusCode == 406) {
-//         throw Exception('이미 사용 중인 이메일입니다.');
-//       } else {
-//         throw Exception('이메일 확인 실패: ${response.statusCode}');
-//       }
-//     } catch (e) {
-//       throw Exception('이메일 확인 오류: $e');
-//     }
-//   }
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
-//   // 토큰 저장
-//   Future<void> _saveToken(String token) async {
-//     final prefs = await SharedPreferences.getInstance();
-//     await prefs.setString('accessToken', token);
-//   }
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return SignUpResponse.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 406) {
+        throw Exception('이미 가입된 이메일입니다.');
+      } else {
+        final errorBody = jsonDecode(response.body);
+        throw Exception(errorBody['message'] ?? '회원가입에 실패했습니다.');
+      }
+    } catch (e) {
+      print('SignUp error: $e');
+      throw Exception('회원가입 오류: $e');
+    }
+  }
 
-//   // 토큰 가져오기
-//   Future<String?> getToken() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     return prefs.getString('accessToken');
-//   }
+  Future<User?> getCurrentUser() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return null;
+      }
 
-//   // 토큰 삭제 (로그아웃)
-//   Future<void> logout() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     await prefs.remove('accessToken');
-//   }
-// }
+      final response = await http.get(
+        Uri.parse('$baseUrl/current-user'),
+        headers: {
+          ...headers,
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('서버 응답 시간이 초과되었습니다.');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return User.fromJson(jsonDecode(response.body));
+      } else {
+        print('Failed to get user info: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Get current user error: $e');
+      return null;
+    }
+  }
+
+  // 이메일 중복 확인
+  Future<bool> checkEmail(EmailCheckRequest request) async {
+    return Future.value(true);
+  }
+
+  // 인증 코드 검증
+  Future<bool> verifyCode(String email, String code) async {
+    return Future.value(true);
+  }
+
+  // 토큰 저장
+  Future<void> _saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('accessToken', token);
+  }
+
+  // 토큰 가져오기
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('accessToken');
+  }
+
+  // 토큰 삭제 (로그아웃)
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('accessToken');
+  }
+}

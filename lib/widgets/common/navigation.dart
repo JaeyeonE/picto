@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:picto/utils/app_color.dart';
 
 import 'package:picto/views/map/map.dart';
+import 'package:picto/views/sign_in/login_screen.dart';
 import 'package:picto/views/sign_in/welcome_screen.dart';
 // 이동할 페이지들의 import 구문 추가
 
@@ -20,28 +21,28 @@ class CustomNavigationBar extends StatelessWidget {
       // 현재 맵 화면에서 맵 버튼을 누른 경우 - 현재 위치로 이동하기 위한 처리
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MapScreen()),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     } else {
       Widget screen;
       switch (index) {
         case 0:
-          screen = const MapScreen();  // 설정 화면 -> 수정할것
+          screen = const LoginScreen();  // 설정 화면 -> 수정할것
           break;
         case 1:
-          screen = const MapScreen();     // 실시간 화면 -> 우선 로그인 화면으로 구현
+          screen = const LoginScreen();     // 실시간 화면 -> 우선 로그인 화면으로 구현
           break;
         case 2:
-          screen = const MapScreen();  // 지도 화면
+          screen = const LoginScreen();  // 지도 화면
           break;
         case 3:
-          screen = const MapScreen();  // 폴더 화면 -> 수정할 것
+          screen = const LoginScreen();  // 폴더 화면 -> 수정할 것
           break;
         case 4:
-          screen = const MapScreen();  // 프로필 화면 -> 수정할 것
+          screen = const LoginScreen();  // 프로필 화면 -> 수정할 것
           break;
         default:
-          screen = const MapScreen();  // 기본값 설정
+          screen = const LoginScreen();  // 기본값 설정
           break;
       }
       

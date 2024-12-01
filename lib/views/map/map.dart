@@ -1,13 +1,14 @@
-///Users/jaeyeon/workzone/picto/lib/views/map/map.dart
-
+// lib/views/map/map.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
-import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:picto/views/map/search_screen.dart';
+import 'package:picto/services/user_manager.dart';
+import 'package:picto/widgets/button/makers.dart';
+import 'package:picto/widgets/common/actual_tag_list.dart';
+import '../../services/photo_service.dart';
+import '../map/search_screen.dart';
 import '../../widgets/common/map_header.dart';
-import '../../widgets/common/tag_list.dart';
 import '../../widgets/common/navigation.dart';
 
 class MapScreen extends StatefulWidget {
@@ -19,148 +20,14 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   int selectedIndex = 2;
-  String selectedTag = '전체';
+  List<String> selectedTags = ['전체'];
   KakaoMapController? mapController;
   LatLng? currentLocation;
   StreamSubscription<Position>? _positionStreamSubscription;
   Set<Marker> markers = {};
   Set<Marker> photoMarkers = {};
-  final TextEditingController searchController = TextEditingController();
-  final dio = Dio();
-
-  Future<void> _searchPhotos(LatLng location, List<String> tags) async {
-    // TODO: API 구현 후 아래의 목업 데이터를 실제 API 호출로 교체
-    /* 실제 API 구현 시 사용할 코드
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final userId = await _authService.getUserId();
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('로그인이 필요합니다.')),
-        );
-        return;
-      }
-
-      final photos = await PhotoApi.getPhotos(
-        userId: userId,
-        lat: location.latitude,
-        lng: location.longitude,
-        count: 50,
-        tags: tags,
-      );
-
-      photoMarkers.clear();
-      
-      for (var photo in photos) {
-        photoMarkers.add(
-          Marker(
-            markerId: "photo_${photo.photoId}",
-            latLng: LatLng(photo.lat, photo.lng),
-            markerImageSrc: 'lib/assets/map/photo_marker.png',
-            width: 30,
-            height: 30,
-            infoWindowText: photo.title,
-          ),
-        );
-      }
-
-      setState(() {
-        markers = {...markers, ...photoMarkers};
-      });
-      
-      await mapController?.setCenter(location);
-      mapController?.addMarker(markers: markers.toList());
-
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('사진 검색 중 오류가 발생했습니다: ${e.toString()}')),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-    */
-
-    // ==================== 임시 목업 데이터 시작 ====================
-    try {
-      // API 호출 지연 시뮬레이션
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // 목업 데이터
-      final Map<String, dynamic> mockResponse = {
-        'isSuccess': true,
-        'result': [
-          {
-            'photo_id': '1',
-            'lat': location.latitude + 0.001,
-            'lng': location.longitude + 0.001,
-            'title': '테스트 사진 1',
-            'tag': '풍경'
-          },
-          {
-            'photo_id': '2',
-            'lat': location.latitude - 0.001,
-            'lng': location.longitude - 0.001,
-            'title': '테스트 사진 2',
-            'tag': '인물'
-          },
-          {
-            'photo_id': '3',
-            'lat': location.latitude + 0.002,
-            'lng': location.longitude - 0.002,
-            'title': '테스트 사진 3',
-            'tag': '음식'
-          },
-        ]
-      };
-
-      // 목업 데이터 처리
-      if (mockResponse['isSuccess'] == true) {
-        photoMarkers.clear();
-        final List<dynamic> results = mockResponse['result'] as List<dynamic>;
-        for (var photo in results) {
-          if (tags.isEmpty || tags.contains(photo['tag'])) {
-            photoMarkers.add(
-              Marker(
-                markerId: "photo_${photo['photo_id']}",
-                latLng: LatLng(photo['lat'], photo['lng']),
-                markerImageSrc: 'lib/assets/map/photo_marker.png',
-                width: 30,
-                height: 30,
-                // onClick: () {
-                //   // TODO: 여기에 페이지 이동 로직 구현
-                //   // Navigator.push(
-                //   //   context,
-                //   //   MaterialPageRoute(
-                //   //     builder: (context) => DetailScreen(photoId: photo['photo_id']),
-                //   //   ),
-                //   // );
-                // },
-              ),
-            );
-          }
-        }
-
-        setState(() {
-          markers = {...markers, ...photoMarkers};
-        });
-        mapController?.addMarker(markers: markers.toList());
-
-        if (mapController != null) {
-          mapController!.setCenter(location);
-        }
-      }
-    } catch (e) {
-      print('사진 검색 오류: $e');
-    }
-    // ==================== 임시 목업 데이터 끝 ====================
-  }
+  final PhotoService _photoService = PhotoService();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -172,52 +39,63 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
-    searchController.dispose();
     super.dispose();
   }
 
-  void _updateMyLocationMarker(LatLng location) {
-    markers.removeWhere((marker) => marker.markerId == "myLocation");
-    
-    //이거 백엔드에 이미지 올려서 불러와야함
-    //const markerUrl = 'https://your-backend.com/assets/markers/my_picto.png'; 
-    
-    markers.add(
-      Marker(
-        markerId: "myLocation",
-        latLng: location,
-        markerImageSrc: 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',  // 테스트용 카카오 기본 마커
-        width: 40,
-        height: 40,
-      ),
-    );
-
-    if (mapController != null) {
-      mapController!.addMarker(markers: markers.toList());
-    }
-  }
-
-  Future<void> _refreshMap() async {
-    // TODO: 새로고침 로직 구현 필요
-    setState(() {
-      // 마커 상태 업데이트
-    });
-  }
-
-  Future<void> _startLocationUpdates() async {
+  // 위치 권한 요청 및 확인
+  Future<bool> _handleLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('위치 권한이 거부되었습니다')),
+        );
+        return false;
       }
     }
-
     if (permission == LocationPermission.deniedForever) {
-      return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('위치 권한이 영구적으로 거부되었습니다. 설정에서 변경해주세요.')),
+      );
+      return false;
     }
+    return true;
+  }
 
-    const LocationSettings locationSettings = LocationSettings(
+  // 현재 위치 가져오기
+  Future<void> _getCurrentLocation() async {
+    final hasPermission = await _handleLocationPermission();
+    if (!hasPermission) return;
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      setState(() {
+        currentLocation = LatLng(position.latitude, position.longitude);
+      });
+
+      if (mapController != null && currentLocation != null) {
+        await mapController!.setCenter(currentLocation!);
+        _updateMyLocationMarker(currentLocation!);
+        _loadNearbyPhotos();  // 위치 업데이트 후 주변 사진 로드
+      }
+    } catch (e) {
+      debugPrint('현재 위치를 가져오는데 실패했습니다: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('현재 위치를 가져오는데 실패했습니다')),
+      );
+    }
+  }
+
+  // 실시간 위치 업데이트
+  Future<void> _startLocationUpdates() async {
+    final hasPermission = await _handleLocationPermission();
+    if (!hasPermission) return;
+
+    const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: 10,
     );
@@ -231,47 +109,85 @@ class _MapScreenState extends State<MapScreen> {
         });
         _updateMyLocationMarker(currentLocation!);
       },
-      onError: (error) {
-        print('실시간 위치 업데이트 오류: $error');
+      onError: (e) {
+        debugPrint('위치 스트림 에러: $e');
       },
     );
   }
 
-  Future<void> _getCurrentLocation() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return;
-      }
-    }
+  // 현재 위치 마커 업데이트
+  void _updateMyLocationMarker(LatLng location) {
+    markers.removeWhere((marker) => marker.markerId == "myLocation");
+  markers.add(MapMarkers.createMyLocationMarker(location));
 
-    if (permission == LocationPermission.deniedForever) {
+  if (mapController != null) {
+    mapController!.addMarker(markers: markers.toList());
+  }
+  }
+
+  // 주변 사진 로드
+  Future<void> _loadNearbyPhotos() async {
+  if (_isLoading) return;
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+    final currentUser = await UserManager().getCurrentUser();  // UserManager에서 현재 사용자 정보 가져오기
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다')),
+      );
       return;
     }
 
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
+    final photos = await _photoService.getPhotosAround(int.parse(currentUser.userId));
       setState(() {
-        currentLocation = LatLng(position.latitude, position.longitude);
+        photoMarkers.clear();
+        for (final photo in photos) {
+          if (selectedTags.contains('전체') || selectedTags.contains(photo.tag)) {
+            final marker = MapMarkers.createPhotoMarker(
+              photo: photo,
+              currentUser: currentUser,
+              onTap: (photo) {
+                // TODO: 사진 상세 페이지로 이동 << 지원이가 수정해줄 부분
+              },
+            );
+            if (marker != null) {  // null이 아닌 경우에만 추가
+              photoMarkers.add(marker);
+            }
+          }
+        }
+        markers = {...markers, ...photoMarkers};
       });
 
-      if (mapController != null && currentLocation != null) {
-        await mapController!.setCenter(currentLocation!);
-        _updateMyLocationMarker(currentLocation!);
-      }
-    } catch (e) {
-      print('위치를 가져오는데 실패했습니다: $e');
+    if (mapController != null) {
+      mapController!.addMarker(markers: markers.toList());
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('사진을 불러오는데 실패했습니다: ${e.toString()}')),
+    );
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
+
+
+  // 지도 새로고침
+  Future<void> _refreshMap() async {
+    await _loadNearbyPhotos();
   }
 
-  void onTagSelected(String tag) {
+  // 태그 선택 시
+  void onTagsSelected(List<String> tags) {
     setState(() {
-      selectedTag = tag;
+      selectedTags = tags;
     });
+    _loadNearbyPhotos();  // 새로운 태그로 사진 다시 로드
   }
 
   @override
@@ -285,6 +201,7 @@ class _MapScreenState extends State<MapScreen> {
               if (currentLocation != null) {
                 controller.setCenter(currentLocation!);
                 _updateMyLocationMarker(currentLocation!);
+                _loadNearbyPhotos();  // 지도 생성 후 주변 사진 로드
               }
             },
             center: currentLocation ?? LatLng(37.5665, 126.9780),
@@ -299,7 +216,13 @@ class _MapScreenState extends State<MapScreen> {
                     PageRouteBuilder(
                       pageBuilder: (context, animation, secondaryAnimation) => 
                         SearchScreen(
-                          onSearch: _searchPhotos,
+                          onSearch: (location, tags) async {
+                            // 검색 결과에 따라 지도 중심 이동
+                            if (mapController != null) {
+                              await mapController!.setCenter(location);
+                              await _loadNearbyPhotos();
+                            }
+                          },
                           defaultLocation: currentLocation ?? LatLng(37.5665, 126.9780),
                         ),
                       transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -318,21 +241,36 @@ class _MapScreenState extends State<MapScreen> {
                   );
                 },
               ),
-              TagSelector(
-                selectedTag: selectedTag,
-                onTagSelected: onTagSelected,
+              TagSelector(  // 추후 변경된 태그 셀렉터에 맞게 변경해야함!
+                selectedTags: selectedTags,
+                onTagsSelected: onTagsSelected,
               ),
             ],
           ),
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
           Positioned(
             right: 16,
             bottom: 100,
             child: InkWell(
               onTap: _refreshMap,
-              child: Image.asset(
-                'lib/assets/map/refresh_map.png', // 이미지 수정 필요
+              child: Container(
                 width: 56,
                 height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.refresh, size: 30),
               ),
             ),
           ),
