@@ -19,6 +19,7 @@ dependencies:
   kakao_map_plugin: ^0.3.2
   flutter_dotenv: ^5.2.1
   shared_preferences: ^2.3.3
+  omni_datetime_picker: ^2.0.5
 
 dev_dependencies:
   flutter_test:

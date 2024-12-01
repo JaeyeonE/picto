@@ -1,4 +1,4 @@
-// lib/models/user_models.dart
+// lib/models/user_modles.dart
 class LoginRequest {
   final String email;
   final String password;
@@ -24,7 +24,6 @@ class SignUpRequest {
   final String email;
   final String password;
   final String name;
-  final int userId;
   final double lat;
   final double lng;
 
@@ -32,16 +31,14 @@ class SignUpRequest {
     required this.email,
     required this.password,
     required this.name,
-    required this.userId,
-    required this.lat,
-    required this.lng,
+    this.lat = 0.0,
+    this.lng = 0.0,
   });
 
   Map<String, dynamic> toJson() => {
     'email': email,
     'password': password,
     'name': name,
-    'userId': userId,
     'lat': lat,
     'lng': lng,
   };
