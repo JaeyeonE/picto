@@ -10,14 +10,14 @@ class Chat extends StatelessWidget {
   final String folderName;
   final String currentUserId;
 
-  Chat({
+  const Chat({super.key, 
     required this.folderName,
     required this.currentUserId,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Text('chat'),
     );
   }

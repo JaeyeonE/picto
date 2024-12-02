@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/common/photo.dart';
-import 'package:picto/widgets/screen_custom/folder/folder_header.dart';
 
 class PhotoListWidget extends StatefulWidget {
   final int? folderId; // 파라미터로 받음
