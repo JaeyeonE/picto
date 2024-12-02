@@ -1,18 +1,18 @@
 // /Users/jaeyeon/workzone/picto/lib/views/map/search_screen.dart
 import 'package:flutter/material.dart';
 import 'package:picto/utils/app_color.dart';
-import 'package:kakao_map_plugin/kakao_map_plugin.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../widgets/button/SearchInputField.dart';
 import '../../widgets/button/search_tag_list.dart';
 
 class SearchScreen extends StatefulWidget {
-  final Function(LatLng, List<String>) onSearch;  // onLocationSelected 대신 onSearch로 변경
+  final Function(LatLng, List<String>) onSearch;
   final LatLng defaultLocation;
 
   const SearchScreen({
     super.key,
     required this.onSearch,
-    required this.defaultLocation,  // 생성자 매개변수 수정
+    required this.defaultLocation,
   });
 
   @override
@@ -51,7 +51,7 @@ class _SearchScreenState extends State<SearchScreen> {
             SearchInputField(
               controller: _searchController,
               selectedTags: selectedTags,
-              onSearch: widget.onSearch,  // onSearch 전달
+              onSearch: widget.onSearch,
               defaultLocation: widget.defaultLocation,
             ),
             const Divider(height: 1),

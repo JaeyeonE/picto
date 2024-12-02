@@ -1,3 +1,4 @@
+// lib/services/user_manager.dart
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,7 +6,7 @@ import '../models/user_modles.dart';
 import '../models/common/user.dart';
 
 class UserManager {
-  static const String baseUrl = 'http://52.79.109.62:8080/user-manager';  
+  static const String baseUrl = 'http://3.35.153.213:8085/user-manager';  
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',
   };
@@ -78,19 +79,11 @@ class UserManager {
     }
   }
 
-  Future<User?> getCurrentUser() async {
+  Future<List<User>> getCurrentUser() async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return null;
-      }
-
       final response = await http.get(
-        Uri.parse('$baseUrl/current-user'),
-        headers: {
-          ...headers,
-          'Authorization': 'Bearer $token',
-        },
+        Uri.parse('$baseUrl/generator/user'),
+        headers: headers,
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
@@ -99,14 +92,17 @@ class UserManager {
       );
 
       if (response.statusCode == 200) {
-        return User.fromJson(jsonDecode(response.body));
+        List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList.map((json) {
+          return User.fromJson(json);
+        }).toList();
       } else {
         print('Failed to get user info: ${response.statusCode}');
-        return null;
+        return [];
       }
     } catch (e) {
       print('Get current user error: $e');
-      return null;
+      return [];
     }
   }
 
