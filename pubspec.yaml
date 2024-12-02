@@ -13,13 +13,24 @@ dependencies:
   dio: ^5.7.0
   http: ^1.2.2
   provider: ^6.1.2
-  google_maps_flutter: ^2.9.0
-  geocoding: ^3.0.0
-  geolocator: ^13.0.1
   kakao_map_plugin: ^0.3.2
   flutter_dotenv: ^5.2.1
   shared_preferences: ^2.3.3
   omni_datetime_picker: ^2.0.5
+
+  #권한 및 정보 관련
+  permission_handler: ^11.3.1
+  device_info_plus: ^11.1.1
+
+  #이미지 관련
+  image_picker: ^1.1.2
+  photo_manager: ^3.6.3
+  photo_manager_image_provider: ^2.2.0
+
+  #map 및 위치
+  google_maps_flutter: ^2.10.0
+  geocoding: ^3.0.0
+  geolocator: ^13.0.2
 
 dev_dependencies:
   flutter_test:
@@ -29,7 +40,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - .env
+    # - .env
     - lib/assets/common/
     - lib/assets/list/
     - lib/assets/map/

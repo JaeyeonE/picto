@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 import 'package:picto/views/sign_in/welcome_screen.dart';
-import 'views/map/map.dart';
+import 'views/map/google_map.dart';
 
 Future<void> main() async {
   // 카카오맵 초기화
-  await dotenv.load(fileName: ".env");
-  AuthRepository.initialize(appKey: dotenv.env['KAKAO_JAVASCRIPT_KEY']!);
+  //await dotenv.load(fileName: ".env");
+  // AuthRepository.initialize(appKey: dotenv.env['KAKAO_JAVASCRIPT_KEY']!);
   runApp(const PhotoSharingApp());
 }
 
