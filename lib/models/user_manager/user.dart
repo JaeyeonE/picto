@@ -40,7 +40,20 @@ class User {
     'email': email,
     'password': password,
   };
+
+  factory User.empty() => User(
+  accountName: '',
+  userId: '0',
+  intro: '',
+  profilePhotoPath: null,
+  name: '',
+  profileActive: false,
+  email: '',
+  password: '',
+);
 }
+
+
 
 // class User {
 //   final String userName;

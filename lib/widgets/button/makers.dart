@@ -1,22 +1,20 @@
 // lib/widgets/map/markers.dart
 
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:picto/models/common/photo.dart';
-import '../../models/common/user.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
+import 'package:picto/models/photo_manager/photo.dart';
+import 'package:picto/models/user_manager/user.dart';
 
 class MapMarkers {
-  static const double MARKER_SIZE = 64.0; // 마커의 크기
-  static const double IMAGE_PADDING = 3.0; // 이미지 패딩
+  static const double MARKER_SIZE = 64.0;
+  static const double IMAGE_PADDING = 3.0;
   
   static ui.Image? _myPictoMarker;
   static ui.Image? _yourPictoMarker;
 
-  // 마커 배경 이미지 초기화
   static Future<void> initializeMarkerImages() async {
     try {
       final ByteData myPictoData = await rootBundle.load('lib/assets/map/my_picto.png');
@@ -31,7 +29,6 @@ class MapMarkers {
     }
   }
 
-  // 위젯을 비트맵으로 변환
   static Future<BitmapDescriptor> _createCustomMarker({
     required bool isMyPhoto,
     required String imageUrl,
@@ -51,35 +48,54 @@ class MapMarkers {
       );
     }
 
-    // 이미지 URL로부터 이미지 로드
-    final imageProvider = NetworkImage(imageUrl);
-    final imageStream = imageProvider.resolve(ImageConfiguration.empty);
-    final completer = Completer<ui.Image>();
-    
-    imageStream.addListener(ImageStreamListener((info, _) {
-      completer.complete(info.image);
-    }));
+    try {
+      // 이미지 URL 유효성 검사
+      if (imageUrl.isEmpty) {
+        throw Exception('Invalid image URL');
+      }
 
-    final image = await completer.future;
-    
-    // 이미지를 패딩을 적용하여 그리기
-    canvas.drawImageRect(
-      image,
-      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-      Rect.fromLTWH(
-        IMAGE_PADDING,
-        IMAGE_PADDING,
-        size.width - (IMAGE_PADDING * 2),
-        size.height - (IMAGE_PADDING * 2),
-      ),
-      Paint(),
-    );
+      // 이미지 URL로부터 이미지 로드
+      final imageProvider = NetworkImage(imageUrl);
+      final imageStream = imageProvider.resolve(ImageConfiguration.empty);
+      final completer = Completer<ui.Image>();
+      
+      imageStream.addListener(ImageStreamListener((info, _) {
+        completer.complete(info.image);
+      }, onError: (exception, stackTrace) {
+        completer.completeError(exception);
+      }));
 
-    final picture = pictureRecorder.endRecording();
-    final img = await picture.toImage(size.width.toInt(), size.height.toInt());
-    final data = await img.toByteData(format: ui.ImageByteFormat.png);
-    
-    return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
+      final image = await completer.future;
+      
+      // 이미지를 패딩을 적용하여 그리기
+      canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        Rect.fromLTWH(
+          IMAGE_PADDING,
+          IMAGE_PADDING,
+          size.width - (IMAGE_PADDING * 2),
+          size.height - (IMAGE_PADDING * 2),
+        ),
+        Paint(),
+      );
+
+      final picture = pictureRecorder.endRecording();
+      final img = await picture.toImage(size.width.toInt(), size.height.toInt());
+      final data = await img.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (data == null) {
+        throw Exception('Failed to convert image to bytes');
+      }
+
+      return BitmapDescriptor.bytes(data.buffer.asUint8List());
+    } catch (e) {
+      debugPrint('마커 이미지 생성 실패: $e');
+      // 에러 발생 시 기본 마커 반환
+      return isMyPhoto 
+        ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure)
+        : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+    }
   }
 
   static Future<Marker?> createPhotoMarker({
@@ -89,8 +105,10 @@ class MapMarkers {
   }) async {
     if (photo.lat == null || photo.lng == null) return null;
     
-    final isMyPhoto = photo.userId == currentUser.userId;
-    final imageUrl = isMyPhoto ? currentUser.userProfile : photo.photoPath;
+    final isMyPhoto = photo.userId == currentUser.userId.toString();
+    final imageUrl = isMyPhoto 
+      ? (currentUser.profilePhotoPath ?? '')
+      : (photo.photoPath);
     
     try {
       final customMarker = await _createCustomMarker(
@@ -109,12 +127,11 @@ class MapMarkers {
         ),
       );
     } catch (e) {
-      print('마커 생성 오류: $e');
+      debugPrint('마커 생성 오류: $e');
       return null;
     }
   }
 
-  // 내 위치 마커는 기존과 동일하게 유지
   static Marker createMyLocationMarker(LatLng location) {
     return Marker(
       markerId: const MarkerId("myLocation"),

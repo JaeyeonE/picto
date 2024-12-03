@@ -11,14 +11,12 @@ class UserSettings {
     required this.popularAlert,
   });
 
-  factory UserSettings.fromJson(Map<String, dynamic> json) {
-    return UserSettings(
-      lightMode: json['lightMode'],
-      autoRotation: json['autoRotation'],
-      aroundAlert: json['aroundAlert'],
-      popularAlert: json['popularAlert'],
-    );
-  }
+  factory UserSettings.fromJson(Map<String, dynamic> json) => UserSettings(
+    lightMode: json['lightMode'] as bool,
+    autoRotation: json['autoRotation'] as bool,
+    aroundAlert: json['aroundAlert'] as bool,
+    popularAlert: json['popularAlert'] as bool,
+  );
 
   Map<String, dynamic> toJson() => {
     'lightMode': lightMode,
@@ -26,4 +24,11 @@ class UserSettings {
     'aroundAlert': aroundAlert,
     'popularAlert': popularAlert,
   };
+
+  factory UserSettings.empty() => UserSettings(
+    lightMode: false,
+    autoRotation: false,
+    aroundAlert: true,
+    popularAlert: true,
+  );
 }

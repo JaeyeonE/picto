@@ -1,8 +1,8 @@
 // lib/views/sign_in/login_screen.dart
+// lib/views/sign_in/login_screen.dart
 import 'package:flutter/material.dart';
-import 'package:picto/models/user_modles.dart';
+import 'package:picto/services/user_manager_service.dart';  // 새로운 서비스 import
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/user_manager.dart';
 import '../../utils/app_color.dart';
 import '../../widgets/common/sign_in_header.dart';
 import 'signup_screen.dart';
@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _userService = UserManagerService(host: 'http://3.35.153.213:8085');  // 서비스 인스턴스 생성
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
   bool _isLoading = false;
@@ -34,14 +35,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-
     try {
-      final loginRequest = LoginRequest(
+      final response = await _userService.signIn(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      await UserManager().login(loginRequest);
+      if (!response.success) {
+        throw Exception(response.message ?? '로그인에 실패했습니다.');
+      }
       
       if (_rememberMe) {
         final prefs = await SharedPreferences.getInstance();

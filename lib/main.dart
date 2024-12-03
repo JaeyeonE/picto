@@ -1,10 +1,10 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:picto/services/user_manager.dart';
+import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/sign_in/welcome_screen.dart';
 import 'package:picto/widgets/button/makers.dart';
-import 'package:picto/models/common/user.dart';
+import 'package:picto/models/user_manager/user.dart';
 import 'views/map/map.dart';
 
 Future<void> main() async {
@@ -23,14 +23,18 @@ Future<void> main() async {
 class PhotoSharingApp extends StatelessWidget {
   PhotoSharingApp({super.key});
 
-  final UserManager _userManager = UserManager();
+  final UserManagerService _userService = UserManagerService(host: 'http://3.35.153.213:8085');
 
   Future<User?> checkAuthState() async {
     try {
-      final token = await _userManager.getToken();
+      final token = await _userService.getToken();
       if (token == null) return null;
       
-      return await _userManager.getCurrentUser();
+      final userId = await _userService.getUserId();
+      if (userId == null) return null;
+
+      final userInfo = await _userService.getUserAllInfo(userId);
+      return userInfo.user;
     } catch (e) {
       print('Auth check error: $e');
       return null;
@@ -44,8 +48,8 @@ class PhotoSharingApp extends StatelessWidget {
       theme: AppThemeExtension.appTheme,
       home: PopScope(
         canPop: false,
-        onPopInvoked: (bool didPop) async {
-          if (didPop) return;
+        onPopInvokedWithResult: (bool didPop, dynamic data) async {
+          if (didPop) return Future.value(true);
 
           final shouldPop = await showDialog<bool>(
             context: context,
@@ -55,7 +59,7 @@ class PhotoSharingApp extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () async {
-                    await _userManager.logout();
+                    await _userService.deleteToken();
                     if (context.mounted) {
                       Navigator.pop(context, true);
                     }
@@ -70,11 +74,7 @@ class PhotoSharingApp extends StatelessWidget {
             ),
           );
 
-          if (shouldPop ?? false) {
-            if (context.mounted) {
-              Navigator.pop(context);
-            }
-          }
+          return Future.value(shouldPop ?? false);
         },
         child: FutureBuilder<User?>(
           future: checkAuthState(),
@@ -92,55 +92,3 @@ class PhotoSharingApp extends StatelessWidget {
     );
   }
 }
-
-// import 'package:flutter/material.dart';
-// import 'package:picto/utils/app_color.dart';
-// import 'package:picto/views/sign_in/welcome_screen.dart';
-// import 'package:picto/widgets/button/makers.dart';
-// import 'views/map/map.dart';
-
-// Future<void> main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   await MapMarkers.initializeMarkerImages();
-//   runApp(const PhotoSharingApp());
-// }
-
-// class PhotoSharingApp extends StatelessWidget {
-//   const PhotoSharingApp({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'PICTO',
-//       theme: AppThemeExtension.appTheme,
-//       home: const MapScreen(), //맵 스크린으로 수정 필요
-//     );
-//   }
-// }
-
-// // 이하 로그인 테스트용 main
-// // 최종 테스트 전 병합 필요! 지금은 서버 닫혀 있어서 바로 맵으로 이동!
-
-// // // lib/main.dart
-// // import 'package:flutter/material.dart';
-// // import 'package:picto/views/sign_in/welcome_screen.dart';
-
-// // void main() {
-// //   runApp(const MyApp());
-// // }
-
-// // class MyApp extends StatelessWidget {
-// //   const MyApp({super.key});
-
-// //   @override
-// //   Widget build(BuildContext context) {
-// //     return MaterialApp(
-// //       title: 'PICTO',
-// //       theme: ThemeData(
-// //         // 테마 설정
-// //         primarySwatch: Colors.blue,
-// //       ),
-// //       home: const WelcomeScreen(), // WelcomeScreen 사용
-// //     );
-// //   }
-// // }
