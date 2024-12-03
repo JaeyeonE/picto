@@ -67,34 +67,3 @@ class Photo {
     };
   }
 }
-
-//photo랑 어떻게 나눠야 할지 몰라서 그냥 하나 넣었어요..
-class ImageUploadData {
-  final int userId;
-  final double lat;
-  final double lng;
-  final String location;
-  final int registerTime;
-  final bool frameActive;
-  final bool sharedActive;
-
-  ImageUploadData({
-    required this.userId,
-    required this.lat,
-    required this.lng,
-    required this.location,
-    required this.registerTime,
-    required this.frameActive,
-    required this.sharedActive,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'userId': userId,
-        'lat': lat,
-        'lng': lng,
-        'location': location,
-        'registerTime': registerTime,
-        'frameActive': frameActive,
-        'sharedActive': sharedActive,
-      };
-}
