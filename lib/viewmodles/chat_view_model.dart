@@ -1,51 +1,71 @@
+import 'package:get/get.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../services/chat_service.dart';
-import '../models/chat_message.dart';
+import '../models/folder/chat_message_model.dart';
 
-class ChatViewModel extends ChangeNotifier {
-  final ChatService _chatService;
-  final String folderId;
-  final String currentUserId;
-  List<ChatMessage> _messages = [];
-  List<String> _members = [];
-  bool _isLoading = false;
+
+class ChatViewModel extends GetxController {
+  final ChatService _chatService = ChatService();
+  final int folderId;
+  final int currentUserId;
+
+  final RxList<ChatMessage> messages = <ChatMessage>[].obs;
+  final RxList<String> members = <String>[].obs;
+  final RxBool isLoading = true.obs;
   StreamSubscription? _messageSubscription;
 
-  ChatViewModel(this._chatService, this.folderId, this.currentUserId) {
+  ChatViewModel({
+    required this.folderId,
+    required this.currentUserId,
+  });
+
+  @override
+  void onInit() {
+    super.onInit();
     _initializeChat();
   }
 
-  List<ChatMessage> get messages => _messages;
-  List<String> get members => _members;
-  bool get isLoading => _isLoading;
+  @override
+  void onClose() {
+    _leaveChat();
+    _messageSubscription?.cancel();
+    _chatService.dispose();
+    super.onClose();
+  }
 
   Future<void> _initializeChat() async {
-    _isLoading = true;
-    notifyListeners();
+    isLoading.value = true;
 
     try {
+      // WebSocket 연결 및 세션 입장
+      _chatService.connectWebSocket(folderId);
       await _chatService.enterChat(folderId, currentUserId);
       
+      // 초기 데이터 로드
       await Future.wait([
         _loadMessages(),
         _loadMembers(),
       ]);
 
-      _startMessagePolling();
+      // 실시간 메시지 수신 시작
+      _subscribeToMessages();
     } catch (e) {
       print('Error initializing chat: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      isLoading.value = false;
     }
+  }
+
+  void _subscribeToMessages() {
+    _messageSubscription = _chatService.getMessageStream()?.listen((message) {
+      messages.add(message);
+    });
   }
 
   Future<void> _loadMessages() async {
     try {
-      final messages = await _chatService.getMessages(folderId);
-      _messages = messages;
-      notifyListeners();
+      final newMessages = await _chatService.getMessages(folderId);
+      messages.value = newMessages;
     } catch (e) {
       print('Error loading messages: $e');
     }
@@ -53,35 +73,29 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> _loadMembers() async {
     try {
-      final members = await _chatService.getChatMembers(folderId);
-      _members = members;
-      notifyListeners();
+      final chatMembers = await _chatService.getChatMembers(folderId);
+      members.value = chatMembers;
     } catch (e) {
       print('Error loading members: $e');
     }
   }
 
-  void _startMessagePolling() {
-    _messageSubscription?.cancel();
-    _messageSubscription = Stream.periodic(const Duration(seconds: 2)).listen((_) {
-      _loadMessages();
-    });
-  }
-
   Future<void> sendMessage(String content) async {
+    if (content.trim().isEmpty) return;
+    
     try {
       await _chatService.sendMessage(folderId, currentUserId, content);
-      await _loadMessages();
     } catch (e) {
       print('Error sending message: $e');
     }
   }
 
-  @override
-  void dispose() {
-    _leaveChat();
-    _messageSubscription?.cancel();
-    super.dispose();
+  Future<void> deleteMessage(ChatMessage message) async {
+    try {
+      await _chatService.deleteMessage(folderId, int.parse(message.senderId));
+    } catch (e) {
+      print('Error deleting message: $e');
+    }
   }
 
   Future<void> _leaveChat() async {
@@ -91,4 +105,6 @@ class ChatViewModel extends ChangeNotifier {
       print('Error leaving chat: $e');
     }
   }
+
+  bool isCurrentUser(String senderId) => senderId == currentUserId.toString();
 }

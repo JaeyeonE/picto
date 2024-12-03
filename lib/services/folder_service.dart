@@ -10,7 +10,7 @@ class FolderService {
   final Dio _dio;
   final String baseUrl;
 
-  FolderService(this._dio) : baseUrl = 'http://HOST/folder-manager';
+  FolderService(this._dio) : baseUrl = 'http://3.35.153.213:8081/folder-manager';
   
   // 새로운 폴더를 생성하는 함수
   Future<FolderModel> createFolder(String name, String content) async {

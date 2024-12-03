@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/common/photo.dart';
+import 'package:picto/widgets/screen_custom/folder/photo_detail.dart';
 
 class PhotoListWidget extends StatefulWidget {
   final int? folderId; // 파라미터로 받음
@@ -70,7 +71,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
           ),
           itemCount: viewModel.photos.length,
           itemBuilder: (context, index) {
-            return _buildPhotoItem(viewModel.photos[index]);
+            return _buildPhotoItem(viewModel.photos[index], index); // index 추가
           },
         );
       }),
@@ -83,45 +84,26 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
     );
   }
 
-  Widget _buildPhotoItem(Photo photo) {
+  Widget _buildPhotoItem(Photo photo, int index) {
     return InkWell(
-      onTap: () async {
-        // 사진 상세 화면
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PhotoDetail(
+              initialPhotoIndex: index,
+              folderId: widget.folderId,
+            ),
+          ),
+        );
       },
-      onLongPress: () => _showPhotoOptions(photo),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          image:DecorationImage(
-            image:NetworkImage(photo.photoUrl),
+          image: DecorationImage(
+            image: NetworkImage(photo.photoUrl),
             fit: BoxFit.cover,
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children:[
-            if(photo.location != null)
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color:Colors.black.withOpacity(0.5),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(8),
-                    bottomRight: Radius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  photo.location!,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
         ),
       ),
     );

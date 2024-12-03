@@ -1,39 +1,54 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/folder/chat_message_model.dart';
 import '../models/folder/status_model.dart';
 
 class ChatService {
   final Dio _dio = Dio();
-  final String baseUrl = 'http://HOST/chatting-scheduler';
-  
-  // 채팅방 메시지 목록 조회
-  Future<List<ChatMessage>> getMessages(String folderId) async {
+  final String baseUrl = 'http://52.79.109.62:8080';
+  WebSocketChannel? _channel;
+
+  ChatService() {
+    _dio.options.headers = {'Content-Type': 'application/json'};
+    _dio.options.connectTimeout = const Duration(seconds: 5);
+    _dio.options.receiveTimeout = const Duration(seconds: 3);
+  }
+
+  // WebSocket 연결 설정
+  void connectWebSocket(int folderId) {
+    final wsUrl = Uri.parse('ws://${baseUrl.substring(7)}/ChattingScheduler/session/1');
+    _channel = WebSocketChannel.connect(wsUrl);
+  }
+
+  // 채팅방 메시지 스트림
+  Stream<ChatMessage>? getMessageStream() {
+    return _channel?.stream.map((message) => ChatMessage.fromJson(message));
+  }
+
+  // 세션/채팅방 메시지 목록 조회
+  Future<List<ChatMessage>> getMessages(int folderId) async {
     try {
-      final response = await _dio.get(
-        '$baseUrl/folder/$folderId',
-        options: Options(headers: {'Content-Type': 'application/json'}),
-      );
+      final response = await _dio.get('$baseUrl/ChattingScheduler/session/1');
       
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data.map((json) => ChatMessage.fromJson(json)).toList();
+        final List<dynamic> jsonList = response.data;
+        return jsonList.map((json) => ChatMessage.fromJson(json)).toList();
       } else {
         throw Exception('Failed to load messages');
       }
     } catch (e) {
-      throw Exception('Error fetching messages: $e');
+      throw Exception('Failed to load messages: $e');
     }
   }
 
   // 채팅방 입장
-  Future<void> enterChat(String folderId, String senderId) async {
+  Future<void> enterChat(int? folderId, int? senderId) async {
     try {
       await _dio.post(
-        '$baseUrl/send/chat/enter',
+        '$baseUrl/session-scheduler/send/session/enter',
         data: {
-          'senderId': senderId,
-          'folderId': folderId,
+          'senderId': 1,
+          'folderId': 1,
           'messageType': 'ENTER',
           'sendDateTime': DateTime.now().toUtc().toIso8601String(),
         },
@@ -44,13 +59,13 @@ class ChatService {
   }
 
   // 채팅방 퇴장
-  Future<void> leaveChat(String folderId, String senderId) async {
+  Future<void> leaveChat(int? folderId, int? senderId) async {
     try {
       await _dio.post(
-        '$baseUrl/send/chat/leave',
+        '$baseUrl/session-scheduler/send/session/exit',
         data: {
-          'senderId': senderId,
-          'folderId': folderId,
+          'senderId': 1,
+          'folderId': 1,
           'messageType': 'EXIT',
           'sendDateTime': DateTime.now().toUtc().toIso8601String(),
         },
@@ -61,13 +76,13 @@ class ChatService {
   }
 
   // 메시지 전송
-  Future<void> sendMessage(String folderId, String senderId, String content) async {
+  Future<void> sendMessage(int? folderId, int? senderId, String content) async {
     try {
       await _dio.post(
-        '$baseUrl/send/chat/message',
+        '$baseUrl/ChattingScheduler/send/chat/message',
         data: {
-          'senderId': senderId,
-          'folderId': folderId,
+          'senderId': 1,
+          'folderId': 1,
           'messageType': 'MESSAGE',
           'content': content,
           'sendDateTime': DateTime.now().toUtc().toIso8601String(),
@@ -79,10 +94,10 @@ class ChatService {
   }
 
   // 채팅방 참여자 목록 조회
-  Future<List<String>> getChatMembers(String folderId) async {
+  Future<List<String>> getChatMembers(int? folderId) async {
     try {
       final response = await _dio.get(
-        '$baseUrl/folder/$folderId/cheator',
+        '$baseUrl/session-scheduler/folder/1/cheator',
       );
       
       if (response.statusCode == 200) {
@@ -93,5 +108,28 @@ class ChatService {
     } catch (e) {
       throw Exception('Error fetching chat members: $e');
     }
+  }
+
+  Future<void> deleteMessage(int folderId, int senderId) async {
+    try {
+      final response = await _dio.delete(
+        '$baseUrl/ChattingScheduler/chat',
+        data: {
+          'chatId': 1,
+          'senderId': 1,
+          'folderId': 1,
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to delete message');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete message: $e');
+    }
+  }
+
+  void dispose() {
+    _channel?.sink.close();
   }
 }
