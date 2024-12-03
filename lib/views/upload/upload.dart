@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 import 'upload_manager.dart';
+import 'package:picto/views/upload/frame_widget.dart';
 import 'package:picto/services/upload_service.dart';
 
 class UploadScreen extends StatefulWidget {
@@ -97,14 +98,7 @@ class _UploadScreenState extends State<UploadScreen> {
       children: [
         const Padding(
           padding: EdgeInsets.all(10),
-          child: Text(
-            '내 앨범',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: DropDownWidget(),
         ),
         Container(
           padding: const EdgeInsets.all(0.5),
@@ -114,12 +108,15 @@ class _UploadScreenState extends State<UploadScreen> {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(Icons.camera),
+            icon: const ImageIcon(
+              AssetImage('lib/assets/common/camera.png'),
+              size: 24.0,
+              color: Colors.white,
+            ),
             onPressed: () async {
               if (await _controller.checkCameraPermission()) {
-                _controller
-                    .getImage(ImageSource.camera)
-                    .then((_) => setState(() {}));
+                await _controller.getImage(ImageSource.camera);
+                setState(() {});
               } else {
                 await PhotoManager.openSetting();
               }

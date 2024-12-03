@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:picto/services/photo_manager_service.dart';
 import 'package:picto/services/user_manager_service.dart';
+import 'package:picto/views/upload/upload.dart';
 import 'package:picto/widgets/button/makers.dart';
 import 'package:picto/widgets/common/actual_tag_list.dart';
 import '../map/search_screen.dart';
@@ -127,13 +128,21 @@ class _MapScreenState extends State<MapScreen> {
 
   void _updateMyLocationMarker(LatLng location) {
     setState(() {
-      markers.removeWhere((marker) => marker.markerId == const MarkerId("myLocation"));
+      markers.removeWhere(
+          (marker) => marker.markerId == const MarkerId("myLocation"));
       markers.add(
         Marker(
           markerId: const MarkerId("myLocation"),
           position: location,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           infoWindow: const InfoWindow(title: "현재 위치"),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (Context) => const UploadScreen()),
+            );
+          },
         ),
       );
     });
@@ -150,7 +159,7 @@ class _MapScreenState extends State<MapScreen> {
       // 현재 사용자 정보 가져오기 부분 수정
       final token = await _userService.getToken();
       final userId = await _userService.getUserId();
-      
+
       if (token == null || userId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('로그인이 필요합니다')),
@@ -160,7 +169,7 @@ class _MapScreenState extends State<MapScreen> {
 
       // 현재 위치 기반 사진 조회
       final photos = await _photoService.getNearbyPhotos(userId);
-      
+
       setState(() {
         photoMarkers.clear();
         for (final photo in photos) {
@@ -211,7 +220,8 @@ class _MapScreenState extends State<MapScreen> {
     try {
       List<Location> locations = await locationFromAddress(query);
       if (locations.isNotEmpty) {
-        final location = LatLng(locations.first.latitude, locations.first.longitude);
+        final location =
+            LatLng(locations.first.latitude, locations.first.longitude);
         mapController?.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
@@ -267,24 +277,27 @@ class _MapScreenState extends State<MapScreen> {
                   Navigator.push(
                     context,
                     PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => 
-                        SearchScreen(
-                          onSearch: (location, tags) async {
-                            if (mapController != null) {
-                              await mapController!.animateCamera(
-                                CameraUpdate.newCameraPosition(
-                                  CameraPosition(
-                                    target: LatLng(location.latitude, location.longitude),
-                                    zoom: 15,
-                                  ),
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          SearchScreen(
+                        onSearch: (location, tags) async {
+                          if (mapController != null) {
+                            await mapController!.animateCamera(
+                              CameraUpdate.newCameraPosition(
+                                CameraPosition(
+                                  target: LatLng(
+                                      location.latitude, location.longitude),
+                                  zoom: 15,
                                 ),
-                              );
-                              await _loadNearbyPhotos();
-                            }
-                          },
-                          defaultLocation: currentLocation ?? const LatLng(37.5665, 126.9780),
-                        ),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                              ),
+                            );
+                            await _loadNearbyPhotos();
+                          }
+                        },
+                        defaultLocation:
+                            currentLocation ?? const LatLng(37.5665, 126.9780),
+                      ),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
                         const begin = Offset(0.0, 1.0);
                         const end = Offset.zero;
                         const curve = Curves.easeInOutCubic;
