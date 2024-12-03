@@ -68,21 +68,4 @@ class UserDataService {
 
     return await Geolocator.getCurrentPosition();
   }
-
-  static Future<String> getAddressFromCoordinates(Position position) async {
-    try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        return '${place.locality ?? ''} ${place.subLocality ?? ''}'.trim();
-      }
-      return '';
-    } catch (e) {
-      print('위치 주소 변환 실패: $e');
-      return '';
-    }
-  }
 }

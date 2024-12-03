@@ -1,56 +1,69 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
+import '/services/user_manager_service.dart';
 import 'package:picto/views/upload/upload_manager.dart';
+import 'package:picto/models/photo_manager/photo.dart';
 
 class ImageUploadData {
-  static const String validationUrl = 'http://10.0.2.2:5000/validate';
+  static const String validationUrl = 'http://10.0.2.2:8083/validate';
   static const String taggingUrl = 'http://10.0.2.2:8083/tag';
+
+  late final UserManagerService _userManagerService;
 
   Future<String> uploadImage(File image, {bool sharedActive = true}) async {
     try {
       if (!await image.exists()) {
-        print('Error: 파일이 존재하지 않습니다');
-        return '업로드 실패: 파일이 존재하지 않습니다';
+        print('Error: 사진이 존재하지 않습니다');
+        return '업로드 실패';
       }
-      print('파일 경로: ${image.path}');
 
       final targetUrl = sharedActive ? validationUrl : taggingUrl;
-      var request = http.MultipartRequest('POST', Uri.parse(targetUrl));
+
+      var request = http.MultipartRequest('POST', Uri.parse(targetUrl))
+        ..headers['Content-Type'] = 'multipart/form-data';
+
+      String fileName = image.path.split('/').last;
 
       var fileStream = await http.ByteStream(image.openRead());
       var length = await image.length();
-      var multipartFile = http.MultipartFile('image', fileStream, length,
-          filename: image.path.split('/').last);
+      var multipartFile = http.MultipartFile('file', fileStream, length,
+          filename: fileName, contentType: MediaType('image', 'jpeg'));
       request.files.add(multipartFile);
 
       try {
         final position = await UserDataService.getCurrentLocation();
-        print('위치 데이터 획득: ${position.latitude}, ${position.longitude}');
-
-        final location =
-            await UserDataService.getAddressFromCoordinates(position);
-        print('주소 변환 결과: $location');
+        var userId = await _userManagerService.getUserId() ?? 1;
 
         Map<String, dynamic> imageData = {
-          'userId': 'userid',
+          'userId': userId,
           'lat': position.latitude,
           'lng': position.longitude,
-          'location': location,
+          'tag': 'a',
           'registerTime': DateTime.now().millisecondsSinceEpoch,
           'frameActive': false,
           'sharedActive': sharedActive,
         };
 
-        request.fields['data'] = json.encode(imageData);
-        print('전송할 데이터: ${request.fields['data']}');
+        request.fields['request'] = json.encode(imageData);
+        print('전송할 데이터: ${request.fields['request']}'); //데이터 비었는지 확인용
       } catch (e) {
-        print('위치 데이터 획득 실패: $e');
+        print('위치 정보 획득 실패: $e');
+        // 에러 발생해도 기본 데이터는 보내기
+        Map<String, dynamic> imageData = {
+          'userId': 1,
+          'lat': 0.0,
+          'lng': 0.0,
+          'tag': 'a',
+          'registerTime': DateTime.now().millisecondsSinceEpoch,
+          'frameActive': false,
+          'sharedActive': sharedActive,
+        };
+        request.fields['request'] = json.encode(imageData);
       }
 
       print('서버로 요청 전송 시작...');
-      request.headers['Content-Type'] = 'multipart/form-data';
-
       var streamedResponse = await request.send();
       print('서버 응답 상태 코드: ${streamedResponse.statusCode}');
 
@@ -59,7 +72,7 @@ class ImageUploadData {
 
       if (response.statusCode == 200) {
         var responseData = json.decode(response.body);
-        return '이미지 업로드 성공: ${responseData['tags'] ?? "태그 없음"}';
+        return '이미지 업로드 성공: ${responseData['tag'] ?? "태그 없음"}';
       } else {
         var errorData = json.decode(response.body);
         print('서버 에러 응답: $errorData');
