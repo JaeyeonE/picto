@@ -1,5 +1,5 @@
-import 'package:picto/models/common/photo.dart';
-import 'package:picto/models/common/user.dart';
+import 'package:picto/models/photo_manager/photo.dart';
+import 'package:picto/models/user_manager/user.dart';
 
 class UploadModel {
   final List<Photo> photoGallery; // 여기서 선택된 사진은 widget/custom_widget/upload_pic으로

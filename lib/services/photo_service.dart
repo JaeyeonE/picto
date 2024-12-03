@@ -2,10 +2,10 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import '../models/common/photo.dart';
+import '../models/photo_manager/photo.dart';
 
 class PhotoService {
-  static const String baseUrl = 'http://HOST';  // TODO: 실제 서버 URL로 변경 필요 야용
+  static const String baseUrl = 'http://3.35.153.213:8080';
   final Dio _dio;
 
   PhotoService() : _dio = Dio() {
@@ -15,7 +15,6 @@ class PhotoService {
   }
 
   // 주변 사진 조회
-  // PhotoService의 getPhotosAround 함수에 로그 추가
   Future<List<Photo>> getPhotosAround(int senderId) async {
     debugPrint('주변 사진 요청 시작 - senderId: $senderId');
     try {
@@ -67,7 +66,7 @@ class PhotoService {
     }
   }
 
-  // 사용자의 모든 사진 조회
+//  사용자의 모든 사진 조회 << 수정할 것
   Future<List<Photo>> getUserPhotos(int userId) async {
     try {
       final response = await _dio.get('$baseUrl/photo-store/photos/$userId');

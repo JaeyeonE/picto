@@ -1,4 +1,4 @@
-import 'package:picto/models/common/user.dart';
+import 'package:picto/models/user_manager/user.dart';
 
 class BlockedList {
   final List<User> userList;
