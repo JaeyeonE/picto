@@ -1,5 +1,5 @@
 import 'package:http/http.dart' as http;
-import 'package:picto/models/common/photo.dart';
+import 'package:picto/models/photo_manager/photo.dart';
 import 'dart:convert';
 
 class FrameService {
