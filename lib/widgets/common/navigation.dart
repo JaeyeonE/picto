@@ -33,7 +33,7 @@ class CustomNavigationBar extends StatelessWidget {
           screen = const LoginScreen();     // 실시간 화면 -> 우선 로그인 화면으로 구현
           break;
         case 2:
-          screen = const LoginScreen();  // 지도 화면
+          screen = const MapScreen();  // 지도 화면
           break;
         case 3:
           screen = const LoginScreen();  // 폴더 화면 -> 수정할 것

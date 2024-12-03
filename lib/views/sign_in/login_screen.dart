@@ -1,11 +1,11 @@
 // lib/views/sign_in/login_screen.dart
 import 'package:flutter/material.dart';
-import 'package:picto/models/user_modles.dart';
+import 'package:picto/services/user_manager_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/user_manager.dart';
 import '../../utils/app_color.dart';
 import '../../widgets/common/sign_in_header.dart';
 import 'signup_screen.dart';
+import '../map/map.dart';  // MapScreen import 추가
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -18,9 +18,40 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _userService = UserManagerService(host: 'http://3.35.153.213:8086');
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = await _userService.getToken();
+    
+    if (token != null) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MapScreen()),
+        );
+      }
+    } else {
+      final rememberMe = prefs.getBool('rememberMe') ?? false;
+      final savedEmail = prefs.getString('email');
+      
+      if (rememberMe && savedEmail != null && mounted) {
+        setState(() {
+          _rememberMe = true;
+          _emailController.text = savedEmail;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -34,14 +65,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-
     try {
-      final loginRequest = LoginRequest(
+      final response = await _userService.signIn(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      await UserManager().login(loginRequest);
+      if (!response.success) {
+        throw Exception(response.message ?? '로그인에 실패했습니다.');
+      }
+
+      // 토큰 저장
+      await _userService.saveToken(response.accessToken);
+      // userId 저장
+      await _userService.saveUserId(response.userId);
       
       if (_rememberMe) {
         final prefs = await SharedPreferences.getInstance();
@@ -50,7 +87,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MapScreen()),
+        );
       }
     } catch (e) {
       if (mounted) {

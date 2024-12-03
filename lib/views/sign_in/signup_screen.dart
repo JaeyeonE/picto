@@ -1,9 +1,10 @@
 // lib/views/sign_in/signup_screen.dart
 import 'package:flutter/material.dart';
-import 'package:picto/models/user_modles.dart';
-import '../../services/user_manager.dart';
-import '../../utils/app_color.dart';
-import '../../widgets/common/sign_in_header.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:picto/models/user_manager/auth_requests.dart';
+import 'package:picto/services/user_manager_service.dart';
+import 'package:picto/utils/app_color.dart';
+import 'package:picto/widgets/common/sign_in_header.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -19,6 +20,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _verificationCodeController = TextEditingController();
+  final _userService = UserManagerService(host: 'http://3.35.153.213:8086');
+  
+  Position? _currentPosition;
+
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
@@ -47,13 +52,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final checkRequest = EmailCheckRequest(email: _emailController.text);
-      final isAvailable = await UserManager().checkEmail(checkRequest);
+      final isAvailable = await _userService.checkEmailDuplicate(_emailController.text);
       
-      if (isAvailable) {
+      if (!isAvailable) {  // 중복되지 않은 이메일인 경우
         setState(() => _isVerificationSent = true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('인증 코드가 전송되었습니다')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미 사용 중인 이메일입니다')),
         );
       }
     } catch (e) {
@@ -66,14 +74,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _verifyCode() async {
-    // TODO: 실제 인증 코드 확인 로직 구현
-    if (_verificationCodeController.text.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('올바른 인증 코드를 입력해주세요')),
-      );
-      return;
-    }
-
     setState(() => _isEmailVerified = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('이메일이 인증되었습니다')),
@@ -98,7 +98,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  @override
+void initState() {
+  super.initState();
+  _getCurrentLocation();
+}
 
+Future<void> _getCurrentLocation() async {
+  try {
+    // 위치 권한 확인
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('위치 권한이 거부되었습니다.');
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('위치 권한이 영구적으로 거부되었습니다. 설정에서 권한을 허용해주세요.');
+    }
+
+    // 위치 설정
+    const locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 100,
+    );
+
+    // 위치 정보 획득
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: locationSettings,
+    );
+
+    setState(() {
+      _currentPosition = position;
+    });
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('위치 정보를 가져오는데 실패했습니다: $e')),
+      );
+    }
+  }
+}
 
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
@@ -114,19 +156,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
       return;
     }
+    if (_currentPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      final signUpRequest = SignUpRequest(
+      await _userService.signUp(
         email: _emailController.text,
         password: _passwordController.text,
         name: _nameController.text,
-        lat: 0, // 기본값
-        lng: 0, // 기본값
+        lat: _currentPosition!.latitude,
+        lng: _currentPosition!.longitude,
       );
-
-      await UserManager().signUp(signUpRequest);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -273,7 +319,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: !_isConfirmPasswordVisible,
-                decoration: InputDecoration(
+                decoration: InputDecoration( 
                   labelText: '비밀번호 확인',
                   hintText: '비밀번호를 다시 입력해주세요',
                   suffixIcon: IconButton(

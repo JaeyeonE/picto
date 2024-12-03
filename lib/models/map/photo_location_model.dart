@@ -1,6 +1,6 @@
 
 
-import '../common/photo.dart';
+import '../photo_manager/photo.dart';
 class PhotoLocationModel {
   final Photo photo;
   final double lat; // 위도
