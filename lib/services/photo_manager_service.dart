@@ -3,7 +3,6 @@ import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/user_manager/api_exceptions.dart';
 import '../models/photo_manager/photo_requests.dart';
 
-
 class PhotoManagerService {
   final Dio _dio;
   static const String _servicePath = '/photo-manager';

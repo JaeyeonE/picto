@@ -28,7 +28,7 @@ class _MapScreenState extends State<MapScreen> {
   StreamSubscription<Position>? _positionStreamSubscription;
   Set<Marker> markers = {};
   Set<Marker> photoMarkers = {};
-  final _userService = UserManagerService(host: 'http://3.35.153.213:8085');
+  final _userService = UserManagerService(host: 'http://3.35.153.213:8086');
   final _photoService = PhotoManagerService(host: 'http://3.35.153.213:8082');
   bool _isLoading = false;
   final _searchController = TextEditingController();
