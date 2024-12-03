@@ -1,4 +1,4 @@
-import 'package:picto/models/common/photo.dart';
+import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/models/user_manager/user_filter.dart';
 import 'package:picto/models/user_manager/user_setting.dart';
