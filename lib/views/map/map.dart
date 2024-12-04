@@ -301,20 +301,6 @@ Future<void> _createDummyMarker() async {
     );
   }
 
-void _updateMyLocationMarker(LatLng location) {
-    setState(() {
-      markers.removeWhere((marker) => marker.markerId == const MarkerId("myLocation"));
-      markers.add(
-        Marker(
-          markerId: const MarkerId("myLocation"),
-          position: location,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          infoWindow: const InfoWindow(title: "현재 위치"),
-        ),
-      );
-    });
-  }
-
   Future<void> _loadNearbyPhotos() async {
     if (_isLoading) return;
 
