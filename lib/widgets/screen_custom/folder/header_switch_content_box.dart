@@ -15,7 +15,7 @@ class ContentView extends StatelessWidget {
     return Obx(() {
       return viewModel.isPhotoMode
           ? PhotoListWidget(folderId: viewModel.currentFolderId!)
-          : Chat(folderId: viewModel.currentFolderId!, currentUserId: 1,);
+          : Chat(folderId: 487, currentUserId: 2,);
     });
   }
 }

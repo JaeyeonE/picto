@@ -1,19 +1,18 @@
 import 'package:get/get.dart';
 import '../services/session_service.dart';
 import '../models/common/session_message.dart';
+import 'chat_view_model.dart';
 
 class SessionController extends GetxController {
-  final SessionService _sessionService = SessionService();
-  final String sessionId;
-  final String currentUserId;
+  final SessionService sessionService;  // private에서 public으로 변경
+  final int sessionId;
 
-  final RxList<SessionMessage> messages = <SessionMessage>[].obs;
+  final RxList<SessionMessage> messages = <SessionMessage>[].obs;  // 타입 명시
   final RxBool isInSession = false.obs;
 
   SessionController({
     required this.sessionId,
-    required this.currentUserId,
-  });
+  }) : sessionService = SessionService();
 
   @override
   void onInit() {
@@ -24,13 +23,13 @@ class SessionController extends GetxController {
   @override
   void onClose() {
     _exitSession();
-    _sessionService.dispose();
+    sessionService.dispose();
     super.onClose();
   }
 
   Future<void> _initializeSession() async {
     try {
-      await _sessionService.enterSession(currentUserId);
+      await sessionService.enterSession(sessionId);
       isInSession.value = true;
       _startMessageStream();
     } catch (e) {
@@ -39,19 +38,15 @@ class SessionController extends GetxController {
   }
 
   void _startMessageStream() {
-    _sessionService.getSessionMessages(sessionId).listen(
-      (message) {
-        messages.add(message);
-      },
-      onError: (error) {
-        print('Error in message stream: $error');
-      },
+    sessionService.getSessionMessages(sessionId).listen(
+      (message) => messages.add(message),
+      onError: (error) => print('Error in message stream: $error'),
     );
   }
 
   Future<void> sendLocation(double lat, double lng) async {
     try {
-      await _sessionService.sendLocation(currentUserId, lat, lng);
+      await sessionService.sendLocation(sessionId, lat, lng);
     } catch (e) {
       print('Error sending location: $e');
     }
@@ -59,7 +54,7 @@ class SessionController extends GetxController {
 
   Future<void> _exitSession() async {
     try {
-      await _sessionService.exitSession(currentUserId);
+      await sessionService.exitSession(sessionId);
       isInSession.value = false;
     } catch (e) {
       print('Error exiting session: $e');

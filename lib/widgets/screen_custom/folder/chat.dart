@@ -1,45 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:picto/viewmodles/chat_view_model.dart';
+import 'package:picto/viewmodles/session_controller.dart';
 import '../../../models/folder/chat_message_model.dart';
+import '../../../services/session_service.dart';
+
 
 class Chat extends GetView<ChatViewModel> {
   final int currentUserId;
   final int folderId;
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final SessionService _sessionService = SessionService();
 
   Chat({
     Key? key,
     required this.currentUserId,
     required this.folderId,
   }) : super(key: key) {
+    // SessionController 먼저 초기화
+    Get.put(SessionController(
+      sessionId: currentUserId,  // currentUserId를 sessionId로 사용
+    ));
+
+    // ChatViewModel 초기화
     Get.put(ChatViewModel(
       folderId: folderId,
       currentUserId: currentUserId,
     ));
   }
 
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+  }
+
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: Obx(() => Text('Chat (${controller.members.length}명)')),
         actions: [
           IconButton(
             icon: const Icon(Icons.people),
             onPressed: () => _showMembersList(context),
           ),
+          IconButton(
+            icon: const Icon(Icons.abc_rounded),
+            onPressed: () => _sessionService.connectWebSocket(currentUserId),
+          )
         ],
       ),
       body: Obx(() {
@@ -55,13 +76,13 @@ class Chat extends GetView<ChatViewModel> {
                 padding: const EdgeInsets.all(8.0),
                 itemCount: controller.messages.length,
                 itemBuilder: (context, index) {
-                  final message = controller.messages[index];
+                  final message = controller.messages[index] as ChatMessage;  // 타입 캐스팅
                   final isCurrentUser = controller.isCurrentUser(message.senderId);
 
                   return MessageBubble(
                     message: message,
                     isCurrentUser: isCurrentUser,
-                    onDelete: controller.deleteMessage,
+                    onDelete: () => _handleDelete(context, message),  // 삭제 핸들러 분리
                   );
                 },
               ),
@@ -74,49 +95,79 @@ class Chat extends GetView<ChatViewModel> {
   }
 
   Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            offset: const Offset(0, -2),
-            blurRadius: 4,
-            color: Colors.black.withOpacity(0.1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _textController,
-              decoration: const InputDecoration(
-                hintText: '메시지를 입력하세요',
-                border: InputBorder.none,
-              ),
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: _handleSubmit,
+    return SafeArea(  // 키보드 영역 처리
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              offset: const Offset(0, -2),
+              blurRadius: 4,
+              color: Colors.black.withOpacity(0.1),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: () => _handleSubmit(_textController.text),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                decoration: const InputDecoration(
+                  hintText: '메시지를 입력하세요',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                maxLines: null,
+                textInputAction: TextInputAction.send,
+                onSubmitted: _handleSubmit,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: () => _handleSubmit(_textController.text),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _handleSubmit(String text) {
+  Future<void> _handleSubmit(String text) async {
     if (text.trim().isEmpty) return;
-    controller.sendMessage(text);
+    
+    final trimmedText = text.trim();
     _textController.clear();
-    Future.delayed(
-      const Duration(milliseconds: 100),
-      _scrollToBottom,
+    
+    await controller.sendMessage(trimmedText);
+    _scrollToBottom();
+  }
+
+  Future<void> _handleDelete(BuildContext context, ChatMessage message) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('메시지 삭제'),
+        content: const Text('이 메시지를 삭제하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              '삭제',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
+
+    if (confirmed == true) {
+      await controller.deleteMessage(message);
+    }
   }
 
   void _showMembersList(BuildContext context) {
@@ -124,14 +175,38 @@ class Chat extends GetView<ChatViewModel> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('채팅방 멤버'),
-        content: Obx(() => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: controller.members
-              .map((member) => ListTile(
-                    title: Text(member),
-                  ))
-              .toList(),
-        )),
+        content: Obx(() {
+          if (controller.members.isEmpty) {
+            return const Text('멤버가 없습니다.');
+          }
+
+          return SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: controller.members.length,
+              itemBuilder: (context, index) {
+                final member = controller.members[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.grey[300],
+                    child: Text(
+                      member[0].toUpperCase(),
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                  ),
+                  title: Text(member),
+                );
+              },
+            ),
+          );
+        }),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
+          ),
+        ],
       ),
     );
   }
@@ -140,7 +215,7 @@ class Chat extends GetView<ChatViewModel> {
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final bool isCurrentUser;
-  final Function(ChatMessage) onDelete;
+  final VoidCallback onDelete;  // Function 타입 대신 VoidCallback 사용
 
   const MessageBubble({
     Key? key,
@@ -152,35 +227,13 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onLongPress: () {
-        if (isCurrentUser) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('메시지 삭제'),
-              content: const Text('이 메시지를 삭제하시겠습니까?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('취소'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    onDelete(message);
-                    Navigator.pop(context);
-                  },
-                  child: const Text('삭제'),
-                ),
-              ],
-            ),
-          );
-        }
-      },
+      onLongPress: isCurrentUser ? onDelete : null,  // 현재 사용자의 메시지만 삭제 가능
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
           mainAxisAlignment:
               isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,  // 메시지와 아바타 하단 정렬
           children: [
             if (!isCurrentUser) _buildAvatar(),
             const SizedBox(width: 8),
@@ -229,9 +282,13 @@ class MessageBubble extends StatelessWidget {
   Widget _buildAvatar() {
     return CircleAvatar(
       backgroundColor: Colors.grey[300],
+      radius: 16,  // 크기 조정
       child: Text(
         message.senderId[0].toUpperCase(),
-        style: const TextStyle(color: Colors.black),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 12,
+        ),
       ),
     );
   }

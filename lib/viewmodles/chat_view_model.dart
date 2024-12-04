@@ -2,22 +2,29 @@ import 'package:get/get.dart';
 import 'dart:async';
 import '../services/chat_service.dart';
 import '../models/folder/chat_message_model.dart';
+import 'session_controller.dart';
+import '../services/session_service.dart';
 
 
 class ChatViewModel extends GetxController {
-  final ChatService _chatService = ChatService();
+  final ChatService _chatService;
+  final SessionController _sessionController;
   final int folderId;
   final int currentUserId;
 
-  final RxList<ChatMessage> messages = <ChatMessage>[].obs;
-  final RxList<String> members = <String>[].obs;
+  final RxList<ChatMessage> messages = <ChatMessage>[].obs;  // 타입 명시
+  final RxList<String> members = <String>[].obs;  // 타입 명시
   final RxBool isLoading = true.obs;
   StreamSubscription? _messageSubscription;
 
   ChatViewModel({
     required this.folderId,
     required this.currentUserId,
-  });
+  }) : _chatService = ChatService(
+         senderId: currentUserId,
+         sessionService: Get.find<SessionController>().sessionService,
+       ),
+       _sessionController = Get.find<SessionController>();
 
   @override
   void onInit() {
@@ -33,33 +40,39 @@ class ChatViewModel extends GetxController {
     super.onClose();
   }
 
-  Future<void> _initializeChat() async {
+  Future<void> _initializeChat() async {  // 반환 타입 명시
     isLoading.value = true;
 
     try {
-      // WebSocket 연결 및 세션 입장
-      _chatService.connectWebSocket(folderId);
-      await _chatService.enterChat(folderId, currentUserId);
+      // WebSocket 연결
+      _chatService.connectWebSocket(currentUserId);
       
-      // 초기 데이터 로드
+      // 초기 데이터 로드를 병렬로 처리
       await Future.wait([
         _loadMessages(),
         _loadMembers(),
+        _chatService.enterChat(currentUserId),  // senderId는 서비스에서 관리
       ]);
 
       // 실시간 메시지 수신 시작
       _subscribeToMessages();
     } catch (e) {
       print('Error initializing chat: $e');
+      // 에러 처리를 위한 상태 추가 가능
+      // error.value = e.toString();
     } finally {
       isLoading.value = false;
     }
   }
 
   void _subscribeToMessages() {
-    _messageSubscription = _chatService.getMessageStream()?.listen((message) {
-      messages.add(message);
-    });
+    final stream = _chatService.getMessageStream();
+    if (stream != null) {
+      _messageSubscription = stream.listen(
+        (message) => messages.add(message),
+        onError: (error) => print('Error in message stream: $error'),
+      );
+    }
   }
 
   Future<void> _loadMessages() async {
@@ -84,7 +97,7 @@ class ChatViewModel extends GetxController {
     if (content.trim().isEmpty) return;
     
     try {
-      await _chatService.sendMessage(folderId, currentUserId, content);
+      await _chatService.sendMessage(folderId, content);  // senderId는 서비스에서 관리
     } catch (e) {
       print('Error sending message: $e');
     }
@@ -100,7 +113,7 @@ class ChatViewModel extends GetxController {
 
   Future<void> _leaveChat() async {
     try {
-      await _chatService.leaveChat(folderId, currentUserId);
+      await _chatService.leaveChat(folderId);  // senderId는 서비스에서 관리
     } catch (e) {
       print('Error leaving chat: $e');
     }
