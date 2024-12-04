@@ -1,12 +1,16 @@
+//lib/services/photo_manager_service.dart
+
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/user_manager/api_exceptions.dart';
 import '../models/photo_manager/photo_requests.dart';
 
-
 class PhotoManagerService {
   final Dio _dio;
+  final FlutterSecureStorage _storage;
   static const String _servicePath = '/photo-manager';
+  static const String _tokenKey = 'auth_token';
 
   PhotoManagerService({required String host}) 
     : _dio = Dio(BaseOptions(
@@ -14,19 +18,42 @@ class PhotoManagerService {
         headers: {'Content-Type': 'application/json'},
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 3),
-      ));
+      )),
+      _storage = const FlutterSecureStorage();
+
+  Future<String?> getToken() async {
+    return await _storage.read(key: _tokenKey);
+  }
 
   // 지역 대표 사진 조회
-  Future<List<Photo>> getRepresentativePhotos(RepresentativePhotoRequest request) async {
+  Future<List<Photo>> getRepresentativePhotos({
+    String? eventType,
+    required String locationType,
+    String? locationName,
+    required int count,
+  }) async {
     try {
+      final token = await getToken();
+      final queryParams = {
+        if (eventType != null) 'eventType': eventType,
+        'locationType': locationType,
+        if (locationName != null) 'locationName': locationName,
+        'count': count.toString(),
+      };
+
       final response = await _dio.get(
         '/photos/representative',
-        data: request.toJson(),
+        queryParameters: queryParams,  // body 대신 queryParameters 사용
+        options: Options(
+          headers: {
+            'Access-Token': token,
+          },
+        ),
       );
       
       return (response.data as List)
-        .map((json) => Photo.fromJson(json))
-        .toList();
+          .map((json) => Photo.fromJson(json))
+          .toList();
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -35,9 +62,15 @@ class PhotoManagerService {
   // 주변 사진 조회
   Future<List<Photo>> getNearbyPhotos(int senderId) async {
     try {
+      final token = await getToken();
       final response = await _dio.get(
         '/photos/around',
-        data: {'senderId': senderId},
+        queryParameters: {'senderId': senderId},  // body 대신 queryParameters 사용
+        options: Options(
+          headers: {
+            'Access-Token': token,
+          },
+        ),
       );
       
       return (response.data as List)
@@ -51,9 +84,15 @@ class PhotoManagerService {
   // 특정 사진 조회
   Future<List<Photo>> getPhotos(PhotoQueryRequest request) async {
     try {
+      final token = await getToken();
       final response = await _dio.get(
         '/photos',
-        data: request.toJson(),
+        queryParameters: request.toJson(),  // body 대신 queryParameters 사용
+        options: Options(
+          headers: {
+            'Access-Token': token,
+          },
+        ),
       );
       
       return (response.data as List)
@@ -67,9 +106,15 @@ class PhotoManagerService {
   // 좋아요 추가
   Future<void> likePhoto(PhotoActionRequest request) async {
     try {
+      final token = await getToken();
       await _dio.post(
         '/photos/like',
         data: request.toJson(),
+        options: Options(
+          headers: {
+            'Access-Token': token,
+          },
+        ),
       );
     } on DioException catch (e) {
       throw _handleError(e);
@@ -79,9 +124,15 @@ class PhotoManagerService {
   // 좋아요 취소
   Future<void> unlikePhoto(PhotoActionRequest request) async {
     try {
+      final token = await getToken();
       await _dio.delete(
         '/photo/unlike',
         data: request.toJson(),
+        options: Options(
+          headers: {
+            'Access-Token': token,
+          },
+        ),
       );
     } on DioException catch (e) {
       throw _handleError(e);
@@ -91,9 +142,15 @@ class PhotoManagerService {
   // 사진 조회 기록
   Future<void> viewPhoto(PhotoActionRequest request) async {
     try {
+      final token = await getToken();
       await _dio.post(
         '/photos/view',
         data: request.toJson(),
+        options: Options(
+          headers: {
+            'Access-Token': token,
+          },
+        ),
       );
     } on DioException catch (e) {
       throw _handleError(e);

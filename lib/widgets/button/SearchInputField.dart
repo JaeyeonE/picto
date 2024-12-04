@@ -1,5 +1,6 @@
 // /Users/jaeyeon/workzone/picto/lib/widgets/button/SearchInputField.dart
 import 'package:flutter/material.dart';
+import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
@@ -19,23 +20,37 @@ class SearchInputField extends StatelessWidget {
   });
 
   Future<void> _processSearch(BuildContext context, String searchText) async {
-    // 검색어에서 태그와 장소를 분리
-    List<String> tags = [];
-    String location = '';
-    
-    List<String> words = searchText.split(' ');
-    for (String word in words) {
-      if (word.startsWith('#')) {
-        tags.add(word.substring(1));
-      } else if (word.trim().isNotEmpty) {
-        location += '${word.trim()} ';
-      }
+  // 검색어에서 태그와 장소를 분리 (기존 로직 유지)
+  List<String> tags = [];
+  String location = '';
+  
+  List<String> words = searchText.split(' ');
+  for (String word in words) {
+    if (word.startsWith('#')) {
+      tags.add(word.substring(1));
+    } else if (word.trim().isNotEmpty) {
+      location += '${word.trim()} ';
     }
+  }
 
-    location = location.trim();
-    
-    if (location.isNotEmpty) {
-      try {
+  location = location.trim();
+  
+  // 선택된 태그 업데이트 (새로운 로직 추가)
+  final userService = UserManagerService(host: 'http://3.35.153.213:8086');
+    try {
+      final userId = await userService.getUserId();
+      if (userId == null) {
+        throw Exception('사용자 인증이 필요합니다');
+      }
+
+      // 선택된 태그들을 서버에 저장
+      await userService.updateTags(
+        userId: userId,
+        tagNames: tags.isEmpty ? ['전체'] : tags,
+      );
+
+      // 위치 검색 처리 (기존 로직 유지)
+      if (location.isNotEmpty) {
         List<Location> locations = await locationFromAddress(location);
         
         if (locations.isNotEmpty) {
@@ -44,22 +59,19 @@ class SearchInputField extends StatelessWidget {
             locations.first.longitude,
           );
           
-          // 먼저 검색 콜백 실행
           onSearch(locationLatLng, tags);
-          
-          // MapScreen으로 직접 이동 (모든 스택을 제거하고 이동)
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
-      } catch (e) {
-        print('장소 검색 오류: $e');
+      } else if (tags.isNotEmpty) {
+        onSearch(defaultLocation, tags);
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
-    } else if (tags.isNotEmpty) {
-      // 태그만 있는 경우도 동일하게 처리
-      onSearch(defaultLocation, tags);
-      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('검색 처리 중 오류가 발생했습니다: $e')),
+      );
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Container(

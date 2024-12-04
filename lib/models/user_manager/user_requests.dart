@@ -1,3 +1,5 @@
+// lib/models/user_manager/user_requests.dart
+
 class UserUpdateRequest {
   final int userId;
   final String? email;

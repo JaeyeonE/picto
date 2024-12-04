@@ -1,3 +1,5 @@
+//lib/models/user_manager/user.dart
+
 class User {
   final String accountName;      // userName -> accountName
   final String userId;           // userId 유지

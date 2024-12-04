@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
-import 'package:picto/views/sign_in/welcome_screen.dart';
+import 'package:picto/views/sign_in/welcome_screen.dart'; // 추후 수정 예정
 import 'package:picto/widgets/button/makers.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'views/map/map.dart';
@@ -23,7 +23,7 @@ Future<void> main() async {
 class PhotoSharingApp extends StatelessWidget {
   PhotoSharingApp({super.key});
 
-  final UserManagerService _userService = UserManagerService(host: 'http://3.35.153.213:8085');
+  final UserManagerService _userService = UserManagerService(host: 'http://3.35.153.213:8086');
 
   Future<User?> checkAuthState() async {
     try {
