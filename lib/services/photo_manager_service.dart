@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/user_manager/api_exceptions.dart';
+import 'package:picto/utils/logging_interceptor.dart';
 import '../models/photo_manager/photo_requests.dart';
 
 class PhotoManagerService {
@@ -18,7 +19,7 @@ class PhotoManagerService {
         headers: {'Content-Type': 'application/json'},
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 3),
-      )),
+      ))..interceptors.add(LoggingInterceptor()), // 인터셉터 추가
       _storage = const FlutterSecureStorage();
 
   Future<String?> getToken() async {
