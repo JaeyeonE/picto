@@ -1,9 +1,10 @@
+//lib/widgets/common/navigation.dart
+
 import 'package:flutter/material.dart';
 import 'package:picto/utils/app_color.dart';
 
 import 'package:picto/views/map/map.dart';
 import 'package:picto/views/sign_in/login_screen.dart';
-import 'package:picto/views/sign_in/welcome_screen.dart';
 // 이동할 페이지들의 import 구문 추가
 
 class CustomNavigationBar extends StatelessWidget {

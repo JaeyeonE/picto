@@ -1,3 +1,5 @@
+// lib/models/photo_manager/photo.dart
+
 import 'package:picto/models/user_manager/user.dart';
 
 class Photo {
