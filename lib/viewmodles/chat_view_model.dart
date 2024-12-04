@@ -43,17 +43,12 @@ class ChatViewModel extends GetxController {
     isLoading.value = true;
 
     try {
-      // WebSocket 연결 설정
       await _chatService.initializeWebSocket(folderId);
       isConnected.value = true;
-
-      // 병렬로 초기 데이터 로드
-      await Future.wait([
-        _loadMessages(),
-        _loadMembers(),
-        _chatService.enterChat(folderId),
-      ]);
-
+      
+      // 채팅방 입장
+      await _chatService.enterChat(folderId);
+      
       _subscribeToMessages();
     } catch (e) {
       print('Error initializing chat: $e');
@@ -68,77 +63,82 @@ class ChatViewModel extends GetxController {
     if (stream != null) {
       _messageSubscription?.cancel();
       _messageSubscription = stream.listen(
-        (message) => messages.add(message),
+        (message) {
+          switch (message.type) {
+            case 'MESSAGE':
+              messages.add(message);
+              break;
+            case 'DELETE':
+              messages.removeWhere((m) => m.senderId == message.senderId);
+              break;
+            case 'ENTER':
+              if (!members.contains(message.senderId)) {
+                members.add(message.senderId);
+              }
+              break;
+            case 'EXIT':
+              members.remove(message.senderId);
+              break;
+          }
+        },
         onError: (error) {
           print('Error in chat message stream: $error');
           isConnected.value = false;
+          _tryReconnect();
         },
         onDone: () {
           print('Chat stream closed');
           isConnected.value = false;
-          // 필요한 경우 재연결 로직 추가
+          _tryReconnect();
         },
       );
     }
   }
 
-  Future<void> _loadMessages() async {
-    try {
-      final newMessages = await _chatService.getMessages(folderId);
-      messages.value = newMessages;
-    } catch (e) {
-      print('Error loading messages: $e');
-    }
-  }
-
-  Future<void> _loadMembers() async {
-    try {
-      final chatMembers = await _chatService.getChatMembers(folderId);
-      members.value = chatMembers;
-    } catch (e) {
-      print('Error loading members: $e');
-    }
-  }
-
-  Future<void> sendMessage(String content) async {
+  void sendMessage(String content) {
     if (content.trim().isEmpty || !isConnected.value) return;
     
     try {
-      await _chatService.sendMessage(folderId, content);
+      _chatService.sendMessage(folderId, content);
     } catch (e) {
       print('Error sending message: $e');
+      _tryReconnect();
     }
   }
 
-  Future<void> deleteMessage(ChatMessage message) async {
-    try {
-      await _chatService.deleteMessage(folderId, int.parse(message.senderId));
-      // 선택적: 로컬 메시지 목록에서도 제거
-      messages.removeWhere((m) => m.senderId == message.senderId);
-    } catch (e) {
-      print('Error deleting message: $e');
-    }
-  }
-
-  Future<void> _leaveChat() async {
+  void deleteMessage(ChatMessage message) {
     if (!isConnected.value) return;
     
     try {
-      await _chatService.leaveChat(folderId);
+      _chatService.deleteMessage(folderId, int.parse(message.senderId));
+    } catch (e) {
+      print('Error deleting message: $e');
+      _tryReconnect();
+    }
+  }
+
+  void _leaveChat() {
+    if (!isConnected.value) return;
+    
+    try {
+      _chatService.leaveChat(folderId);
       isConnected.value = false;
+      messages.clear();
+      members.clear();
     } catch (e) {
       print('Error leaving chat: $e');
     }
   }
 
+  Future<void> _tryReconnect() async {
+    if (!isConnected.value && !isLoading.value) {
+      await _initializeChat();
+    }
+  }
+
   Future<void> reconnect() async {
     if (isConnected.value) return;
-    
-    try {
-      await _initializeChat();
-    } catch (e) {
-      print('Error reconnecting to chat: $e');
-    }
+    await _initializeChat();
   }
 
   bool isCurrentUser(String senderId) => senderId == currentUserId.toString();

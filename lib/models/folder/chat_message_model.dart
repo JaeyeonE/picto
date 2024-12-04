@@ -7,6 +7,7 @@ class ChatMessage {
   final Status status;
   final String messageType;
   final String senderId;
+  final String type;
 
   ChatMessage({
     required this.folderId,
@@ -15,6 +16,7 @@ class ChatMessage {
     required this.status,
     required this.messageType,
     required this.senderId,
+    required this.type,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class ChatMessage {
       status: Status.fromJson(json['status'] ?? {}),
       messageType: json['messageType'],
       senderId: json['senderId'],
+      type: json['type'],
     );
   }
 
@@ -36,6 +39,7 @@ class ChatMessage {
       'status': status.toJson(),
       'messageType': messageType,
       'senderId': senderId,
+      'type': type,
     };
   }
 }

@@ -129,17 +129,17 @@ class Chat extends GetView<ChatViewModel> {
     );
   }
 
-  Future<void> _handleSubmit(String text) async {
+  void _handleSubmit(String text) {
     if (text.trim().isEmpty) return;
     
     final trimmedText = text.trim();
     _textController.clear();
     
-    await controller.sendMessage(trimmedText);
+    controller.sendMessage(trimmedText); // await 제거
     _scrollToBottom();
   }
 
-  Future<void> _handleDelete(BuildContext context, ChatMessage message) async {
+  void _handleDelete(BuildContext context, ChatMessage message) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -162,7 +162,7 @@ class Chat extends GetView<ChatViewModel> {
     );
 
     if (confirmed == true) {
-      await controller.deleteMessage(message);
+      controller.deleteMessage(message); // await 제거
     }
   }
 

@@ -30,9 +30,8 @@ class SessionController extends GetxController {
   Future<void> _initializeSession() async {
     isConnecting.value = true;
     try {
-      // WebSocket 연결 초기화
       await sessionService.initializeWebSocket(sessionId);
-      await sessionService.enterSession(sessionId);
+      sessionService.enterSession(sessionId);
       isInSession.value = true;
       _startMessageStream();
     } catch (e) {
@@ -46,35 +45,51 @@ class SessionController extends GetxController {
     final stream = sessionService.getSessionStream();
     if (stream != null) {
       stream.listen(
-        (message) => messages.add(message),
-        onError: (error) => print('Error in session message stream: $error'),
+        (message) {
+          messages.add(message);
+          // 메시지 타입에 따른 상태 업데이트
+          if (message.messageType == 'EXIT') {
+            isInSession.value = false;
+          }
+        },
+        onError: (error) {
+          print('Error in session message stream: $error');
+          isInSession.value = false;
+        },
         onDone: () {
           print('Session stream closed');
           isInSession.value = false;
-          // 필요한 경우 재연결 로직 추가
+          _tryReconnect();
         },
       );
     }
   }
 
-  Future<void> sendLocation(double lat, double lng) async {
-    if (!isInSession.value) return;
+  void sendLocation(double lat, double lng) {
+    if (!isInSession.value || !sessionService.isConnected) return;
     
     try {
-      await sessionService.sendLocation(sessionId, lat, lng);
+      sessionService.sendLocation(sessionId, lat, lng);
     } catch (e) {
       print('Error sending location: $e');
+      _tryReconnect();
     }
   }
 
-  Future<void> _exitSession() async {
-    if (!isInSession.value) return;
+  void _exitSession() {
+    if (!isInSession.value || !sessionService.isConnected) return;
     
     try {
-      await sessionService.exitSession(sessionId);
+      sessionService.exitSession(sessionId);
       isInSession.value = false;
     } catch (e) {
       print('Error exiting session: $e');
+    }
+  }
+
+  Future<void> _tryReconnect() async {
+    if (!isInSession.value && !isConnecting.value) {
+      await _initializeSession();
     }
   }
 }
