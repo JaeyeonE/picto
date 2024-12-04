@@ -1,7 +1,6 @@
 ///Users/jaeyeon/workzone/picto/lib/widgets/common/map_header.dart
 
 import 'package:flutter/material.dart';
-import 'package:picto/views/map/search_screen.dart';
 import 'package:picto/utils/app_color.dart';
 
 class MapHeader extends StatelessWidget {
