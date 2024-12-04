@@ -5,7 +5,7 @@
 // import '../models/photo_manager/photo.dart';
 
 // class PhotoService {
-//   static const String baseUrl = 'http://3.35.153.213:8080';
+//   static const String baseUrl = 'http://3.35.153.213:8082';
 //   final Dio _dio;
 
 //   PhotoService() : _dio = Dio() {

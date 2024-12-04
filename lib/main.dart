@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/sign_in/welcome_screen.dart'; // 추후 수정 예정
+import 'package:picto/views/sign_in/login_screen.dart';
 import 'package:picto/widgets/button/makers.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'views/map/map.dart';
@@ -85,7 +86,10 @@ class PhotoSharingApp extends StatelessWidget {
               );
             }
             
-            return const MapScreen();
+            // 여기를 수정: 사용자가 없으면 LoginScreen, 있으면 MapScreen
+            return snapshot.data == null 
+                ? const LoginScreen()
+                : const MapScreen();
           },
         ),
       ),

@@ -98,6 +98,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  @override
+void initState() {
+  super.initState();
+  _getCurrentLocation();
+}
+
+Future<void> _getCurrentLocation() async {
+  try {
+    // 위치 권한 확인
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('위치 권한이 거부되었습니다.');
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('위치 권한이 영구적으로 거부되었습니다. 설정에서 권한을 허용해주세요.');
+    }
+
+    // 위치 설정
+    const locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 100,
+    );
+
+    // 위치 정보 획득
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: locationSettings,
+    );
+
+    setState(() {
+      _currentPosition = position;
+    });
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('위치 정보를 가져오는데 실패했습니다: $e')),
+      );
+    }
+  }
+}
+
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_isEmailVerified) {
@@ -275,7 +319,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: !_isConfirmPasswordVisible,
-                decoration: InputDecoration(
+                decoration: InputDecoration( 
                   labelText: '비밀번호 확인',
                   hintText: '비밀번호를 다시 입력해주세요',
                   suffixIcon: IconButton(
