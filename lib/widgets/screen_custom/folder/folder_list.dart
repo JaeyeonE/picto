@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/folder/folder_model.dart';
 import 'photo_list.dart';
+import 'package:picto/views/folder/folder.dart';
 
 class FolderList extends StatefulWidget {
   const FolderList({super.key});
@@ -82,7 +83,7 @@ class _FolderListState extends State<FolderList> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PhotoListWidget(folderId: folder.folderId),
+            builder: (context) => Folder(folderId: folder.folderId),
           ),
         );
       },

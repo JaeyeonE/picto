@@ -16,6 +16,7 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="key here"/>
         <activity
+            android:usesCleartextTraffic="true"
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"

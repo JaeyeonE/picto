@@ -1,1 +1,0 @@
-// folder_chatroom, folder_photo 포함한 화면

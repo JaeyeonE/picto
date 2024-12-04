@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/utils/constant.dart';
+import 'package:picto/widgets/screen_custom/folder/create_folder_dialog.dart';
 
 class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBackPressed;
@@ -18,49 +19,114 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      title: Obx(() {
+Widget build(BuildContext context) {
+  return AppBar(
+    title: Obx(() {
+      final currentFolderName = viewModel.currentFolderName;
+      
+      // currentFolderName이 null이거나 비어있으면 로고를 표시
+      if (currentFolderName == null || currentFolderName.isEmpty) {
+        return Image.asset(
+          logoPath,
+          height: 32,
+          fit: BoxFit.contain,
+        );
+      }
+      // 폴더 이름이 있으면 표시
+      return Text(currentFolderName);
+    }),
+    centerTitle: true,
+    leading: Obx(() {
+      final currentFolderName = viewModel.currentFolderName;
+      
+      // currentFolderName이 null이거나 비어있으면 뒤로가기 버튼을 숨김
+      if (currentFolderName == null || currentFolderName.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () {
+          // 뒤로가기 시 폴더 이름 초기화
+          viewModel.setCurrentFolder('', -1);
+          Navigator.of(context).pop();
+        },
+      );
+    }),
+    actions: [
+      Obx(() {
         final currentFolderName = viewModel.currentFolderName;
+        final currentFolderId = viewModel.currentFolderId;
         
-        // currentFolderName이 null이거나 비어있으면 로고를 표시
-        if (currentFolderName == null || currentFolderName.isEmpty) {
-          return Image.asset(
-            logoPath,
-            height: 32,
-            fit: BoxFit.contain,
-          );
-        }
-        // 폴더 이름이 있으면 표시
-        return Text(currentFolderName);
-      }),
-      centerTitle: true,
-      leading: Obx(() {
-        final currentFolderName = viewModel.currentFolderName;
-        
-        // currentFolderName이 null이거나 비어있으면 뒤로가기 버튼을 숨김
-        if (currentFolderName == null || currentFolderName.isEmpty) {
-          return const SizedBox.shrink();
-        }
         return IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.more_vert),
           onPressed: () {
-            // 뒤로가기 시 폴더 이름 초기화
-            viewModel.setCurrentFolder('', -1);
-            if (onBackPressed != null) {
-              onBackPressed!();
+            if(currentFolderId == null || currentFolderName == null || currentFolderName.isEmpty) {
+              _showFolderListOptions(context);
             } else {
-              Navigator.of(context).pop();
+              _showFolderOptions(context);
             }
           },
         );
       }),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.more_vert),
-          onPressed: onMenuPressed,
+    ],
+  );
+}
+
+  void _showFolderListOptions(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    builder: (context) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.create_new_folder),
+          title: const Text('Create New Folder'),
+          onTap: () {
+            Navigator.pop(context); // Close bottom sheet
+            showDialog(
+              context: context,
+              builder: (context) => const CreateFolderDialog(),
+            );
+          },
         ),
       ],
+    ),
+  );
+}
+
+  void _showFolderOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text('edit folder info'),
+            onTap: () {
+              Navigator.pop(context);
+              // go to folder edit view
+            },
+          ),
+          ListTile (
+            leading: const Icon(Icons.people),
+            title: const Text('manage member'),
+            onTap:() {
+              Navigator.pop(context);
+              // go to member management
+            },
+          ),
+          ListTile (
+            leading: const Icon(Icons.delete),
+            title: const Text('delete folder'),
+            onTap: () async {
+              Navigator.pop(context);
+              await viewModel.deleteFolder(viewModel.currentFolderId);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
     );
   }
 

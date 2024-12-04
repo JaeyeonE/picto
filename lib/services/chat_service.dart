@@ -1,168 +1,124 @@
-// // services/chat_service.dart
-// import 'package:dio/dio.dart';
+import 'dart:convert';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import '../models/folder/chat_message_model.dart';
+import 'session_service.dart';
 
-// import 'package:flutter/material.dart';
-// import 'package:picto/models/folder/chat_model.dart';
+class ChatService {
+  final SessionService _sessionService;
+  final int _senderId;
+  WebSocketChannel? _channel;
+  Stream<ChatMessage>? _messageStream;
+  bool _isConnected = false;
 
-// class ChatService {
-//   final Dio _dio = Dio();
+  ChatService({
+    required SessionService sessionService,
+    required int senderId,
+  }) : _sessionService = sessionService,
+       _senderId = senderId;
 
-//   // 특정 폴더의 메시지 목록 조회
-//   Future<List<ChatMessage>> getChatMessages(String folderName) async {
-//     try {
-//       final response = await _dio.get('/chats', 
-//         queryParameters: {'folderName': folderName}
-//       );
-      
-//       if (response.statusCode == 200) {
-//         final List<dynamic> data = response.data['messages'];
-//         return data.map((json) => ChatMessage.fromJson(json)).toList();
-//       } else {
-//         throw Exception('Failed to load messages');
-//       }
-//     } catch (e) {
-//       throw Exception('Error fetching messages: $e');
-//     }
-//   }
+  Future<void> initializeWebSocket(int folderId) async {
+    final wsUrl = Uri(
+      scheme: 'ws',
+      host: '52.79.109.62',
+      port: 8080,
+      path: '/chatting-scheduler/folder/$folderId/chat'
+    );
 
-//   // 새 메시지 전송
-//   Future<void> sendMessage(ChatMessage message) async {
-//     try {
-//       await _dio.post('/chats/send',
-//         data: message.toJson(),
-//       );
-//     } catch (e) {
-//       throw Exception('Error sending message: $e');
-//     }
-//   }
+    try {
+      await _channel?.sink.close();
+      _channel = WebSocketChannel.connect(wsUrl);
+      _isConnected = true;
 
-//   // 실시간 메시지 업데이트를 위한 폴링 메서드
-//   Stream<List<ChatMessage>> streamMessages(String folderName) async* {
-//     while (true) {
-//       try {
-//         final messages = await getChatMessages(folderName);
-//         yield messages;
-//         await Future.delayed(const Duration(seconds: 2)); // 폴링 간격
-//       } catch (e) {
-//         print('Error in message stream: $e');
-//         await Future.delayed(const Duration(seconds: 5)); // 에러 시 더 긴 대기
-//       }
-//     }
-//   }
-// }
+      _messageStream = _channel?.stream.map((data) {
+        final jsonData = jsonDecode(data);
+        return ChatMessage.fromJson(jsonData);
+      });
 
-// // viewmodels/chat_view_model.dart
-// class ChatViewModel extends ChangeNotifier {
-//   final ChatService _chatService;
-//   List<ChatMessage> _messages = [];
-//   String _currentFolderName = '';
-//   bool _isLoading = false;
-//   StreamSubscription? _messageSubscription;
+      print('Chat WebSocket connected: $wsUrl');
+    } catch (e) {
+      _isConnected = false;
+      print('Chat WebSocket connection failed: $e');
+      rethrow;
+    }
+  }
 
-//   ChatViewModel(this._chatService);
+  void sendMessage(int folderId, String content) {
+    if (!_isConnected) {
+      throw Exception('WebSocket not connected');
+    }
 
-//   List<ChatMessage> get messages => _messages;
-//   bool get isLoading => _isLoading;
+    final message = {
+      'type': 'MESSAGE',
+      'senderId': _senderId,
+      'folderId': folderId,
+      'content': content,
+      'sendDateTime': DateTime.now().toUtc().toIso8601String(),
+    };
 
-//   void setCurrentFolder(String folderName) {
-//     _currentFolderName = folderName;
-//     _loadInitialMessages();
-//     _startMessageStream();
-//   }
+    _channel?.sink.add(jsonEncode(message));
+  }
 
-//   Future<void> _loadInitialMessages() async {
-//     try {
-//       _isLoading = true;
-//       notifyListeners();
+  Future<void> enterChat(int folderId) async {
+    if (!_isConnected) {
+      throw Exception('WebSocket not connected');
+    }
 
-//       final messages = await _chatService.getChatMessages(_currentFolderName);
-//       _messages = messages;
-      
-//       _isLoading = false;
-//       notifyListeners();
-//     } catch (e) {
-//       _isLoading = false;
-//       notifyListeners();
-//       print('Error loading messages: $e');
-//     }
-//   }
+    // 세션 입장
+    _sessionService.enterSession(_senderId);
 
-//   void _startMessageStream() {
-//     _messageSubscription?.cancel();
-//     _messageSubscription = _chatService
-//         .streamMessages(_currentFolderName)
-//         .listen((updatedMessages) {
-//       _messages = updatedMessages;
-//       notifyListeners();
-//     });
-//   }
+    // 채팅방 입장 메시지 전송
+    final message = {
+      'type': 'ENTER',
+      'senderId': _senderId,
+      'folderId': folderId,
+      'sendDateTime': DateTime.now().toUtc().toIso8601String(),
+    };
 
-//   Future<void> sendMessage(String content, String senderId) async {
-//     try {
-//       final message = ChatMessage(
-//         id: DateTime.now().millisecondsSinceEpoch.toString(),
-//         senderId: senderId,
-//         message: content,
-//         timestamp: DateTime.now(),
-//         folderName: _currentFolderName,
-//       );
-      
-//       await _chatService.sendMessage(message);
-//       // 메시지 전송 후 즉시 목록 갱신
-//       await _loadInitialMessages();
-//     } catch (e) {
-//       print('Error sending message: $e');
-//       // 에러 처리 로직 추가 가능
-//     }
-//   }
+    _channel?.sink.add(jsonEncode(message));
+  }
 
-//   @override
-//   void dispose() {
-//     _messageSubscription?.cancel();
-//     super.dispose();
-//   }
-// }
+  Future<void> leaveChat(int folderId) async {
+    if (!_isConnected) {
+      throw Exception('WebSocket not connected');
+    }
 
-// // views/chat_view.dart는 이전과 동일하나, 로딩 상태 표시를 추가
+    // 세션 퇴장
+    _sessionService.exitSession(_senderId);
 
-// class ChatViewContent extends StatelessWidget {
-//   final String currentUserId;
+    // 채팅방 퇴장 메시지 전송
+    final message = {
+      'type': 'EXIT',
+      'senderId': _senderId,
+      'folderId': folderId,
+      'sendDateTime': DateTime.now().toUtc().toIso8601String(),
+    };
 
-//   ChatViewContent({required this.currentUserId});
+    _channel?.sink.add(jsonEncode(message));
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Consumer<ChatViewModel>(
-//       builder: (context, viewModel, child) {
-//         if (viewModel.isLoading) {
-//           return const Center(child: CircularProgressIndicator());
-//         }
+  void deleteMessage(int folderId, int messageId) {
+    if (!_isConnected) {
+      throw Exception('WebSocket not connected');
+    }
 
-//         final messages = viewModel.messages.map((msg) {
-//           return types.TextMessage(
-//             id: msg.id,
-//             author: types.User(id: msg.senderId),
-//             text: msg.message,
-//             createdAt: msg.timestamp.millisecondsSinceEpoch,
-//           );
-//         }).toList();
+    final message = {
+      'type': 'DELETE',
+      'chatId': messageId,
+      'senderId': _senderId,
+      'folderId': folderId,
+      'sendDateTime': DateTime.now().toUtc().toIso8601String(),
+    };
 
-//         return Scaffold(
-//           appBar: AppBar(
-//             title: Text('Chat'),
-//           ),
-//           body: Chat(
-//             messages: messages,
-//             onSendPressed: (types.PartialText message) {
-//               viewModel.sendMessage(
-//                 message.text,
-//                 currentUserId,
-//               );
-//             },
-//             user: types.User(id: currentUserId),
-//           ),
-//         );
-//       },
-//     );
-//   }
-// }
+    _channel?.sink.add(jsonEncode(message));
+  }
+
+  Stream<ChatMessage>? getChatStream() => _messageStream;
+
+  bool get isConnected => _isConnected;
+
+  void dispose() {
+    _channel?.sink.close();
+    _messageStream = null;
+    _isConnected = false;
+  }
+}
