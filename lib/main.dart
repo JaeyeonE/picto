@@ -6,7 +6,7 @@ import 'package:picto/views/sign_in/welcome_screen.dart'; // 추후 수정 예�
 import 'package:picto/views/sign_in/login_screen.dart';
 import 'package:picto/widgets/button/makers.dart';
 import 'package:picto/models/user_manager/user.dart';
-import 'views/map/map.dart';
+import 'package:picto/views/map/map_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
