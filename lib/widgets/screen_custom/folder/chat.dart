@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-
-=======
 import 'package:get/get.dart';
->>>>>>> folder
 import 'package:picto/viewmodles/chat_view_model.dart';
 import 'package:picto/viewmodles/session_controller.dart';
 import '../../../models/folder/chat_message_model.dart';
@@ -55,14 +51,6 @@ class Chat extends GetView<ChatViewModel> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-<<<<<<< HEAD
-        title: Text('Chat'),
-      ),
-      body: Text('채팅'),
-      );
-  }
-}
-=======
         title: Obx(() => Text('Chat (${controller.members.length}명)')),
         actions: [
           IconButton(
@@ -305,4 +293,3 @@ class MessageBubble extends StatelessWidget {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }
->>>>>>> folder

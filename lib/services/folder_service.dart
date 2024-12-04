@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'dart:io';
 import 'dart:convert';
 
-import 'package:picto/models/common/photo.dart';
+import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/folder/folder_model.dart';
 import 'package:picto/models/folder/folder_user.dart';
 
@@ -123,62 +123,6 @@ class FolderService {
         content: "멍멍이와 함께한 추억",
         createdDateTime: 1731752705881,
         link: "pets",
-      ),
-    ];
-  }
-
-  // 테스트용 사진 목록 조회
-  Future<List<Photo>> getPhotosTest(int? folderId) async {
-    await Future.delayed(const Duration(seconds: 1));
-    
-    return [
-      Photo(
-        photoId: 1,
-        photoUrl: "https://picsum.photos/300/300?random=1",
-        location: "서울특별시 강남구",
-        title: "가족 나들이",
-        lat: 37.5642135,
-        lng: 127.0016985,
-        registerTime: 1731752705878,
-        uploadTime: 1731752705878,
-        likes: 42,
-        views: 128,
-        frameActive: false,
-        savedDateTime: 1731752705878,
-        generatorId: folderId,
-        userId: 1,
-      ),
-      Photo(
-        photoId: 2,
-        photoUrl: "https://picsum.photos/300/300?random=2",
-        location: "부산광역시 해운대구",
-        title: "바다 여행",
-        lat: 35.1595454,
-        lng: 129.1603321,
-        registerTime: 1731752705879,
-        uploadTime: 1731752705879,
-        likes: 67,
-        views: 203,
-        frameActive: true,
-        savedDateTime: 1731752705879,
-        generatorId: folderId,
-        userId: 1,
-      ),
-      Photo(
-        photoId: 3,
-        photoUrl: "https://picsum.photos/300/300?random=3",
-        location: "제주특별자치도 서귀포시",
-        title: "한라산 등반",
-        lat: 33.3616666,
-        lng: 126.5291666,
-        registerTime: 1731752705880,
-        uploadTime: 1731752705880,
-        likes: 89,
-        views: 341,
-        frameActive: false,
-        savedDateTime: 1731752705880,
-        generatorId: folderId,
-        userId: 1,
       ),
     ];
   }

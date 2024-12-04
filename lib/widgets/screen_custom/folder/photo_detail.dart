@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:picto/models/common/photo.dart';
+import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 
 class PhotoDetail extends StatefulWidget {
@@ -121,7 +121,7 @@ class _PhotoDetailState extends State<PhotoDetail> {
                   final photo = photos[index];
                   return Center(
                     child: Image.network(
-                      photo.photoUrl,
+                      photo.photoPath,
                       fit: BoxFit.contain,
                     ),
                   );

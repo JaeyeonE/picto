@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 
-import 'package:picto/models/common/photo.dart';
+import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/folder/folder_model.dart';
 import 'package:picto/models/folder/folder_user.dart';
 import 'package:picto/services/folder_service.dart';
@@ -97,7 +97,7 @@ class FolderViewModel extends GetxController {
   Future<void> loadPhotos(int? folderId) async {
     _isLoading.value = true;
     try {
-      final photos = await _folderService.value?.getPhotosTest(folderId);
+      final photos = await _folderService.value?.getPhotos(folderId);
       _photos.assignAll(photos ?? []);
       _currentFolderId.value = folderId;
     } catch (e) {
