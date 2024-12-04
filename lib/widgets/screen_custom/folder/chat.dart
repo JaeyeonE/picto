@@ -57,10 +57,6 @@ class Chat extends GetView<ChatViewModel> {
             icon: const Icon(Icons.people),
             onPressed: () => _showMembersList(context),
           ),
-          IconButton(
-            icon: const Icon(Icons.abc_rounded),
-            onPressed: () => _sessionService.connectWebSocket(currentUserId),
-          )
         ],
       ),
       body: Obx(() {

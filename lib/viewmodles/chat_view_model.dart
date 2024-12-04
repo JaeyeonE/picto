@@ -3,8 +3,6 @@ import 'dart:async';
 import '../services/chat_service.dart';
 import '../models/folder/chat_message_model.dart';
 import 'session_controller.dart';
-import '../services/session_service.dart';
-
 
 class ChatViewModel extends GetxController {
   final ChatService _chatService;
@@ -12,17 +10,18 @@ class ChatViewModel extends GetxController {
   final int folderId;
   final int currentUserId;
 
-  final RxList<ChatMessage> messages = <ChatMessage>[].obs;  // 타입 명시
-  final RxList<String> members = <String>[].obs;  // 타입 명시
+  final RxList<ChatMessage> messages = <ChatMessage>[].obs;
+  final RxList<String> members = <String>[].obs;
   final RxBool isLoading = true.obs;
+  final RxBool isConnected = false.obs;
   StreamSubscription? _messageSubscription;
 
   ChatViewModel({
     required this.folderId,
     required this.currentUserId,
   }) : _chatService = ChatService(
-         senderId: currentUserId,
          sessionService: Get.find<SessionController>().sessionService,
+         senderId: currentUserId,
        ),
        _sessionController = Get.find<SessionController>();
 
@@ -40,37 +39,45 @@ class ChatViewModel extends GetxController {
     super.onClose();
   }
 
-  Future<void> _initializeChat() async {  // 반환 타입 명시
+  Future<void> _initializeChat() async {
     isLoading.value = true;
 
     try {
-      // WebSocket 연결
-      _chatService.connectWebSocket(currentUserId);
-      
-      // 초기 데이터 로드를 병렬로 처리
+      // WebSocket 연결 설정
+      await _chatService.initializeWebSocket(folderId);
+      isConnected.value = true;
+
+      // 병렬로 초기 데이터 로드
       await Future.wait([
         _loadMessages(),
         _loadMembers(),
-        _chatService.enterChat(currentUserId),  // senderId는 서비스에서 관리
+        _chatService.enterChat(folderId),
       ]);
 
-      // 실시간 메시지 수신 시작
       _subscribeToMessages();
     } catch (e) {
       print('Error initializing chat: $e');
-      // 에러 처리를 위한 상태 추가 가능
-      // error.value = e.toString();
+      isConnected.value = false;
     } finally {
       isLoading.value = false;
     }
   }
 
   void _subscribeToMessages() {
-    final stream = _chatService.getMessageStream();
+    final stream = _chatService.getChatStream();
     if (stream != null) {
+      _messageSubscription?.cancel();
       _messageSubscription = stream.listen(
         (message) => messages.add(message),
-        onError: (error) => print('Error in message stream: $error'),
+        onError: (error) {
+          print('Error in chat message stream: $error');
+          isConnected.value = false;
+        },
+        onDone: () {
+          print('Chat stream closed');
+          isConnected.value = false;
+          // 필요한 경우 재연결 로직 추가
+        },
       );
     }
   }
@@ -94,10 +101,10 @@ class ChatViewModel extends GetxController {
   }
 
   Future<void> sendMessage(String content) async {
-    if (content.trim().isEmpty) return;
+    if (content.trim().isEmpty || !isConnected.value) return;
     
     try {
-      await _chatService.sendMessage(folderId, content);  // senderId는 서비스에서 관리
+      await _chatService.sendMessage(folderId, content);
     } catch (e) {
       print('Error sending message: $e');
     }
@@ -106,16 +113,31 @@ class ChatViewModel extends GetxController {
   Future<void> deleteMessage(ChatMessage message) async {
     try {
       await _chatService.deleteMessage(folderId, int.parse(message.senderId));
+      // 선택적: 로컬 메시지 목록에서도 제거
+      messages.removeWhere((m) => m.senderId == message.senderId);
     } catch (e) {
       print('Error deleting message: $e');
     }
   }
 
   Future<void> _leaveChat() async {
+    if (!isConnected.value) return;
+    
     try {
-      await _chatService.leaveChat(folderId);  // senderId는 서비스에서 관리
+      await _chatService.leaveChat(folderId);
+      isConnected.value = false;
     } catch (e) {
       print('Error leaving chat: $e');
+    }
+  }
+
+  Future<void> reconnect() async {
+    if (isConnected.value) return;
+    
+    try {
+      await _initializeChat();
+    } catch (e) {
+      print('Error reconnecting to chat: $e');
     }
   }
 

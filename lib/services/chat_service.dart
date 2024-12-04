@@ -1,226 +1,172 @@
 import 'package:dio/dio.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
 import '../models/folder/chat_message_model.dart';
-import '../services/session_service.dart';
+import 'session_service.dart';
 
 class ChatService {
   final Dio _dio = Dio();
   final String baseUrl = 'http://52.79.109.62:8080/chatting-scheduler';
-  WebSocketChannel? _channel;
   final SessionService _sessionService;
   final int _senderId;
-  bool _isConnected = false;
-  
-  // 재연결 관련 설정
-  static const int maxReconnectAttempts = 5;
-  static const Duration reconnectDelay = Duration(seconds: 2);
-  int _reconnectAttempts = 0;
+  WebSocketChannel? _channel;
+  Stream<ChatMessage>? _messageStream;
 
   ChatService({
-    required int senderId,
     required SessionService sessionService,
-  }) : _senderId = senderId,
-       _sessionService = sessionService {
-    _initializeDio();
+    required int senderId,
+  }) : _sessionService = sessionService,
+       _senderId = senderId {
+    _initDio();
   }
 
-  void _initializeDio() {
-    _dio.options.headers = {'Content-Type': 'application/json'};
-    _dio.options.connectTimeout = const Duration(seconds: 5);
-    _dio.options.receiveTimeout = const Duration(seconds: 3);
-    _dio.interceptors.add(InterceptorsWrapper(
-      onError: (error, handler) async {
-        if (error.response?.statusCode == 401) {
-          // 인증 에러 처리
-          throw Exception('Authentication failed');
-        }
-        return handler.next(error);
-      }
-    ));
+  void _initDio() {
+    _dio.options
+      ..baseUrl = baseUrl
+      ..connectTimeout = const Duration(seconds: 5)
+      ..receiveTimeout = const Duration(seconds: 3)
+      ..headers = {'Content-Type': 'application/json'};
   }
 
-  // WebSocket 연결 설정
-  Future<void> connectWebSocket(int folderId) async {
-    if (_isConnected) {
-      await _channel?.sink.close();
-    }
+  Future<void> initializeWebSocket(int folderId) async {
+    final wsUrl = Uri.parse('wss://52.79.109.62:8080/chatting-scheduler/folder/$folderId/chat');
 
     try {
-      final wsUrl = Uri(
-        scheme: 'wss',
-        host: '52.79.109.62',
-        port: 8080,
-        path: '/chatting-scheduler/folder/$folderId/chat'
-      );
-      
-      print('Connecting to Chat WebSocket: ${wsUrl.toString()}');
-      _channel = WebSocketChannel.connect(wsUrl);
-      _isConnected = true;
-      _reconnectAttempts = 0;
-
-      // 연결 상태 모니터링
-      _channel?.stream.listen(
-        (message) {
-          // 메시지 처리
-        },
-        onError: (error) {
-          print('WebSocket error: $error');
-          _handleWebSocketError();
-        },
-        onDone: () {
-          _isConnected = false;
-          _handleWebSocketError();
+      _channel?.sink.close();
+      // IOWebSocketChannel 사용 및 설정 추가
+      _channel = IOWebSocketChannel.connect(
+        wsUrl,
+        connectTimeout: const Duration(seconds: 5),
+        protocols: ['websocket'],
+        headers: {
+          'Connection': 'Upgrade',
+          'Upgrade': 'websocket',
+          'Cache-Control': 'no-cache',
+          'Content-Type': 'application/json',
         },
       );
-    } catch (e) {
-      print('WebSocket connection error: $e');
-      _handleWebSocketError();
-    }
-  }
 
-  void _handleWebSocketError() {
-    if (_reconnectAttempts < maxReconnectAttempts) {
-      _reconnectAttempts++;
-      Future.delayed(reconnectDelay * _reconnectAttempts, () {
-        if (!_isConnected) {
-          print('Attempting to reconnect... Attempt $_reconnectAttempts');
-          connectWebSocket(_senderId);
-        }
-      });
-    } else {
-      print('Max reconnection attempts reached');
-      throw Exception('Unable to maintain WebSocket connection');
-    }
-  }
-
-  Stream<ChatMessage>? getMessageStream() {
-    if (!_isConnected || _channel == null) {
-      throw Exception('WebSocket is not connected');
-    }
-    return _channel?.stream.map((message) {
-      try {
-        return ChatMessage.fromJson(message);
-      } catch (e) {
-        print('Error parsing message: $e');
-        rethrow;
+      // 연결 확인을 위한 ping 설정
+      if (_channel != null) {
+        _messageStream = _channel!.stream.map((data) {
+          print('Received chat data: $data');  // 데이터 수신 로깅
+          return ChatMessage.fromJson(data);
+        });
       }
-    });
+
+      print('Chat WebSocket initialized: $wsUrl');
+    } catch (e) {
+      print('Chat WebSocket initialization failed: $e');
+      rethrow;
+    }
   }
 
-  // 세션/채팅방 메시지 목록 조회
+  Stream<ChatMessage>? getChatStream() => _messageStream;
+
   Future<List<ChatMessage>> getMessages(int folderId) async {
     try {
-      final response = await _dio.get('$baseUrl/folders/$folderId/chat');
-      
+      final response = await _dio.get('/folders/$folderId/chat');
       if (response.statusCode == 200) {
-        final List<dynamic> jsonList = response.data;
-        return jsonList.map((json) => ChatMessage.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load messages');
+        final List<dynamic> data = response.data;
+        return data.map((json) => ChatMessage.fromJson(json)).toList();
       }
+      throw Exception('Failed to fetch messages');
     } catch (e) {
-      throw Exception('Failed to load messages: $e');
+      print('Failed to get messages: $e');
+      rethrow;
     }
   }
 
-  // 채팅방 입장
   Future<void> enterChat(int folderId) async {
     try {
-      // 세션 입장 먼저 수행
       await _sessionService.enterSession(_senderId);
       
-      // 채팅방 입장
-      await _dio.post(
-        '$baseUrl/send/chat/enter',  // 경로 수정
-        data: {
-          'senderId': _senderId,
-          'folderId': folderId,
-          'messageType': 'ENTER',
-          'sendDateTime': DateTime.now().toUtc().toIso8601String(),
-        },
-      );
+      final data = {
+        'senderId': _senderId,
+        'folderId': folderId,
+        'messageType': 'ENTER',
+        'sendDateTime': DateTime.now().toUtc().toIso8601String(),
+      };
+      
+      await _dio.post('/send/chat/enter', data: data);
+      print('Chat room entered successfully');
     } catch (e) {
-      throw Exception('Error entering chat: $e');
+      print('Failed to enter chat: $e');
+      rethrow;
     }
   }
 
-  // 채팅방 퇴장
   Future<void> leaveChat(int folderId) async {
     try {
-      // 세션 퇴장 먼저 수행
       await _sessionService.exitSession(_senderId);
       
-      await _dio.post(
-        '$baseUrl/send/chat/leave',  // 경로 수정
-        data: {
-          'senderId': _senderId,
-          'folderId': folderId,
-          'messageType': 'EXIT',
-          'sendDateTime': DateTime.now().toUtc().toIso8601String(),
-        },
-      );
+      final data = {
+        'senderId': _senderId,
+        'folderId': folderId,
+        'messageType': 'EXIT',
+        'sendDateTime': DateTime.now().toUtc().toIso8601String(),
+      };
+      
+      await _dio.post('/send/chat/leave', data: data);
+      print('Chat room left successfully');
     } catch (e) {
-      throw Exception('Error leaving chat: $e');
+      print('Failed to leave chat: $e');
+      rethrow;
     }
   }
 
-  // 메시지 전송
   Future<void> sendMessage(int folderId, String content) async {
     try {
-      await _dio.post(
-        '$baseUrl/send/chat/message',  // 경로 수정
-        data: {
-          'senderId': _senderId,
-          'folderId': folderId,
-          'messageType': 'MESSAGE',
-          'content': content,
-          'sendDateTime': DateTime.now().toUtc().toIso8601String(),
-        },
-      );
+      final data = {
+        'senderId': _senderId,
+        'folderId': folderId,
+        'messageType': 'MESSAGE',
+        'content': content,
+        'sendDateTime': DateTime.now().toUtc().toIso8601String(),
+      };
+      
+      await _dio.post('/send/chat/message', data: data);
+      print('Message sent successfully');
     } catch (e) {
-      throw Exception('Error sending message: $e');
+      print('Failed to send message: $e');
+      rethrow;
     }
   }
 
-  // 채팅방 참여자 목록 조회
-  Future<List<String>> getChatMembers(int? folderId) async {
+  Future<List<String>> getChatMembers(int folderId) async {
     try {
-      final response = await _dio.get(
-        '$baseUrl/folders/$folderId/cheators',
-      );
-      
+      final response = await _dio.get('/folders/$folderId/cheators');
       if (response.statusCode == 200) {
         return List<String>.from(response.data);
-      } else {
-        throw Exception('Failed to load chat members');
       }
+      throw Exception('Failed to fetch chat members');
     } catch (e) {
-      throw Exception('Error fetching chat members: $e');
+      print('Failed to get chat members: $e');
+      rethrow;
     }
   }
 
-  Future<void> deleteMessage(int folderId, int senderId) async {
+  Future<void> deleteMessage(int folderId, int messageId) async {
     try {
-      final response = await _dio.delete(
-        '$baseUrl/chat',
-        data: {
-          'chatId': senderId,
-          'senderId': senderId,
-          'folderId': folderId,
-        },
-      );
-
+      final data = {
+        'chatId': messageId,
+        'senderId': _senderId,
+        'folderId': folderId,
+      };
+      
+      final response = await _dio.delete('/chat', data: data);
       if (response.statusCode != 200) {
         throw Exception('Failed to delete message');
       }
+      print('Message deleted successfully');
     } catch (e) {
-      throw Exception('Failed to delete message: $e');
+      print('Failed to delete message: $e');
+      rethrow;
     }
   }
 
-  Future<void> dispose() async {
-    _isConnected = false;
-    await _channel?.sink.close();
-    _sessionService.dispose();
+  void dispose() {
+    _channel?.sink.close();
+    _messageStream = null;
   }
 }
