@@ -4,40 +4,8 @@ import 'package:picto/models/user_manager/api_exceptions.dart';
 import 'package:picto/models/user_manager/auth_responses.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/models/user_manager/user_requests.dart';
+import 'package:picto/utils/logging_interceptor.dart';
 
-class LoggingInterceptor extends Interceptor {
- @override
- void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-   print('=== HTTP Request ===');
-   print('URL: ${options.baseUrl}${options.path}');
-   print('Method: ${options.method}');
-   print('Headers: ${options.headers}');
-   print('Body: ${options.data}');
-   print('==================');
-   return super.onRequest(options, handler);
- }
-
- @override
- void onResponse(Response response, ResponseInterceptorHandler handler) {
-   print('=== HTTP Response ==='); 
-   print('Status Code: ${response.statusCode}');
-   print('Headers: ${response.headers}');
-   print('Body: ${response.data}');
-   print('===================');
-   return super.onResponse(response, handler);
- }
-
- @override
- void onError(DioException err, ErrorInterceptorHandler handler) {
-   print('=== HTTP Error ===');
-   print('Status Code: ${err.response?.statusCode}');
-   print('Response: ${err.response?.data}');
-   print('Message: ${err.message}');
-   print('Error Type: ${err.type}');
-   print('================');
-   return super.onError(err, handler);
- }
-}
 
 class UserManagerService {
  final Dio _dio;
@@ -159,7 +127,7 @@ class UserManagerService {
      await _dio.get('/email/$email');
      return false;
    } on DioException catch (e) {
-     if (e.response?.statusCode == 406) {
+     if (e.response?.statusCode == 406) { //백엔드 코드 미구현. 우선 무조건 true 반환
        return true;
      }
      throw _handleError(e);
