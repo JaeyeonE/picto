@@ -22,7 +22,7 @@ class SessionService {
   }
 
   Future<void> initializeWebSocket(int sessionId) async {
-    final wsUrl = Uri.parse('wss://52.79.109.62:8085/session-scheduler/session/$sessionId');
+    final wsUrl = Uri.parse('ws://52.79.109.62:8085/session-scheduler/session/$sessionId');
 
     try {
       _channel?.sink.close();

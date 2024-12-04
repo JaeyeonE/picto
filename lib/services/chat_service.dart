@@ -29,7 +29,7 @@ class ChatService {
   }
 
   Future<void> initializeWebSocket(int folderId) async {
-    final wsUrl = Uri.parse('wss://52.79.109.62:8080/chatting-scheduler/folder/$folderId/chat');
+    final wsUrl = Uri.parse('ws://52.79.109.62:8080/chatting-scheduler/folder/$folderId/chat');
 
     try {
       _channel?.sink.close();
