@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/app_color.dart';
 import '../../widgets/common/sign_in_header.dart';
 import 'signup_screen.dart';
-import '../map/map.dart';  // MapScreen import 추가
+import 'package:picto/views/map/map.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);

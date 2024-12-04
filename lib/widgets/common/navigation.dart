@@ -1,9 +1,11 @@
+//lib/widgets/common/navigation.dart
+
 import 'package:flutter/material.dart';
 import 'package:picto/utils/app_color.dart';
 
 import 'package:picto/views/map/map.dart';
+import 'package:picto/views/profile/logout.dart';
 import 'package:picto/views/sign_in/login_screen.dart';
-import 'package:picto/views/sign_in/welcome_screen.dart';
 // 이동할 페이지들의 import 구문 추가
 
 class CustomNavigationBar extends StatelessWidget {
@@ -39,10 +41,10 @@ class CustomNavigationBar extends StatelessWidget {
           screen = const LoginScreen();  // 폴더 화면 -> 수정할 것
           break;
         case 4:
-          screen = const LoginScreen();  // 프로필 화면 -> 수정할 것
+          screen = const ProfileScreen();  // 로그아웃 버튼
           break;
         default:
-          screen = const LoginScreen();  // 기본값 설정
+          screen = const ProfileScreen();  // 로그아웃 버튼
           break;
       }
       

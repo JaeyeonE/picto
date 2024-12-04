@@ -1,4 +1,4 @@
-// 필요한 기능이 전부 추가된 tag list! 이걸로 변경할 것!
+//lib/widgets/common/actual_tag_list.dart
 
 import 'package:flutter/material.dart';
 import 'package:omni_datetime_picker/omni_datetime_picker.dart';

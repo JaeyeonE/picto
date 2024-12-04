@@ -1,3 +1,5 @@
+//lib/models/user_manager/api_exceptions.dart
+
 class ApiException implements Exception {
   final String message;
   
