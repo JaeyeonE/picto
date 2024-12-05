@@ -34,14 +34,14 @@ class Photo {
   factory Photo.fromJson(Map<String, dynamic> json) {
     return Photo(
       photoId: json['photoId'] as int,
-      userId: json['userId'].toString(),
+      userId: json['userId'].toString() ?? 'default',
       photoPath: json['photoPath'] as String,
       lat: json['lat']?.toDouble(),
       lng: json['lng']?.toDouble(),
       location: json['location'] as String?,
-      registerDatetime: json['registerDatetime'] as int,
-      updateDatetime: json['updateDatetime'] as int,
-      frameActive: json['frame_active'] as bool,
+      registerDatetime: json['upDatetime'] as int,
+      updateDatetime: json['upDatetime'] as int,
+      frameActive: json['frame_active'] as bool ?? false, //액자 저장할 때만 true
       likes: json['likes'] as int,
       views: json['views'] as int,
       tag: json['tag'] as String?,

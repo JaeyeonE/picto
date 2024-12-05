@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:picto/services/frame_list.dart';
+import 'package:picto/services/frame_service.dart';
+import 'package:picto/models/photo_manager/photo.dart';
+import 'package:picto/views/upload/save_location.dart';
 
 class DropDownWidget extends StatefulWidget {
   const DropDownWidget({Key? key}) : super(key: key);
@@ -10,41 +12,81 @@ class DropDownWidget extends StatefulWidget {
 
 class _DropDownWidgetState extends State<DropDownWidget> {
   String? _selectedFrame;
+  List<Photo> _frames = [];
   final FrameService _frameService = FrameService();
-  List<String> _frames = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchFrames();
+    _loadFrames();
   }
 
-  Future<void> _fetchFrames() async {
+  Future<void> _loadFrames() async {
     try {
-      List<String> frames = await _frameService.getUserFrames(1);
+      final frames = await _frameService.getUserFrames(2);
       setState(() {
         _frames = frames;
+        _isLoading = false;
       });
     } catch (e) {
-      print('액자 가져오기 실패: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      print('프레임 로드 실패: $e');
+    }
+  }
+
+  Future<void> _handleAddFrame() async {
+    final bool? shouldProceed = await showDialog<bool>(
+      context: context,
+      builder: (context) => const SaveLocationDialog(),
+    );
+
+    if (shouldProceed == true) {
+      try {
+        await _frameService.saveLocationAsFrame();
+
+        await _loadFrames();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('현재 위치가 프레임으로 저장되었습니다')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('위치 저장 실패: $e')),
+          );
+        }
+      }
     }
   }
 
   void _onFrameSelected(String value) {
-    setState(() {
-      _selectedFrame = value;
-    });
+    if (value == 'add_frame') {
+      _handleAddFrame();
+    } else {
+      setState(() {
+        _selectedFrame = value;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return PopupMenuButton<String>(
       onSelected: _onFrameSelected,
-      color: Color(0xFF313233),
+      color: const Color(0xFF313233),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Color(0xFF313233),
+          color: const Color(0xFF313233),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -52,30 +94,34 @@ class _DropDownWidgetState extends State<DropDownWidget> {
           children: [
             Text(
               _selectedFrame ?? '저장된 액자',
-              style: TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white),
             ),
-            SizedBox(width: 10),
-            Icon(Icons.arrow_drop_down, color: Colors.white),
+            const SizedBox(width: 10),
+            const Icon(Icons.arrow_drop_down, color: Colors.white),
           ],
         ),
       ),
       itemBuilder: (BuildContext context) {
         return [
-          ..._frames.map((String album) {
+          ..._frames.where((frame) => frame.tag != null).map((frame) {
             return PopupMenuItem<String>(
-              value: album,
-              child: Text(album, style: TextStyle(color: Colors.white)),
+              value: frame.tag!,
+              child:
+                  Text(frame.tag!, style: const TextStyle(color: Colors.white)),
             );
           }).toList(),
-          const PopupMenuItem(
-            enabled: false,
-            child: Divider(),
-          ),
+          if (_frames.isNotEmpty)
+            const PopupMenuItem(
+              enabled: false,
+              child: Divider(),
+            ),
           PopupMenuItem(
-            value: 'add',
+            value: 'add_frame',
             child: Center(
-              child: Text('현재 위치 저장',
-                  style: TextStyle(color: Color.fromARGB(255, 255, 198, 41))),
+              child: Text(
+                '현재 위치 저장',
+                style: TextStyle(color: Color.fromARGB(255, 255, 198, 41)),
+              ),
             ),
           ),
         ];
