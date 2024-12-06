@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:picto/services/frame_service.dart';
 import 'package:picto/models/photo_manager/photo.dart';
-import 'package:picto/views/upload/save_location.dart';
+import 'package:picto/services/upload/frame_add_service.dart';
+import 'package:picto/services/upload/frame_list.dart';
+import 'package:picto/services/upload/frame_upload.dart';
+import 'package:picto/views/upload/frame_item.dart';
 
-class DropDownWidget extends StatefulWidget {
-  const DropDownWidget({Key? key}) : super(key: key);
+class FrameSelectionWidget extends StatefulWidget {
+  final Function(Photo frame, Map<String, dynamic> uploadData)? onFrameSelected;
+
+  const FrameSelectionWidget({
+    this.onFrameSelected,
+    Key? key,
+  }) : super(key: key);
 
   @override
-  _DropDownWidgetState createState() => _DropDownWidgetState();
+  _FrameSelectionWidgetState createState() => _FrameSelectionWidgetState();
 }
 
-class _DropDownWidgetState extends State<DropDownWidget> {
-  String? _selectedFrame;
+class _FrameSelectionWidgetState extends State<FrameSelectionWidget> {
+  Photo? _selectedFrame;
   List<Photo> _frames = [];
-  final FrameService _frameService = FrameService();
-  bool _isLoading = true;
+  final FrameListService _frameListService = FrameListService();
+  final FrameAddService _frameAddService = FrameAddService();
+  bool _isLoading = false;
+  Map<String, dynamic> _selectedFrameData = {};
 
   @override
   void initState() {
@@ -23,109 +32,129 @@ class _DropDownWidgetState extends State<DropDownWidget> {
   }
 
   Future<void> _loadFrames() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
     try {
-      final frames = await _frameService.getUserFrames(2);
+      final frames =
+          await _frameListService.getFrames(2); // userId는 실제 사용자 ID로 변경 필요
+      if (!mounted) return;
       setState(() {
         _frames = frames;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
       print('프레임 로드 실패: $e');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('프레임 로드 실패: $e')),
+      );
     }
   }
 
   Future<void> _handleAddFrame() async {
     final bool? shouldProceed = await showDialog<bool>(
       context: context,
-      builder: (context) => const SaveLocationDialog(),
+      barrierDismissible: false,
+      builder: (BuildContext context) => const SaveLocationDialog(),
     );
 
-    if (shouldProceed == true) {
+    if (shouldProceed == true && mounted) {
       try {
-        await _frameService.saveLocationAsFrame();
+        // 현재 위치 정보를 가져오는 로직 필요
+        final double currentLat = 35.83569842525286; // 실제 위치로 변경 필요
+        final double currentLng = 128.62260693482764; // 실제 위치로 변경 필요
+
+        final frameData = await _frameAddService.addFrame();
 
         await _loadFrames();
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('현재 위치가 프레임으로 저장되었습니다')),
-          );
-        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('위치가 저장되었습니다.')),
+        );
+        _selectedFrameData = frameData;
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('위치 저장 실패: $e')),
-          );
-        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('저장 실패: $e')),
+        );
       }
     }
   }
 
-  void _onFrameSelected(String value) {
-    if (value == 'add_frame') {
+  void _onFrameSelected(Photo? frame) {
+    if (!mounted) return;
+    setState(() => _selectedFrame = frame);
+
+    if (frame == null) {
       _handleAddFrame();
-    } else {
-      setState(() {
-        _selectedFrame = value;
-      });
+    } else if (widget.onFrameSelected != null) {
+      _selectedFrameData = {
+        'photoId': frame.photoId,
+        'location': frame.location,
+        'registerTime': frame.registerDatetime,
+      };
+      widget.onFrameSelected!(frame, _selectedFrameData);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  void dispose() {
+    _frameListService.dispose();
+    super.dispose();
+  }
 
-    return PopupMenuButton<String>(
-      onSelected: _onFrameSelected,
-      color: const Color(0xFF313233),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => Container(
+        width: constraints.maxWidth * 0.7,
+        constraints: const BoxConstraints(minHeight: 48),
         decoration: BoxDecoration(
           color: const Color(0xFF313233),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(4),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              _selectedFrame ?? '저장된 액자',
-              style: const TextStyle(color: Colors.white),
-            ),
-            const SizedBox(width: 10),
-            const Icon(Icons.arrow_drop_down, color: Colors.white),
-          ],
-        ),
-      ),
-      itemBuilder: (BuildContext context) {
-        return [
-          ..._frames.where((frame) => frame.tag != null).map((frame) {
-            return PopupMenuItem<String>(
-              value: frame.tag!,
-              child:
-                  Text(frame.tag!, style: const TextStyle(color: Colors.white)),
-            );
-          }).toList(),
-          if (_frames.isNotEmpty)
-            const PopupMenuItem(
-              enabled: false,
-              child: Divider(),
-            ),
-          PopupMenuItem(
-            value: 'add_frame',
-            child: Center(
-              child: Text(
-                '현재 위치 저장',
-                style: TextStyle(color: Color.fromARGB(255, 255, 198, 41)),
+        child: _isLoading
+            ? const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : DropdownButtonHideUnderline(
+                child: ButtonTheme(
+                  alignedDropdown: true,
+                  child: DropdownButton<Photo>(
+                    value: _selectedFrame,
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                    hint: const Text(
+                      '저장된 액자',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    dropdownColor: const Color(0xFF1E1E1E),
+                    isExpanded: true,
+                    items: [
+                      if (_frames.length < 5)
+                        DropdownMenuItem<Photo>(
+                          child: Text(
+                            _selectedFrame == null ? '현재 위치 저장' : '현재위치 액자로 저장',
+                            style: TextStyle(
+                              color: _selectedFrame == null
+                                  ? const Color(0xFFFFD700)
+                                  : Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ..._frames.map((Photo frame) => FrameItem(frame: frame)),
+                    ],
+                    onChanged: _onFrameSelected,
+                  ),
+                ),
               ),
-            ),
-          ),
-        ];
-      },
+      ),
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:photo_manager/photo_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import 'dart:io';
 
 class UploadController {
