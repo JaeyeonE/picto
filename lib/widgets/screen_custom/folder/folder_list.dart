@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -6,6 +7,7 @@ import 'package:picto/models/folder/folder_model.dart';
 import 'photo_list.dart';
 import 'package:picto/views/folder/folder.dart';
 import 'package:picto/models/user_manager/user.dart';
+import 'package:picto/services/folder_service.dart';
 
 class FolderList extends StatefulWidget {
   final User user;
@@ -16,15 +18,26 @@ class FolderList extends StatefulWidget {
 }
 
 class _FolderListState extends State<FolderList> {
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
-
+  late final FolderViewModel viewModel;
+  
   @override
   void initState() {
     super.initState();
+    // FolderViewModel 초기화
+    final dio = Dio();
+    final folderService = FolderService(dio);
+    viewModel = Get.put(FolderViewModel(folderService: folderService, user: widget.user));
+    
     // 폴더 목록 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
       viewModel.loadFolders();
     });
+  }
+
+  @override
+  void dispose() {
+    Get.delete<FolderViewModel>();  // 메모리 누수 방지를 위한 cleanup
+    super.dispose();
   }
 
   @override
