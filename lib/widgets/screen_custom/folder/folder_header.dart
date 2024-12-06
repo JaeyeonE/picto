@@ -73,8 +73,8 @@ Widget build(BuildContext context) {
           icon: const Icon(Icons.more_vert),
           onPressed: () {
             if(currentFolderId == null || currentFolderName == null || currentFolderName.isEmpty) {
-              _showFolderListOptions(context); // 원래 이거임
-              //_showFolderOptions(context);
+              //_showFolderListOptions(context); // 원래 이거임
+              _showFolderOptions(context);
             } else {
               _showFolderOptions(context);
             }
@@ -131,7 +131,7 @@ Widget build(BuildContext context) {
             title: const Text('manage member'),
             onTap:() {
               Navigator.pop(context);
-              // go to member management
+              
             },
           ),
           ListTile (
