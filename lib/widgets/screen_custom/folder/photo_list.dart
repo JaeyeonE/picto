@@ -93,6 +93,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
             builder: (context) => PhotoDetail(
               initialPhotoIndex: index,
               folderId: widget.folderId,
+              photoId: photo.photoId,
             ),
           ),
         );

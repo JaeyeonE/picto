@@ -5,6 +5,9 @@ import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/utils/constant.dart';
 import 'package:picto/widgets/screen_custom/folder/create_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/delete_folder_dialog.dart';
+import 'package:picto/widgets/screen_custom/folder/enter_code_dialog.dart';
+import 'package:picto/widgets/screen_custom/folder/folder_user_dialog.dart';
+import 'package:picto/widgets/screen_custom/folder/share_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/update_folder_dialog.dart';
 
 class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -56,7 +59,6 @@ Widget build(BuildContext context) {
     }),
     actions: [
   Obx(() {
-    final folderName = viewModel.currentFolderName;
     final folderId = viewModel.currentFolderId;
     
     return Row(
@@ -65,7 +67,7 @@ Widget build(BuildContext context) {
         IconButton(
           icon: const Icon(Icons.notifications),
           onPressed: () {
-            _showNotificationList(context);
+            _showNotificationDialog(context);
             print('Notification pressed');
           },
         ),
@@ -130,7 +132,10 @@ Widget build(BuildContext context) {
             title: const Text('manage member'),
             onTap:() {
               Navigator.pop(context);
-              
+              showDialog(
+              context: context,
+              builder: (context) => const FolderUserDialog(),
+            );
             },
           ),
           ListTile (
@@ -144,62 +149,82 @@ Widget build(BuildContext context) {
               );
             },
           ),
+          ListTile (
+            leading: const Icon(Icons.share),
+            title: const Text('share folder'),
+            onTap: () {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (context) =>const ShareFolderDialog(),
+              );
+            },
+          ),
+          ListTile (
+            leading: const Icon(Icons.share),
+            title: const Text('enter invitation code'),
+            onTap: () {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (context) =>const EnterCodeDialog(),
+              );
+            },
+          ),
         ],
       ),
     );
   }
   
-  void _showNotificationList(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    builder: (context) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: const Row(
-            children: [
-              Icon(Icons.notifications),
-              SizedBox(width: 12),
-              Text(
-                '공유 폴더 알림 조회',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+  void _showNotificationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.notifications, size: 24),
+            SizedBox(width: 8),
+            Text('공유 폴더 알림'),
+          ],
         ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.folder_shared),
-          title: const Text('테스트 폴더 초대'),  // 여기는 실제 폴더 이름이 들어갈 예정
-          subtitle: const Text('홍길동님이 초대하셨습니다'),  // 여기는 실제 초대한 사람 이름이 들어갈 예정
-          trailing: Row(
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: const Icon(Icons.check_circle, color: Colors.green),
-                onPressed: () {
-                  Navigator.pop(context);
-                  // 수락 로직 구현
-                },
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.folder_shared),
+                title: const Text('테스트 폴더 초대'),  // 실제 폴더 이름
+                subtitle: const Text('홍길동님이 초대하셨습니다'),  // 실제 초대한 사람 이름
               ),
-              IconButton(
-                icon: const Icon(Icons.cancel, color: Colors.red),
-                onPressed: () {
-                  Navigator.pop(context);
-                  // 거절 로직 구현
-                },
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // 거절 로직
+                    },
+                    child: const Text('거절', style: TextStyle(color: Colors.red)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // 수락 로직
+                    },
+                    child: const Text('수락', style: TextStyle(color: Colors.green)),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);

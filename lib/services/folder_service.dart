@@ -118,17 +118,64 @@ class FolderService {
     }
   }
 
-  Future<void> shareFolder(int folderId, int senderId, int receiverId) async {
-    print('Sharing folder - FolderID: $folderId, SenderID: $senderId, ReceiverID: $receiverId');
+
+  Future<void> inviteToFolder(int senderId, int receiverId, int folderId) async {
+    print('Inviting user to folder - SenderId: $senderId, ReceiverId: $receiverId, FolderId: $folderId');
     try {
-      await _dio.post('$baseUrl/folders/shares', data: {
-        'senderId': senderId,
-        'receiverId': receiverId,
-        'folderId': folderId
-      });
-      print('Folder shared successfully');
+      await _dio.post(
+        '$baseUrl/folders/shares',
+        data: {
+          'senderId': senderId,
+          'receiverId': receiverId,
+          'folderId': folderId,
+        },
+      );
+      print('Successfully sent folder invitation');
     } on DioException catch (e) {
-      print('Error sharing folder: ${e.message}');
+      print('Error sending folder invitation: ${e.message}');
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> acceptInvitation(int noticeId, int receiverId) async {
+    try {
+      await _dio.post(
+        '$baseUrl/folders/shares/notices/$noticeId',
+        data: {
+          'receiverId': receiverId,
+          'accept': true,
+        },
+      );
+    } on DioException catch (e) {
+      print('Error accepting invitation: ${e.message}');
+      throw _handleDioError(e);
+    }
+  }
+
+  
+  Future<int?> getNoticeIdForInvitation(int receiverId, int folderId) async {
+    try {
+      final response = await _dio.get(
+        '$baseUrl/folders/shares/notices',
+        queryParameters: {
+          'receiverId': receiverId,
+        },
+      );
+      
+      if (response.data is! List) {
+        throw FormatException('Expected list response from server');
+      }
+
+      // folderId와 일치하는 notice를 찾아서 id만 반환
+      final List<dynamic> notices = response.data;
+      final notice = notices.firstWhere(
+        (notice) => notice['folderId'] == folderId,
+        orElse: () => null,
+      );
+      print('noticeId: ${notice?['id']}')
+      return notice?['id'];
+    } on DioException catch (e) {
+      print('Error getting notice ID: ${e.message}');
       throw _handleDioError(e);
     }
   }
