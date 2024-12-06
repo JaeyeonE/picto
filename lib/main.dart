@@ -1,42 +1,44 @@
-// lib/main.dart
+//lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/sign_in/login_screen.dart';
-import 'package:picto/widgets/button/makers.dart';
 import 'package:picto/models/user_manager/user.dart';
-import 'views/map/map.dart';
+import 'package:picto/views/map/map.dart';
+import 'package:picto/views/map/marker_image_processor.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
-    await MapMarkers.initializeMarkerImages();
+    await MarkerImageProcessor.loadFrameImages();
     debugPrint('마커 이미지 초기화 성공');
   } catch (e) {
     debugPrint('마커 이미지 초기화 실패: $e');
   }
-  
+
   runApp(PhotoSharingApp());
 }
 
 class PhotoSharingApp extends StatelessWidget {
   PhotoSharingApp({super.key});
 
-  final UserManagerService _userService = UserManagerService(host: 'http://3.35.153.213:8086');
+  final UserManagerService _userService =
+      UserManagerService(host: 'http://3.35.153.213:8086');
 
   Future<User?> checkAuthState() async {
     try {
       final token = await _userService.getToken();
       if (token == null) return null;
-      
+
       final userId = await _userService.getUserId();
       if (userId == null) return null;
 
       final userInfo = await _userService.getUserAllInfo(userId);
       return userInfo.user;
     } catch (e) {
-      print('Auth check error: $e');
+      debugPrint('Auth check error: $e');
       return null;
     }
   }
@@ -84,11 +86,12 @@ class PhotoSharingApp extends StatelessWidget {
                 body: Center(child: CircularProgressIndicator()),
               );
             }
-            
-            // 여기를 수정: 사용자가 없으면 LoginScreen, 있으면 MapScreen
-            return snapshot.data == null 
-                ? const LoginScreen()
-                : const MapScreen();
+
+            if (snapshot.data == null) {
+              return const LoginScreen();
+            }
+
+            return MapScreen(initialUser: snapshot.data!);
           },
         ),
       ),

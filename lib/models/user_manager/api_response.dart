@@ -1,3 +1,5 @@
+// lib/models/user_manager/api_response.dart
+
 class ApiResponse<T> {
   final bool success;
   final String? message;
