@@ -166,7 +166,7 @@ class FolderService {
     }
   }
 
-  Future<List<Photo>> getPhotos(int userId, int? folderId) async {
+  Future<List<Photo>> getPhotos(int userId, int folderId) async {
     print('Fetching photos for folder: $folderId');
     try {
       if (folderId == null) throw ArgumentError('folderId cannot be null');

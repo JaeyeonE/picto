@@ -5,10 +5,11 @@ import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/folder/folder_model.dart';
 import 'photo_list.dart';
 import 'package:picto/views/folder/folder.dart';
+import 'package:picto/models/user_manager/user.dart';
 
 class FolderList extends StatefulWidget {
-  final int userId;
-  const FolderList({super.key, required this.userId});
+  final User user;
+  FolderList({super.key, required this.user});
 
   @override
   State<FolderList> createState() => _FolderListState();
