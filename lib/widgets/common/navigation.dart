@@ -4,6 +4,7 @@ import 'package:picto/views/map/map.dart';
 import 'package:picto/views/profile/logout.dart';
 import 'package:picto/views/sign_in/login_screen.dart';
 import 'package:picto/models/user_manager/user.dart';
+import 'package:picto/widgets/screen_custom/folder/folder_list.dart';
 
 class CustomNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -36,7 +37,7 @@ class CustomNavigationBar extends StatelessWidget {
           screen =  MapScreen(initialUser: currentUser); // 지도 화면
           break;
         case 3:
-          screen = const LoginScreen(); // 폴더 화면 -> 수정할 것
+          screen = FolderList(user: currentUser); // 폴더 화면 -> 수정할 것
           break;
         case 4:
           screen = const ProfileScreen(); // 로그아웃 버튼

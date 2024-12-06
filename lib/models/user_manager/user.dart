@@ -2,7 +2,7 @@
 
 class User {
   final String? accountName;
-  final String userId;
+  final int userId;
   final String name; 
   final String email; 
   final String? profilePath; 
@@ -22,7 +22,7 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-        userId: json['userId'].toString(),
+        userId: json['userId'],
         accountName: json['accountName'],
         intro: json['intro'],
         profilePath: json['profilePath'],
@@ -45,7 +45,7 @@ class User {
 
   factory User.empty() => User(
         accountName: 'empty',
-        userId: '0',
+        userId: 0,
         intro: 'empty',
         profilePath: 'lib/assets/map/dog.png',
         name: 'empty',

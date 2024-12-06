@@ -1,7 +1,6 @@
-//lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:picto/services/user_manager_service.dart';
+import 'package:picto/services/session_service.dart';  // 추가
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/sign_in/login_screen.dart';
 import 'package:picto/models/user_manager/user.dart';
@@ -26,6 +25,7 @@ class PhotoSharingApp extends StatelessWidget {
 
   final UserManagerService _userService =
       UserManagerService(host: 'http://3.35.153.213:8086');
+  final SessionService _sessionService = SessionService();
 
   Future<User?> checkAuthState() async {
     try {
@@ -36,10 +36,28 @@ class PhotoSharingApp extends StatelessWidget {
       if (userId == null) return null;
 
       final userInfo = await _userService.getUserAllInfo(userId);
+      
+      // 사용자 인증이 확인되면 세션 서비스 초기화
+      await _sessionService.initializeWebSocket(userId);
+      await _sessionService.enterSession(userId);
+      
       return userInfo.user;
     } catch (e) {
       debugPrint('Auth check error: $e');
       return null;
+    }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    try {
+      final userId = await _userService.getUserId();
+      if (userId != null) {
+        await _sessionService.exitSession(userId);
+      }
+      _sessionService.dispose();
+      await _userService.deleteToken();
+    } catch (e) {
+      debugPrint('Logout error: $e');
     }
   }
 
@@ -61,7 +79,7 @@ class PhotoSharingApp extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () async {
-                    await _userService.deleteToken();
+                    await _handleLogout(context);
                     if (context.mounted) {
                       Navigator.pop(context, true);
                     }
@@ -69,7 +87,21 @@ class PhotoSharingApp extends StatelessWidget {
                   child: const Text('네'),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.pop(context, false),
+                  onPressed: () async {
+                    // '아니오'를 선택한 경우에도 세션은 종료
+                    try {
+                      final userId = await _userService.getUserId();
+                      if (userId != null) {
+                        await _sessionService.exitSession(userId);
+                      }
+                      _sessionService.dispose();
+                    } catch (e) {
+                      debugPrint('Session closure error: $e');
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context, false);
+                    }
+                  },
                   child: const Text('아니오'),
                 ),
               ],
