@@ -41,11 +41,13 @@ android {
 
     defaultConfig {
         applicationId = "com.example.picto"
-        minSdk = 17       // 최소 SDK 버전을 명시적으로 지정
+        minSdk = 20       // 최소 SDK 버전을 명시적으로 지정
         targetSdk = 34    // 타겟 SDK 버전을 명시적으로 지정
         compileSdkVersion = 34
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
+
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -59,4 +61,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
 }

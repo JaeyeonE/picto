@@ -11,7 +11,7 @@ class FolderService {
   final Dio _dio;
   final String baseUrl;
 
-  FolderService(Dio dio)
+  FolderService(Dio dio, {required int userId})
       : _dio = dio..options = BaseOptions(
           connectTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 3),
