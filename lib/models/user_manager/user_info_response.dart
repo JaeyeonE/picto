@@ -1,3 +1,5 @@
+//lib/models/user_manager/user_info_response.dart
+
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/models/user_manager/user_filter.dart';

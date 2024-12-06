@@ -1,20 +1,20 @@
 //lib/models/user_manager/user.dart
 
 class User {
-  final String accountName;      // userName -> accountName
-  final String userId;           // userId 유지
-  final String intro;           // userBio -> intro
-  final String? profilePhotoPath; // userProfile -> profilePhotoPath
-  final String name;            // title -> name
-  final bool profileActive;     // isPrivate -> profileActive
-  final String email;          // 추가 필요
-  final String password;       // 추가 필요
+  final String? accountName;
+  final String userId;
+  final String name; 
+  final String email; 
+  final String? profilePath; 
+  final String? intro; 
+  final bool profileActive; 
+  final String? password; 
 
   User({
     required this.accountName,
     required this.userId,
     required this.intro,
-    this.profilePhotoPath,
+    required this.profilePath,
     required this.name,
     required this.profileActive,
     required this.email,
@@ -22,35 +22,35 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-    userId: json['userId'].toString(),
-    accountName: json['accountName'],
-    intro: json['intro'],
-    profilePhotoPath: json['profilePhotoPath'],
-    name: json['name'],
-    profileActive: json['profileActive'],
-    email: json['email'],
-    password: json['password'],
-  );
+        userId: json['userId'].toString(),
+        accountName: json['accountName'],
+        intro: json['intro'],
+        profilePath: json['profilePath'],
+        name: json['name'],
+        profileActive: json['profileActive'],
+        email: json['email'],
+        password: json['password'],
+      );
 
   Map<String, dynamic> toJson() => {
-    'userId': userId,
-    'accountName': accountName,
-    'intro': intro,
-    'profilePhotoPath': profilePhotoPath,
-    'name': name,
-    'profileActive': profileActive,
-    'email': email,
-    'password': password,
-  };
+        'userId': userId,
+        'name': name,
+        'accountName': accountName,
+        'email': email,
+        'profileActive': profileActive,
+        'intro': intro,
+        'profilePath': profilePath,
+        'password': password,
+      };
 
   factory User.empty() => User(
-  accountName: '',
-  userId: '0',
-  intro: '',
-  profilePhotoPath: null,
-  name: '',
-  profileActive: false,
-  email: '',
-  password: '',
-);
+        accountName: 'empty',
+        userId: '0',
+        intro: 'empty',
+        profilePath: 'lib/assets/map/dog.png',
+        name: 'empty',
+        profileActive: false,
+        email: '',
+        password: '',
+      );
 }
