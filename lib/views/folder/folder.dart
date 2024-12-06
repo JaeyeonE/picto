@@ -23,28 +23,6 @@ class _FolderState extends State<Folder> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
-    return MaterialApp(
-      home: Scaffold(
-        appBar: FolderHeader(),
-        body: Column(
-          children: [
-            HeaderSwitch(),
-            Expanded(
-              child: ContentView(),
-            )
-          ] 
-        ),
-        bottomNavigationBar: CustomNavigationBar(
-        selectedIndex: selectedIndex,
-        onItemSelected: (index) {
-          setState(() {
-            selectedIndex = index;
-          });
-        },
-      ),
-      )
-=======
     return Scaffold(
       appBar: FolderHeader(),
       body: Column(
@@ -55,7 +33,6 @@ class _FolderState extends State<Folder> {
           )
         ] 
       ),
->>>>>>> folder
     );
   }
   

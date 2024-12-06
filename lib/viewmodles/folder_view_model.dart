@@ -104,10 +104,6 @@ class FolderViewModel extends GetxController {
   Future<void> loadPhotos(int? folderId) async {
     _isLoading.value = true;
     try {
-<<<<<<< HEAD
-      final photos = await _folderService.value?.getPhotos(folderId);
-      _photos.assignAll(photos ?? []);
-=======
       final photos = await _folderService.value?.getPhotos(userId, folderId);
       print('Loaded folders: ${photos?.map((f) => f.toJson())}');
       if (photos != null) {
@@ -115,7 +111,6 @@ class FolderViewModel extends GetxController {
       } else {
         _photos.clear();
       }
->>>>>>> folder
       _currentFolderId.value = folderId;
     } catch (e) {
       print('Error loading photos: $e');
