@@ -4,12 +4,12 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.4.4 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
+  # cupertino_icons: ^1.0.6
   dio: ^5.7.0
   http: ^1.2.2
   provider: ^6.1.2
@@ -17,6 +17,9 @@ dependencies:
   flutter_dotenv: ^5.2.1
   shared_preferences: ^2.3.3
   omni_datetime_picker: ^2.0.5
+  get: ^4.6.6
+  lucide_icons: ^0.257.0
+  web_socket_channel: ^3.0.1
 
   #권한 및 정보 관련
   permission_handler: ^11.3.1
@@ -32,6 +35,7 @@ dependencies:
   geocoding: ^3.0.0
   geolocator: ^13.0.2
   flutter_secure_storage: ^9.2.2
+  image: ^4.3.0
 
 dev_dependencies:
   flutter_test:
@@ -47,4 +51,4 @@ flutter:
     - lib/assets/map/
     - lib/assets/navigator/
     - lib/assets/sign_in/
-
+    - lib/assets/testimage/

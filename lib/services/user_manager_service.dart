@@ -65,7 +65,8 @@ class UserManagerService {
         data: {
           'email': email,
           'password': password,
-        },options: Options(
+        },
+        options: Options(
           headers: {
             'Content-Type': 'application/json',
           },
@@ -110,7 +111,8 @@ class UserManagerService {
           'name': name,
           'lat': lat,
           'lng': lng,
-        },options: Options(
+        },
+        options: Options(
           headers: {
             'Content-Type': 'application/json',
           },
@@ -130,7 +132,6 @@ class UserManagerService {
       );
     }
   }
-
 
   // 확인해서 추가할 것
   // 이메일 중복 확인
@@ -152,16 +153,21 @@ class UserManagerService {
     try {
       final token = await getToken();
       final response = await _dio.get(
-        '/user/$userId',
-         options: Options(
+        '/user-all/$userId', // 이거 되면 레전드 근데 사용자 프로필 조회하려면 다르게 설정해야함...
+        options: Options(
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
-      return User.fromJson(response.data);
+      if (response.statusCode == 200) {
+        // response.data['user']로 변경하여 User 객체 생성
+        return User.fromJson(response.data['user']);
+      } else {
+        throw Exception('사용자 정보 로드 실패: ${response.statusMessage}');
+      }
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -177,7 +183,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
@@ -200,7 +206,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
@@ -220,7 +226,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
@@ -244,7 +250,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
@@ -294,7 +300,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
@@ -319,7 +325,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
@@ -351,7 +357,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
@@ -383,7 +389,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );
@@ -409,7 +415,7 @@ class UserManagerService {
           headers: {
             'Content-Type': 'application/json',
             'Access-Token': token,
-            'User-Id' : userId,
+            'User-Id': userId,
           },
         ),
       );

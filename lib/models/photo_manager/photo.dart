@@ -37,7 +37,7 @@ class Photo {
     return Photo(
       photoId: json['photoId'] as int,
       userId: json['userId'].toString(),
-      photoPath: 'lib/assets/map/dog.png', //json['photoPath'] as String,
+      photoPath: json['photoPath'] as String,
       lat: json['lat']?.toDouble(),
       lng: json['lng']?.toDouble(),
       location: json['location'] as String?,
@@ -55,7 +55,7 @@ class Photo {
     return {
       'photoId': photoId,
       'userId': userId,
-      'photoPath': 'lib/assets/map/dog.png', //photoPath,
+      'photoPath': photoPath,
       'lat': lat,
       'lng': lng,
       'location': location,

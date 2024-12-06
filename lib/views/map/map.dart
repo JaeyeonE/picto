@@ -1,26 +1,28 @@
 // lib/views/map/map.dart
 
-// 필요한 패키지 및 라이브러리 import
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:picto/models/photo_manager/photo.dart';
-import 'package:picto/models/user_manager/auth_responses.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/services/photo_manager_service.dart';
 import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/views/map/zoom_position.dart';
-import 'package:picto/widgets/button/makers.dart';
 import 'package:picto/widgets/common/actual_tag_list.dart';
 import '../map/search_screen.dart';
 import '../../widgets/common/map_header.dart';
 import '../../widgets/common/navigation.dart';
+import 'marker_manager.dart';
 
 // StatefulWidget으로 MapScreen 클래스 정의
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final User initialUser;
+
+  const MapScreen({
+    super.key,
+    required this.initialUser,
+  });
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -34,19 +36,22 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? currentLocation; // 현재 위치
   StreamSubscription<Position>? _positionStreamSubscription; // 위치 업데이트 구독
   Set<Marker> markers = {}; // 모든 마커 세트
-  Set<Marker> photoMarkers = {}; // 사진 마커 세트
   String _currentLocationType = 'large'; // 현재 위치 타입(large/middle/small)
-  final _userService = UserManagerService(host: 'http://3.35.153.213:8086'); // 사용자 관리 서비스
-  final _photoService = PhotoManagerService(host: 'http://3.35.153.213:8082'); // 사진 관리 서비스
+  final _userService =
+      UserManagerService(host: 'http://3.35.153.213:8086'); // 사용자 관리 서비스
+  final _photoService =
+      PhotoManagerService(host: 'http://3.35.153.213:8082'); // 사진 관리 서비스
   bool _isLoading = false; // 로딩 상태
   final _searchController = TextEditingController(); // 검색 컨트롤러
   User? currentUser; // 현재 사용자 정보
+  MarkerManager? _markerManager; // 마커 관리자
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentUser(); // 사용자 정보 로드
-    _initializeLocationServices(); // 위치 서비스 초기화
+    currentUser = widget.initialUser; // 현재 사용자 설정
+    _initializeUser(); // 기존 초기화 함수 유지
+    _initializeLocationServices();
   }
 
   @override
@@ -57,14 +62,15 @@ class _MapScreenState extends State<MapScreen> {
     super.dispose();
   }
 
-  // 현재 사용자 정보를 로드하는 함수
-  Future<void> _loadCurrentUser() async {
+  // 사용자 초기화 함수
+  Future<void> _initializeUser() async {
     try {
       final userId = await _userService.getUserId();
       if (userId != null) {
         final user = await _userService.getUserProfile(userId);
         setState(() {
           currentUser = user;
+          _markerManager = MarkerManager(currentUserId: user.userId);
         });
       }
     } catch (e) {
@@ -74,6 +80,9 @@ class _MapScreenState extends State<MapScreen> {
 
   // 카메라 이동 시 실행되는 함수 - 줌 레벨에 따라 위치 타입 변경
   void _onCameraMove(CameraPosition position) {
+    if (currentUser == null || _markerManager == null)
+      return; // 사용자 정보가 없으면 처리하지 않음
+
     String newLocationType;
     if (position.zoom >= 15) {
       newLocationType = 'small'; // 읍/면/동 수준
@@ -85,58 +94,65 @@ class _MapScreenState extends State<MapScreen> {
 
     if (_currentLocationType != newLocationType) {
       setState(() {
-        _currentLocationType = newLocationType; // 정도 변경
-        _loadRepresentativePhotos(); // 줌 레벨 변경 시 대표 사진 새로 로드
+        _currentLocationType = newLocationType;
       });
+
+      // 줌 레벨에 따라 적절한 함수 호출
+      if (newLocationType == 'small') {
+        _loadNearbyPhotos();
+      } else {
+        _loadRepresentativePhotos();
+      }
     }
+
+    // 현재 줌 레벨에 맞는 마커만 표시
+    setState(() {
+      markers = _markerManager!.getMarkersForZoomLevel(position.zoom);
+    });
   }
 
   // 대표 사진들을 로드하는 함수
   Future<void> _loadRepresentativePhotos() async {
-    if (_isLoading || currentUser == null) return;
+    if (_isLoading || currentUser == null || _markerManager == null) return;
     setState(() => _isLoading = true);
 
     try {
-      if (currentUser == null) return;
-
       final photos = await _photoService.getRepresentativePhotos(
         locationType: _currentLocationType,
         count: 10,
       );
 
-      final newMarkers = <Marker>{};
-
-      // 마커 생성을 한번에 처리
-      await Future.wait(photos
+      // 태그 필터링된 사진만 선택
+      final filteredPhotos = photos
           .where((photo) =>
-              selectedTags.contains('전체') || selectedTags.contains(photo.tag))
-          .map((photo) async {
-        final marker = await MapMarkers.createPhotoMarker(
-          photo: photo,
-          currentUser: currentUser!,
-          onTap: (photo) {
-            // TODO: 사진 상세 페이지로 이동
-          },
-        );
-        if (marker != null) newMarkers.add(marker);
-      }));
+              selectedTags.contains('전체') ||
+              (photo.tag != null && selectedTags.contains(photo.tag!)))
+          .toList();
+
+      // MarkerManager를 통해 마커 생성
+      final newMarkers = await _markerManager!
+          .createMarkersFromPhotos(filteredPhotos, _currentLocationType);
 
       if (mounted) {
         setState(() {
-          photoMarkers = newMarkers;
-          markers = {...markers}..addAll(photoMarkers);
+          markers = newMarkers;
+          print("Updated markers set, size: ${markers.length} line 139");
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('사진을 불러오는데 실패했습니다: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('사진을 불러오는데 실패했습니다: $e')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-// 위치 권한을 확인하고 요청하는 함수
+  // 위치 권한을 확인하고 요청하는 함수
   Future<bool> _handleLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -155,6 +171,59 @@ class _MapScreenState extends State<MapScreen> {
       return false;
     }
     return true;
+  }
+
+  // 주변 사진 로드 함수
+  Future<void> _loadNearbyPhotos() async {
+    if (_isLoading || currentUser == null || _markerManager == null) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final userId = await _userService.getUserId();
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 필요합니다')),
+        );
+        return;
+      }
+
+      final photos = await _photoService.getNearbyPhotos(userId);
+      Text("Received photos: $photos");
+
+      // 태그 필터링된 사진만 선택
+      final filteredPhotos = photos
+          .where((photo) =>
+              selectedTags.contains('전체') ||
+              (photo.tag != null && selectedTags.contains(photo.tag!)))
+          .toList();
+
+      // MarkerManager를 통해 마커 생성
+      final newMarkers = await _markerManager!
+          .createMarkersFromPhotos(filteredPhotos, 'small');
+
+      if (mounted) {
+        setState(() {
+          markers = newMarkers;
+          print("Updated markers set, size: ${markers.length} line 206");
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('주변 사진을 불러오는데 실패했습니다: ${e.toString()}'),
+            action: SnackBarAction(
+              label: '다시 시도',
+              onPressed: _loadNearbyPhotos,
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   // 현재 위치 마커를 업데이트하는 함수
@@ -211,7 +280,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-// 실시간 위치 업데이트를 시작하는 함수
+  // 실시간 위치 업데이트를 시작하는 함수
   Future<void> _startLocationUpdates() async {
     final hasPermission = await _handleLocationPermission();
     if (!hasPermission) return;
@@ -236,82 +305,13 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Future<void> _loadNearbyPhotos() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final token = await _userService.getToken();
-      final userId = await _userService.getUserId();
-
-      if (token == null || userId == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('로그인이 필요합니다')),
-          );
-        }
-        return;
-      }
-
-      // 한번에 모든 데이터를 가져옴
-      final results = await Future.wait([
-        _photoService.getNearbyPhotos(userId),
-        _userService.getUserAllInfo(userId),
-      ]);
-
-      final photos = results[0] as List<Photo>; // 타입 명시
-      final userInfo = results[1] as UserInfoResponse; // 타입 명시
-
-      if (!mounted) return;
-
-      // 마커 생성을 한번에 처리
-      final newMarkers = await Future.wait(photos
-          .where((photo) =>
-              selectedTags.contains('전체') || selectedTags.contains(photo.tag))
-          .map((photo) async {
-        return await MapMarkers.createPhotoMarker(
-          photo: photo,
-          currentUser: userInfo.user,
-          onTap: (photo) {
-            // TODO: 사진 상세 페이지로 이동
-          },
-        );
-      }));
-
-      if (!mounted) return;
-
-      setState(() {
-        photoMarkers.clear();
-        photoMarkers.addAll(newMarkers.whereType<Marker>()); // null 제외
-        markers = {...markers, ...photoMarkers};
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('사진을 불러오는데 실패했습니다: ${e.toString()}'),
-            action: SnackBarAction(
-              label: '다시 시도',
-              onPressed: _loadNearbyPhotos,
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-// 지도를 새로고침하는 함수
+  // 지도를 새로고침하는 함수
   Future<void> _refreshMap() async {
-    await _loadNearbyPhotos();
+    if (_currentLocationType == 'small') {
+      await _loadNearbyPhotos();
+    } else {
+      await _loadRepresentativePhotos();
+    }
   }
 
   // 위치 서비스를 초기화하는 함수
@@ -497,6 +497,7 @@ class _MapScreenState extends State<MapScreen> {
                 _getCurrentLocation();
               }
             },
+            currentUser: widget.initialUser,
           ),
         ),
       ),
