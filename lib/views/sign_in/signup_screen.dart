@@ -200,7 +200,7 @@ Future<void> _getCurrentLocation() async {
       appBar: AppBar(
         title: const Text('회원가입'),
         leading: IconButton(
-          icon: Image.asset('assets/common/arrow_back_black.png'),
+          icon: Image.asset('lib/assets/common/picto_letter_logo.png'),
           onPressed: () => Navigator.pop(context),
         ),
       ),
