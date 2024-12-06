@@ -4,21 +4,21 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 
-class PhotoDetail extends StatefulWidget {
+class Feed extends StatefulWidget {
   final int initialPhotoIndex;
   final int? folderId;
 
-  const PhotoDetail({
+  const Feed({
     Key? key,
     required this.initialPhotoIndex,
     required this.folderId,
   }) : super(key: key);
 
   @override
-  State<PhotoDetail> createState() => _PhotoDetailState();
+  State<Feed> createState() => _FeedState();
 }
 
-class _PhotoDetailState extends State<PhotoDetail> {
+class _FeedState extends State<Feed> {
   final FolderViewModel viewModel = Get.find<FolderViewModel>();
   late PageController _pageController;
   int currentIndex = 0;
