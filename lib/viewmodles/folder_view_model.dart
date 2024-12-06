@@ -7,13 +7,18 @@ import 'package:picto/models/folder/folder_model.dart';
 import 'package:picto/models/folder/folder_user.dart';
 import 'package:picto/services/folder_service.dart';
 import 'package:picto/models/user_manager/user.dart';
+import 'package:picto/services/photo_store.dart';
+import 'package:picto/services/user_manager_service.dart';
 
 class FolderViewModel extends GetxController {
   final User user;
   final Rxn<FolderService> _folderService;
+  final PhotoStoreService _photoStoreService;
+  final UserManagerService _userManagerService;
   final RxList<FolderModel> _folders = RxList([]);
   final RxList<Photo> _photos = RxList([]);
   final RxList<FolderUser> _folderUsers = RxList([]);
+  final RxList<User> _userProfiles = RxList([]);
   final RxBool _isLoading = false.obs;
   final RxnString _currentFolderName = RxnString();
   final RxInt _currentFolderId = 0.obs;
@@ -23,13 +28,18 @@ class FolderViewModel extends GetxController {
 
   FolderViewModel({
     required this.user,
-  required FolderService folderService,})
-      : _folderService = Rxn(folderService);
+    required FolderService folderService,
+    required PhotoStoreService photoStoreService,
+    required UserManagerService userManagerService,
+  }) : _folderService = Rxn(folderService),
+       _photoStoreService = photoStoreService,
+       _userManagerService = userManagerService;
 
   // Getters
   List<FolderModel> get folders => _folders;
   List<Photo> get photos => _photos;
   List<FolderUser> get folderUsers => _folderUsers;
+  List<User> get userProfiles => _userProfiles;
   bool get isLoading => _isLoading.value;
   String? get currentFolderName => _currentFolderName.value;
   int get currentFolderId => _currentFolderId.value;
@@ -106,9 +116,19 @@ class FolderViewModel extends GetxController {
     _isLoading.value = true;
     try {
       final photos = await _folderService.value?.getPhotos(user.userId, folderId);
-      print('Loaded folders: ${photos?.map((f) => f.toJson())}');
       if (photos != null) {
-        _photos.assignAll(photos); // 단일 Photo를 리스트로 변환
+        // 각 사진에 대해 PhotoStore에서 실제 이미지 데이터 다운로드
+        for (var photo in photos) {
+          try {
+            final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
+            if (response.statusCode == 200) {
+              photo.photoPath = response.body; // 실제 이미지 데이터 또는 URL을 저장
+            }
+          } catch (e) {
+            print('Error downloading photo ${photo.photoId}: $e');
+          }
+        }
+        _photos.assignAll(photos);
       } else {
         _photos.clear();
       }
@@ -127,10 +147,21 @@ class FolderViewModel extends GetxController {
     try {
       final users = await _folderService.value?.getFolderUsers(user.userId, folderId);
       _folderUsers.assignAll(users ?? []);
-      print('Loaded folder users: ${users?.map((f) => f.toJson())}');
+      
+      // 각 폴더 사용자의 상세 프로필 정보 로드
+      _userProfiles.clear();
+      for (var folderUser in _folderUsers) {
+        try {
+          final userProfile = await _userManagerService.getUserProfile(folderUser.userId);
+          _userProfiles.add(userProfile);
+        } catch (e) {
+          print('Error loading user profile for userId ${folderUser.userId}: $e');
+        }
+      }
     } catch (e) {
       print('Error loading folder users: $e');
       _folderUsers.clear();
+      _userProfiles.clear();
     } finally {
       _isLoading.value = false;
     }
