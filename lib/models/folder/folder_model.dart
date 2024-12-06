@@ -19,7 +19,7 @@ class FolderModel {
     return FolderModel(
       folderId: json['folderId'],
       generatorId: json['generatorId'],
-      name: json['name'] ?? '',
+      name: json['folderName'] ?? '',
       link: json['link'] ?? '',
       content: json['content'],
       createdDateTime: json['createdDateTime'],
@@ -30,7 +30,7 @@ class FolderModel {
     return {
       'folderId': folderId,
       'generatorId': generatorId,
-      'name': name,
+      'folderName': name,
       'link': link,
       'content': content,
       'createdDateTime': createdDateTime,

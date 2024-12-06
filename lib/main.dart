@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
         final folderService = FolderService(dio);
 
         // ViewModels
-        Get.put(FolderViewModel(folderService: folderService, userId: 1));
+        Get.put(FolderViewModel(folderService: folderService, userId: 2));
       }),
     );
   }

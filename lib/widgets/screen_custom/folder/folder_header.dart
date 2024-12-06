@@ -56,8 +56,8 @@ Widget build(BuildContext context) {
     }),
     actions: [
   Obx(() {
-    final currentFolderName = viewModel.currentFolderName;
-    final currentFolderId = viewModel.currentFolderId;
+    final folderName = viewModel.currentFolderName;
+    final folderId = viewModel.currentFolderId;
     
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -72,14 +72,13 @@ Widget build(BuildContext context) {
         IconButton(
           icon: const Icon(Icons.more_vert),
           onPressed: () {
-            if(currentFolderId == null || currentFolderName == null || currentFolderName.isEmpty) {
-              //_showFolderListOptions(context); // 원래 이거임
-              _showFolderOptions(context);
+            if (folderId == null) {
+              _showFolderListOptions(context);
             } else {
               _showFolderOptions(context);
             }
           },
-        ),
+        )
       ],
     );
   }),
