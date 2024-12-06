@@ -2,11 +2,9 @@ import 'package:get/get.dart';
 import 'dart:async';
 import '../services/chat_service.dart';
 import '../models/folder/chat_message_model.dart';
-import 'session_controller.dart';
 
 class ChatViewModel extends GetxController {
   final ChatService _chatService;
-  final SessionController _sessionController;
   final int folderId;
   final int currentUserId;
   Timer? _reconnectTimer;
@@ -21,10 +19,8 @@ class ChatViewModel extends GetxController {
     required this.folderId,
     required this.currentUserId,
   }) : _chatService = ChatService(
-         sessionService: Get.find<SessionController>().sessionService,
          senderId: currentUserId,
-       ),
-       _sessionController = Get.find<SessionController>();
+       );
 
   @override
   void onInit() {
@@ -48,7 +44,6 @@ class ChatViewModel extends GetxController {
       await _chatService.initializeWebSocket(folderId);
       isConnected.value = true;
       
-      // 채팅방 입장
       await _chatService.enterChat(folderId);
       
       _subscribeToMessages();
@@ -86,12 +81,12 @@ class ChatViewModel extends GetxController {
         onError: (error) {
           print('Error in chat message stream: $error');
           isConnected.value = false;
-          _scheduleReconnect();  // 수정
+          _scheduleReconnect();
         },
         onDone: () {
           print('Chat stream closed');
           isConnected.value = false;
-          _scheduleReconnect();  // 수정
+          _scheduleReconnect();
         },
       );
     }

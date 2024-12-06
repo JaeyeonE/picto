@@ -70,7 +70,7 @@ class _MapScreenState extends State<MapScreen> {
         final user = await _userService.getUserProfile(userId);
         setState(() {
           currentUser = user;
-          _markerManager = MarkerManager(currentUserId: int.parse(user.userId));
+          _markerManager = MarkerManager(currentUserId: user.userId);
         });
       }
     } catch (e) {

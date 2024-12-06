@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_list.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_header.dart';
 import 'package:picto/widgets/screen_custom/folder/header_switch.dart';
@@ -7,8 +9,8 @@ import 'package:picto/widgets/screen_custom/folder/header_switch_content_box.dar
 
 class Folder extends StatefulWidget {
   final int? folderId;
-  final int? userId;
-  const Folder({super.key, this.folderId, this.userId});
+  final User? user;
+  const Folder({super.key, this.folderId, this.user});
 
   @override
   State<Folder> createState() => _FolderState();

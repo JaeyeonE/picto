@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/folder/chat_message_model.dart';
 import '../models/common/websocket_status.dart';
-import 'session_service.dart';
 
 class ChatServiceException implements Exception {
   final String message;
@@ -17,7 +16,6 @@ class ChatService {
   static const int maxReconnectAttempts = 3;
   static const Duration reconnectDelay = Duration(seconds: 5);
   
-  final SessionService _sessionService;
   final int _senderId;
   int? _currentFolderId;
   
@@ -32,10 +30,8 @@ class ChatService {
   bool _isReconnecting = false;
 
   ChatService({
-    required SessionService sessionService,
     required int senderId,
-  }) : _sessionService = sessionService,
-       _senderId = senderId {
+  }) : _senderId = senderId {
     _statusController = StreamController<WebSocketStatus>.broadcast();
     print('ChatService initialized for user: $_senderId');
   }
@@ -158,7 +154,6 @@ class ChatService {
     _validateConnection();
 
     try {
-      await _sessionService.enterSession(_senderId);
       final message = {
         'type': 'ENTER',
         'senderId': _senderId,
@@ -178,7 +173,6 @@ class ChatService {
     _validateConnection();
 
     try {
-      await _sessionService.exitSession(_senderId);
       final message = {
         'type': 'EXIT',
         'senderId': _senderId,
