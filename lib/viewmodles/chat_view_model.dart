@@ -9,6 +9,7 @@ class ChatViewModel extends GetxController {
   final SessionController _sessionController;
   final int folderId;
   final int currentUserId;
+  Timer? _reconnectTimer;
 
   final RxList<ChatMessage> messages = <ChatMessage>[].obs;
   final RxList<String> members = <String>[].obs;
@@ -35,6 +36,7 @@ class ChatViewModel extends GetxController {
   void onClose() {
     _leaveChat();
     _messageSubscription?.cancel();
+    _reconnectTimer?.cancel(); 
     _chatService.dispose();
     super.onClose();
   }
@@ -84,15 +86,24 @@ class ChatViewModel extends GetxController {
         onError: (error) {
           print('Error in chat message stream: $error');
           isConnected.value = false;
-          _tryReconnect();
+          _scheduleReconnect();  // 수정
         },
         onDone: () {
           print('Chat stream closed');
           isConnected.value = false;
-          _tryReconnect();
+          _scheduleReconnect();  // 수정
         },
       );
     }
+  }
+
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+      if (!isConnected.value && !isLoading.value) {
+        _initializeChat();
+      }
+    });
   }
 
   void sendMessage(String content) {

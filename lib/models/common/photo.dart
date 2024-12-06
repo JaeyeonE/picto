@@ -1,8 +1,10 @@
 class Photo {
     final int photoId;
     final String photoUrl;
+    final String contentType;
     final String? location;
     final String? title;
+    final String tag;
     final double lat;
     final double lng;
     final int registerTime;
@@ -17,6 +19,8 @@ class Photo {
     Photo({
       required this.photoId,
       required this.photoUrl,
+      required this.contentType,
+      required this.tag,
       this.location,
       this.title,
       required this.lat,
@@ -33,27 +37,31 @@ class Photo {
 
     factory Photo.fromJson(Map<String, dynamic> json) {
       return Photo(
-        photoId: json['photoId'],
-        photoUrl: json['photoUrl'],
-        location: json['location'],
-        title: json['title'],
-        lat: json['lat'].toDouble(),
-        lng: json['lng'].toDouble(),
-        registerTime: json['registerTime'],
-        uploadTime: json['uploadTime'],
-        likes: json['likes'],
-        views: json['views'],
-        frameActive: json['frameActive'],
-        savedDateTime: json['savedDateTime'],
-        generatorId: json['generatorId'],
-        userId: json['userId'],
+        photoId: json['photoId'] ?? 0,
+        photoUrl: json['photoPath'] ?? '',
+        contentType: json['contentType'] ?? '',
+        tag: json['tag'] ?? '',
+        location: json['location'] ?? '',
+        title: json['title'] ?? '',
+        lat: json['lat']?? 0,
+        lng: json['lng'] ?? 0,
+        registerTime: json['registerTime'] ?? 0,
+        uploadTime: json['uploadTime'] ?? 0,
+        likes: json['likes'] ?? 0,
+        views: json['views'] ?? 0,
+        frameActive: json['frameActive'] ?? false,
+        savedDateTime: json['savedDateTime'] ?? 0,
+        generatorId: json['generatorId'] ?? 1,
+        userId: json['userId'] ?? 1,
       );
     }
 
     Map<String, dynamic> toJson() {
       return {
         'photoId': photoId,
-        'photoUrl': photoUrl,
+        'photoPath': photoUrl,
+        'tag': tag,
+        'contentType': contentType,
         'location': location,
         'title': title,
         'lat': lat,

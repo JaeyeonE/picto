@@ -6,7 +6,8 @@ import 'package:picto/widgets/screen_custom/folder/header_switch_content_box.dar
 
 class Folder extends StatefulWidget {
   final int? folderId;
-  const Folder({super.key, this.folderId});
+  final int? userId;
+  const Folder({super.key, this.folderId, this.userId});
 
   @override
   State<Folder> createState() => _FolderState();
@@ -18,19 +19,18 @@ class _FolderState extends State<Folder> {
     super.initState(); // 폴더 목록 로드
   }
 
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: FolderHeader(),
-        body: Column(
-          children: [
-            HeaderSwitch(),
-            Expanded(
-              child: ContentView(),
-            )
-          ] 
-        ),
-      )
+    return Scaffold(
+      appBar: FolderHeader(),
+      body: Column(
+        children: [
+          HeaderSwitch(),
+          Expanded(
+            child: ContentView(),
+          )
+        ] 
+      ),
     );
   }
   

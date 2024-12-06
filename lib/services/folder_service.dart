@@ -17,94 +17,125 @@ class FolderService {
           receiveTimeout: const Duration(seconds: 3),
           validateStatus: (status) => status! < 500,
         ),
-        baseUrl = 'http://HOST/folder-manager';
+        baseUrl = 'http://52.78.237.242:8081/folder-manager' {
+    print('FolderService initialized with baseUrl: $baseUrl');
+  }
 
-  // 새로운 폴더를 생성하는 함수
-  Future<FolderModel> createFolder(String name, String content) async {
+  Future<FolderModel> createFolder(int userId, String name, String content) async {
+    print('Creating folder - Name: $name, Content: $content');
     try {
       final response = await _dio.post(
         '$baseUrl/folders',
         data: {
+          'generatorId': userId,
           'name': name,
           'content': content,
         },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
+      print('Folder created successfully: ${response.data}');
       return FolderModel.fromJson(response.data);
     } on DioException catch (e) {
+      print('Error creating folder: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 기존 폴더의 정보를 수정하는 함수
-  Future<FolderModel> updateFolder(int folderId, String name, String content) async {
+  Future<FolderModel> updateFolder(int? userId, int? folderId, String name, String content) async {
+    print('Updating folder - ID: $folderId, Name: $name, Content: $content');
     try {
       final response = await _dio.patch(
         '$baseUrl/folders/$folderId',
+        queryParameters: {
+          'generatorId': userId,
+        },
         data: {
           'name': name,
           'content': content,
         },
       );
+      print('Folder updated successfully: ${response.data}');
       return FolderModel.fromJson(response.data);
     } on DioException catch (e) {
+      print('Error updating folder: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 특정 폴더를 삭제하는 함수
-  Future<void> deleteFolder(int? folderId) async {
+  Future<void> deleteFolder(int userId, int? folderId) async {
+    print('Deleting folder - ID: $folderId');
     try {
       if (folderId == null) throw ArgumentError('folderId cannot be null');
-      await _dio.delete('$baseUrl/folders/$folderId');
+      await _dio.delete(
+        '$baseUrl/folders/$folderId',
+        queryParameters:{
+          'generatorId': userId,
+        }
+      );
+      print('Folder deleted successfully');
     } on DioException catch (e) {
+      print('Error deleting folder: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 모든 폴더 목록을 조회하는 함수
   Future<List<FolderModel>> getFolders(int? userId) async {
+    print('Fetching folders for user: $userId');
     try {
       final response = await _dio.get('$baseUrl/folders/shares/users/$userId');
       if (response.data is! List) {
+        print('Error: Server response is not a list');
         throw FormatException('Expected list response from server');
       }
       final List<dynamic> data = response.data;
+      print('Successfully fetched ${data.length} folders');
       return data.map((json) => FolderModel.fromJson(json)).toList();
     } on DioException catch (e) {
+      print('Error fetching folders: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 특정 폴더의 사용자 목록을 조회하는 함수
-  Future<List<FolderUser>> getFolderUsers(int? folderId) async {
+  Future<List<FolderUser>> getFolderUsers(int userId, int? folderId) async {
+    print('Fetching users for folder: $folderId');
     try {
-      final response = await _dio.get('$baseUrl/folders/shares/$folderId');
+      final response = await _dio.get(
+        '$baseUrl/folders/shares/$folderId',
+        queryParameters: {
+          'userId': userId,
+        },
+      );
       if (response.data is! List) {
+        print('Error: Server response is not a list');
         throw FormatException('Expected list response from server');
       }
       final List<dynamic> data = response.data;
+      print('Successfully fetched ${data.length} folder users');
       return data.map((json) => FolderUser.fromJson(json)).toList();
     } on DioException catch (e) {
+      print('Error fetching folder users: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 폴더 공유하기
   Future<void> shareFolder(int folderId, int senderId, int receiverId) async {
+    print('Sharing folder - FolderID: $folderId, SenderID: $senderId, ReceiverID: $receiverId');
     try {
       await _dio.post('$baseUrl/folders/shares', data: {
         'senderId': senderId,
         'receiverId': receiverId,
         'folderId': folderId
       });
+      print('Folder shared successfully');
     } on DioException catch (e) {
+      print('Error sharing folder: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 사진 업로드
   Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
+    print('Uploading photo to folder: $folderId');
+    print('Photo metadata: $metadata');
     try {
       String fileName = photo.path.split('/').last;
       FormData formData = FormData.fromMap({
@@ -116,157 +147,82 @@ class FolderService {
         '$baseUrl/folders/$folderId/photos/upload',
         data: formData,
       );
+      print('Photo uploaded successfully');
     } on DioException catch (e) {
+      print('Error uploading photo: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 사진 삭제
   Future<void> deletePhoto(int? folderId, int photoId) async {
+    print('Deleting photo - FolderID: $folderId, PhotoID: $photoId');
     try {
       if (folderId == null) throw ArgumentError('folderId cannot be null');
       await _dio.delete('$baseUrl/folders/$folderId/photos/$photoId');
+      print('Photo deleted successfully');
     } on DioException catch (e) {
+      print('Error deleting photo: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 폴더의 전체 사진 조회 함수
-  Future<List<Photo>> getPhotos(int? folderId) async {
+  Future<List<Photo>> getPhotos(int userId, int? folderId) async {
+    print('Fetching photos for folder: $folderId');
     try {
       if (folderId == null) throw ArgumentError('folderId cannot be null');
-      final response = await _dio.get('$baseUrl/folders/$folderId/photos');
+      final response = await _dio.get(
+        '$baseUrl/folders/$folderId/photos',
+        queryParameters: {
+          'userId': userId
+        },
+      );
       if (response.data is! List) {
+        print('Error: Server response is not a list');
         throw FormatException('Expected list response from server');
       }
       final List<dynamic> data = response.data;
+      print('Successfully fetched ${data.length} photos');
       return data.map((json) => Photo.fromJson(json)).toList();
     } on DioException catch (e) {
+      print('Error fetching photos: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 특정 사진 상세 조회 함수
-  Future<Photo> getPhotoDetail(int folderId, int photoId) async {
+  Future<Photo> getPhotosTest(int? folderId) async {
+    print('Fetching photos for folder: $folderId');
     try {
-      final response = await _dio.get('$baseUrl/folders/$folderId/photos/$photoId');
+      final response = await _dio.get('$baseUrl/folders/$folderId/photos/');
+      print('Successfully fetched photo detail');
       return Photo.fromJson(response.data);
     } on DioException catch (e) {
+      print('Error fetching photo detail: ${e.message}');
       throw _handleDioError(e);
     }
   }
 
-  // 에러 처리 헬퍼 함수
-  Exception _handleDioError(DioException e) {
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return TimeoutException('Connection timed out');
-      case DioExceptionType.connectionError:
-        return const SocketException('Connection error occurred');
-      case DioExceptionType.badResponse:
-        final statusCode = e.response?.statusCode;
-        final message = e.response?.data['message'] ?? 'Unknown error occurred';
-        return Exception('Server error ($statusCode): $message');
-      default:
-        return Exception('Network error occurred: ${e.message}');
+  Future<Photo> getPhotoDetail(int folderId, int photoId) async {
+    print('Fetching photo detail - FolderID: $folderId, PhotoID: $photoId');
+    try {
+      final response = await _dio.get('$baseUrl/folders/$folderId/photos/$photoId');
+      print('Successfully fetched photo detail');
+      return Photo.fromJson(response.data);
+    } on DioException catch (e) {
+      print('Error fetching photo detail: ${e.message}');
+      throw _handleDioError(e);
     }
   }
 
-
-  // 테스트용 데이터
-
-  // 테스트용 폴더 목록 조회
-  Future<List<FolderModel>> getFoldersTest() async {
-    // 실제 API 호출처럼 보이도록 지연 추가
-    await Future.delayed(const Duration(seconds: 1));
-    
-    return [
-      FolderModel(
-        folderId: 1,
-        name: "가족 앨범",
-        content: "우리 가족의 소중한 순간들",
-        createdDateTime: 1731752705878,
-        link: "family-album",
-      ),
-      FolderModel(
-        folderId: 2,
-        name: "여름 휴가 2023",
-        content: "제주도 여행",
-        createdDateTime: 1731752705879,
-        link: "summer-vacation",
-      ),
-      FolderModel(
-        folderId: 3,
-        name: "우리 아이 성장앨범",
-        content: "첫 걸음마부터 초등학교까지",
-        createdDateTime: 1731752705880,
-        link: "baby-growth",
-      ),
-      FolderModel(
-        folderId: 4,
-        name: "반려동물",
-        content: "멍멍이와 함께한 추억",
-        createdDateTime: 1731752705881,
-        link: "pets",
-      ),
-    ];
-  }
-
-  // 테스트용 사진 목록 조회
-  Future<List<Photo>> getPhotosTest(int? folderId) async {
-    await Future.delayed(const Duration(seconds: 1));
-    
-    return [
-      Photo(
-        photoId: 1,
-        photoUrl: "https://picsum.photos/300/300?random=1",
-        location: "서울특별시 강남구",
-        title: "가족 나들이",
-        lat: 37.5642135,
-        lng: 127.0016985,
-        registerTime: 1731752705878,
-        uploadTime: 1731752705878,
-        likes: 42,
-        views: 128,
-        frameActive: false,
-        savedDateTime: 1731752705878,
-        generatorId: folderId,
-        userId: 1,
-      ),
-      Photo(
-        photoId: 2,
-        photoUrl: "https://picsum.photos/300/300?random=2",
-        location: "부산광역시 해운대구",
-        title: "바다 여행",
-        lat: 35.1595454,
-        lng: 129.1603321,
-        registerTime: 1731752705879,
-        uploadTime: 1731752705879,
-        likes: 67,
-        views: 203,
-        frameActive: true,
-        savedDateTime: 1731752705879,
-        generatorId: folderId,
-        userId: 1,
-      ),
-      Photo(
-        photoId: 3,
-        photoUrl: "https://picsum.photos/300/300?random=3",
-        location: "제주특별자치도 서귀포시",
-        title: "한라산 등반",
-        lat: 33.3616666,
-        lng: 126.5291666,
-        registerTime: 1731752705880,
-        uploadTime: 1731752705880,
-        likes: 89,
-        views: 341,
-        frameActive: false,
-        savedDateTime: 1731752705880,
-        generatorId: folderId,
-        userId: 1,
-      ),
-    ];
+  Exception _handleDioError(DioException e) {
+    final error = switch (e.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout => TimeoutException('Connection timed out'),
+      DioExceptionType.connectionError => const SocketException('Connection error occurred'),
+      DioExceptionType.badResponse => Exception('Server error (${e.response?.statusCode}): ${e.response?.data['message'] ?? 'Unknown error occurred'}'),
+      _ => Exception('Network error occurred: ${e.message}'),
+    };
+    print('Handled error: ${error.toString()}');
+    return error;
   }
 }

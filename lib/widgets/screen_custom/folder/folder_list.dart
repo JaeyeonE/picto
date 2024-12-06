@@ -7,7 +7,8 @@ import 'photo_list.dart';
 import 'package:picto/views/folder/folder.dart';
 
 class FolderList extends StatefulWidget {
-  const FolderList({super.key});
+  final int userId;
+  const FolderList({super.key, required this.userId});
 
   @override
   State<FolderList> createState() => _FolderListState();
@@ -75,17 +76,18 @@ class _FolderListState extends State<FolderList> {
       onTap: () {
         // 폴더 선택 시 상태 업데이트
         viewModel.toggleFirst();
-        viewModel.setCurrentFolder(folder.name, folder.folderId);
-        
-        // 해당 폴더의 사진 목록 로드
-        viewModel.loadPhotos(folder.folderId);
-        
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Folder(folderId: folder.folderId),
-          ),
-        );
+      // null 체크 추가
+        if (folder.folderId != null) {
+          viewModel.setCurrentFolder(folder.name, folder.folderId);
+          viewModel.loadPhotos(folder.folderId);
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Folder(folderId: folder.folderId!),
+            ),
+          );
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -103,23 +105,12 @@ class _FolderListState extends State<FolderList> {
               child: Column(
                 children: [
                   Text(
-                    folder.name,
+                    folder.name ?? 'No id',
                     style: const TextStyle(fontSize: 12),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (folder.content != null && folder.content!.isNotEmpty)
-                    Text(
-                      folder.content!,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey[600],
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                 ],
               ),
             ),

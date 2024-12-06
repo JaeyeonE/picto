@@ -1,22 +1,28 @@
 class FolderUser {
   final int folderId;
   final int userId;
-  final String name;
-  final String email;
+  final int sharedDateTime;
 
   FolderUser({
     required this.folderId,
     required this.userId,
-    required this.name,
-    required this.email,
+    required this.sharedDateTime,
   });
 
   factory FolderUser.fromJson(Map<String, dynamic> json) {
     return FolderUser(
       folderId: json['folderId'],
       userId: json['userId'],
-      name: json['name'],
-      email: json['email'],
+      sharedDateTime: json['sharedDateTime'] ?? 0,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'folderId': folderId,
+      'userId': userId,
+      'sharedDateTime': sharedDateTime,
+    };
+  }
+
 }

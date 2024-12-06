@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import '../services/session_service.dart';
 import '../models/common/session_message.dart';
 
+
 class SessionController extends GetxController {
   final SessionService sessionService;
   final int sessionId;
+  StreamSubscription? _sessionSubscription;
 
   final RxList<SessionMessage> messages = <SessionMessage>[].obs;
   final RxBool isInSession = false.obs;
@@ -23,6 +27,7 @@ class SessionController extends GetxController {
   @override
   void onClose() {
     _exitSession();
+    _sessionSubscription?.cancel();  // 구독 취소
     sessionService.dispose();
     super.onClose();
   }
@@ -44,10 +49,10 @@ class SessionController extends GetxController {
   void _startMessageStream() {
     final stream = sessionService.getSessionStream();
     if (stream != null) {
-      stream.listen(
+      _sessionSubscription?.cancel();  // 기존 구독 취소
+      _sessionSubscription = stream.listen(
         (message) {
           messages.add(message);
-          // 메시지 타입에 따른 상태 업데이트
           if (message.messageType == 'EXIT') {
             isInSession.value = false;
           }
@@ -55,11 +60,12 @@ class SessionController extends GetxController {
         onError: (error) {
           print('Error in session message stream: $error');
           isInSession.value = false;
+          // 즉시 재연결하지 않음
         },
         onDone: () {
           print('Session stream closed');
           isInSession.value = false;
-          _tryReconnect();
+          // 즉시 재연결하지 않음
         },
       );
     }
@@ -89,7 +95,10 @@ class SessionController extends GetxController {
 
   Future<void> _tryReconnect() async {
     if (!isInSession.value && !isConnecting.value) {
-      await _initializeSession();
+      await Future.delayed(const Duration(seconds: 5));  // 재연결 전 딜레이
+      if (!isInSession.value && !isConnecting.value) {  // 상태 재확인
+        await _initializeSession();
+      }
     }
   }
 }

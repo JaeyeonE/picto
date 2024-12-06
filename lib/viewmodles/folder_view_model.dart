@@ -8,6 +8,7 @@ import 'package:picto/models/folder/folder_user.dart';
 import 'package:picto/services/folder_service.dart';
 
 class FolderViewModel extends GetxController {
+  final int userId;
   final Rxn<FolderService> _folderService;
   final RxList<FolderModel> _folders = RxList([]);
   final RxList<Photo> _photos = RxList([]);
@@ -19,7 +20,9 @@ class FolderViewModel extends GetxController {
   final RxBool _isFirst = true.obs;
   final RxBool _isPhotoMode = true.obs;
 
-  FolderViewModel(FolderService folderService)
+  FolderViewModel({
+    required this.userId,
+  required FolderService folderService,})
       : _folderService = Rxn(folderService);
 
   // Getters
@@ -37,7 +40,8 @@ class FolderViewModel extends GetxController {
   Future<void> loadFolders() async {
     _isLoading.value = true;
     try {
-      final folders = await _folderService.value?.getFolders();
+      final folders = await _folderService.value?.getFolders(userId);
+      print('Loaded folders: ${folders?.map((f) => f.toJson())}');  // 로깅 추가
       _folders.assignAll(folders ?? []);
     } catch (e) {
       print('Error loading folders: $e');
@@ -51,9 +55,10 @@ class FolderViewModel extends GetxController {
   Future<void> createFolder(String name, String content) async {
     _isLoading.value = true;
     try {
-      final newFolder = await _folderService.value?.createFolder(name, content);
+      final newFolder = await _folderService.value?.createFolder(userId, name, content);
       if (newFolder != null) {
         _folders.add(newFolder);
+        print('created folder: ${newFolder.toJson()}'); 
       }
     } catch (e) {
       print('Error creating folder: $e');
@@ -63,15 +68,17 @@ class FolderViewModel extends GetxController {
   }
 
   // 폴더 수정
-  Future<void> updateFolder(int folderId, String name, String content) async {
+  Future<void> updateFolder(int? folderId, String name, String content) async {
     _isLoading.value = true;
+    print('current folder ID: ${folderId}');
     try {
-      final updatedFolder = await _folderService.value?.updateFolder(folderId, name, content);
+      final updatedFolder = await _folderService.value?.updateFolder(userId, folderId, name, content);
       if (updatedFolder != null) {
         final index = _folders.indexWhere((folder) => folder.folderId == folderId);
         if (index != -1) {
           _folders[index] = updatedFolder;
         }
+        print('updated folder: ${updatedFolder.toJson()}');
       }
     } catch (e) {
       print('Error updating folder: $e');
@@ -84,7 +91,7 @@ class FolderViewModel extends GetxController {
   Future<void> deleteFolder(int? folderId) async {
     _isLoading.value = true;
     try {
-      await _folderService.value?.deleteFolder(folderId);
+      await _folderService.value?.deleteFolder(userId, folderId);
       _folders.removeWhere((folder) => folder.folderId == folderId);
     } catch (e) {
       print('Error deleting folder: $e');
@@ -97,8 +104,13 @@ class FolderViewModel extends GetxController {
   Future<void> loadPhotos(int? folderId) async {
     _isLoading.value = true;
     try {
-      final photos = await _folderService.value?.getPhotosTest(folderId);
-      _photos.assignAll(photos ?? []);
+      final photos = await _folderService.value?.getPhotos(userId, folderId);
+      print('Loaded folders: ${photos?.map((f) => f.toJson())}');
+      if (photos != null) {
+        _photos.assignAll(photos); // 단일 Photo를 리스트로 변환
+      } else {
+        _photos.clear();
+      }
       _currentFolderId.value = folderId;
     } catch (e) {
       print('Error loading photos: $e');
@@ -112,8 +124,9 @@ class FolderViewModel extends GetxController {
   Future<void> loadFolderUsers(int? folderId) async {
     _isLoading.value = true;
     try {
-      final users = await _folderService.value?.getFolderUsers(folderId);
+      final users = await _folderService.value?.getFolderUsers(userId, folderId);
       _folderUsers.assignAll(users ?? []);
+      print('Loaded folder users: ${users?.map((f) => f.toJson())}');
     } catch (e) {
       print('Error loading folder users: $e');
       _folderUsers.clear();
@@ -160,8 +173,7 @@ class FolderViewModel extends GetxController {
     update();
   }
 
-  void setCurrentFolder(String folderName, int? folderId) {
-    _currentFolderName.value = folderName;
+  void setCurrentFolder(String? folderName, int? folderId) {
     _currentFolderId.value = folderId;
     update();
   }

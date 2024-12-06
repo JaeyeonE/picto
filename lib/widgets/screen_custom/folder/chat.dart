@@ -11,7 +11,7 @@ class Chat extends GetView<ChatViewModel> {
   final int folderId;
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final SessionService _sessionService = SessionService();
+  late SessionService _sessionService = Get.find<SessionController>().sessionService;
 
   Chat({
     Key? key,
@@ -19,9 +19,12 @@ class Chat extends GetView<ChatViewModel> {
     required this.folderId,
   }) : super(key: key) {
     // SessionController 먼저 초기화
-    Get.put(SessionController(
+
+    final sessionController = Get.put(SessionController(
       sessionId: currentUserId,  // currentUserId를 sessionId로 사용
     ));
+
+    _sessionService = sessionController.sessionService;
 
     // ChatViewModel 초기화
     Get.put(ChatViewModel(
@@ -57,6 +60,10 @@ class Chat extends GetView<ChatViewModel> {
             icon: const Icon(Icons.people),
             onPressed: () => _showMembersList(context),
           ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _sessionService.initializeWebSocket(currentUserId),
+          )
         ],
       ),
       body: Obx(() {

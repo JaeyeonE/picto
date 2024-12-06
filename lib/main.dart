@@ -13,6 +13,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +46,7 @@ class MyApp extends StatelessWidget {
         final folderService = FolderService(dio);
 
         // ViewModels
-        Get.put(FolderViewModel(folderService));
+        Get.put(FolderViewModel(folderService: folderService, userId: 1));
       }),
     );
   }
@@ -80,7 +81,7 @@ class MainScreen extends StatelessWidget {
           );
         },
       ),
-      body: const FolderList(),
+      body: const FolderList(userId: 1),
     );
   }
 
