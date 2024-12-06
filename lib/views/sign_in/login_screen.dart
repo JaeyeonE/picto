@@ -32,18 +32,34 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final token = await _userService.getToken();
-    
+
     if (token != null) {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MapScreen()),
-        );
+      try {
+        final userId = await _userService.getUserId();
+        if (userId != null) {
+          // 사용자 정보 가져오기
+          final userInfo = await _userService.getUserAllInfo(userId);
+
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MapScreen(
+                  initialUser: userInfo.user,
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('사용자 정보 로드 실패: $e');
+        // 토큰이 있지만 사용자 정보를 가져오는데 실패한 경우
+        await _userService.deleteToken();
       }
     } else {
       final rememberMe = prefs.getBool('rememberMe') ?? false;
       final savedEmail = prefs.getString('email');
-      
+
       if (rememberMe && savedEmail != null && mounted) {
         setState(() {
           _rememberMe = true;
@@ -79,7 +95,10 @@ class _LoginScreenState extends State<LoginScreen> {
       await _userService.saveToken(response.accessToken);
       // userId 저장
       await _userService.saveUserId(response.userId);
-      
+
+      // 사용자 정보 가져오기
+      final userInfo = await _userService.getUserAllInfo(response.userId);
+
       if (_rememberMe) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('rememberMe', true);
@@ -89,7 +108,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MapScreen()),
+          MaterialPageRoute(
+            builder: (context) => MapScreen(
+              initialUser: userInfo.user, // UserInfoResponse에서 User 객체만 전달
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -150,9 +173,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: '비밀번호',
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible 
-                          ? Icons.visibility 
-                          : Icons.visibility_off,
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
