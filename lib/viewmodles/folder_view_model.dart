@@ -16,7 +16,7 @@ class FolderViewModel extends GetxController {
   final RxList<FolderUser> _folderUsers = RxList([]);
   final RxBool _isLoading = false.obs;
   final RxnString _currentFolderName = RxnString();
-  final RxnInt _currentFolderId = RxnInt();
+  final RxInt _currentFolderId = 0.obs;
   final RxBool _isPhotoList = true.obs;
   final RxBool _isFirst = true.obs;
   final RxBool _isPhotoMode = true.obs;
@@ -32,7 +32,7 @@ class FolderViewModel extends GetxController {
   List<FolderUser> get folderUsers => _folderUsers;
   bool get isLoading => _isLoading.value;
   String? get currentFolderName => _currentFolderName.value;
-  int? get currentFolderId => _currentFolderId.value;
+  int get currentFolderId => _currentFolderId.value;
   bool get isPhotoList => _isPhotoList.value;
   bool get isFirst => _isFirst.value;
   bool get isPhotoMode => _isPhotoMode.value;
@@ -89,7 +89,7 @@ class FolderViewModel extends GetxController {
   }
 
   // 폴더 삭제
-  Future<void> deleteFolder(int? folderId) async {
+  Future<void> deleteFolder(int folderId) async {
     _isLoading.value = true;
     try {
       await _folderService.value?.deleteFolder(user.userId, folderId);
@@ -102,7 +102,7 @@ class FolderViewModel extends GetxController {
   }
 
   // 폴더 내 사진 목록 로드
-  Future<void> loadPhotos(int? folderId) async {
+  Future<void> loadPhotos(int folderId) async {
     _isLoading.value = true;
     try {
       final photos = await _folderService.value?.getPhotos(user.userId, folderId);
@@ -174,7 +174,7 @@ class FolderViewModel extends GetxController {
     update();
   }
 
-  void setCurrentFolder(String? folderName, int? folderId) {
+  void setCurrentFolder(String? folderName, int folderId) {
     _currentFolderId.value = folderId;
     update();
   }

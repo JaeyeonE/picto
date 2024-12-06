@@ -6,11 +6,11 @@ import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/widgets/screen_custom/folder/photo_detail.dart';
 
 class PhotoListWidget extends StatefulWidget {
-  final int? folderId; // 파라미터로 받음
+  final int folderId; // 파라미터로 받음
 
   const PhotoListWidget({
     Key? key,
-    this.folderId,
+    required this.folderId,
   }) : super(key: key);
 
   @override
