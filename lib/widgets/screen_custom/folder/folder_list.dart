@@ -1,46 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 
-// import 폴더 아이콘
 import 'package:picto/viewmodles/folder_view_model.dart';
+import 'package:picto/models/folder/folder_model.dart';
+import 'photo_list.dart';
+import 'package:picto/views/folder/folder.dart';
 
-class FolderListView extends StatefulWidget {
-  const FolderListView({super.key});
+class FolderList extends StatefulWidget {
+  final int userId;
+  const FolderList({super.key, required this.userId});
 
   @override
-  State<FolderListView> createState() => _FolderListViewState();
+  State<FolderList> createState() => _FolderListState();
 }
 
-class _FolderListViewState extends State<FolderListView> {
+class _FolderListState extends State<FolderList> {
+  final FolderViewModel viewModel = Get.find<FolderViewModel>();
+
   @override
   void initState() {
-    super.initState(); // 폴더 목록 로드
+    super.initState();
+    // 폴더 목록 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FolderViewModel>().loadFolders();
+      viewModel.loadFolders();
     });
   }
 
   @override
-  Widget build(BuildContext context){
-     return Consumer<FolderViewModel>(
-      builder: (context, viewModel, child) {
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-          ),
-          itemCount: viewModel.isLoading ? 12 : viewModel.folderModel.folderList?.length ?? 0,
-          itemBuilder: (context, index) {
-            if (viewModel.isLoading) {
-              return _buildEmptyFolder();
-            }
-            return _buildFolder(viewModel.folderModel.folderList![index]);
-          },
-        );
-      },
-    );
+  Widget build(BuildContext context) {
+    return Obx(() {
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+        ),
+        itemCount: viewModel.isLoading ? 12 : viewModel.folders.length,
+        itemBuilder: (context, index) {
+          if (viewModel.isLoading) {
+            return _buildEmptyFolder();
+          }
+          return _buildFolder(viewModel.folders[index]);
+        },
+      );
+    });
   }
 
   Widget _buildEmptyFolder() {
@@ -52,7 +56,7 @@ class _FolderListViewState extends State<FolderListView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.folder, size: 40, color: Colors.grey[300]), // 나중에 폴더 아이콘으로 바꾸기
+          Icon(Icons.folder, size: 40, color: Colors.grey[300]),
           const SizedBox(height: 8),
           Container(
             width: 60,
@@ -67,29 +71,52 @@ class _FolderListViewState extends State<FolderListView> {
     );
   }
 
-  Widget _buildFolder(String folderName){
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.folder, size: 40, color: Colors.blue),
-          const SizedBox(height: 8),
-          Text(
-            folderName,
-            style: const TextStyle(fontSize: 12),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+  Widget _buildFolder(FolderModel folder) {
+    return InkWell(
+      onTap: () {
+        // 폴더 선택 시 상태 업데이트
+        viewModel.toggleFirst();
+      // null 체크 추가
+        if (folder.folderId != null) {
+          viewModel.setCurrentFolder(folder.name, folder.folderId);
+          viewModel.loadPhotos(folder.folderId);
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Folder(folderId: folder.folderId!),
+            ),
+          );
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.folder, size: 40, color: Colors.blue),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                children: [
+                  Text(
+                    folder.name ?? 'No id',
+                    style: const TextStyle(fontSize: 12),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-
-

@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <application
+        android:enableOnBackInvokedCallback="true"
         android:label="picto"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
@@ -16,6 +17,7 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="API KEY 여기 넣으면 됩니당"/>
         <activity
+            android:usesCleartextTraffic="true"
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
