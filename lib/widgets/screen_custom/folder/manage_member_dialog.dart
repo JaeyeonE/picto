@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
+import 'package:picto/models/user_manager/user.dart';
 
-class FolderUsersDialog extends StatefulWidget {
-  const FolderUsersDialog({Key? key}) : super(key: key);
+class ManageMemberDialog extends StatefulWidget {
+  const ManageMemberDialog({Key? key}) : super(key: key);
 
   @override
-  State<FolderUsersDialog> createState() => _FolderUsersDialogState();
+  State<ManageMemberDialog> createState() => _ManageMemberDialogState();
 }
 
-class _FolderUsersDialogState extends State<FolderUsersDialog> {
+class _ManageMemberDialogState extends State<ManageMemberDialog> {
   final FolderViewModel viewModel = Get.find<FolderViewModel>();
 
   @override
@@ -20,6 +21,22 @@ class _FolderUsersDialogState extends State<FolderUsersDialog> {
 
   Future<void> _loadFolderUsers() async {
     await viewModel.loadFolderUsers(viewModel.currentFolderId);
+  }
+
+  Widget _buildAvatar(User user) {
+    if (user.profilePath != null && user.profilePath!.isNotEmpty) {
+      return CircleAvatar(
+        backgroundImage: AssetImage(user.profilePath!),
+        backgroundColor: Colors.grey[200],
+      );
+    } else {
+      return CircleAvatar(
+        child: Text(
+          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+        ),
+        backgroundColor: Colors.grey[200],
+      );
+    }
   }
 
   @override
@@ -66,19 +83,22 @@ class _FolderUsersDialogState extends State<FolderUsersDialog> {
                 }
 
                 return ListView.builder(
-                  itemCount: viewModel.folderUsers.length,
+                  itemCount: viewModel.userProfiles.length,
                   itemBuilder: (context, index) {
-                    final user = viewModel.folderUsers[index];
+                    final user = viewModel.userProfiles[index];
                     return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                        ),
-                      ),
+                      leading: _buildAvatar(user),
                       title: Text(user.name),
-                      subtitle: Text(user.email),
-                      // 폴더 생성자인 경우 표시
-                      trailing: user.role == 'OWNER' 
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(user.email),
+                          if (user.accountName != null && user.accountName!.isNotEmpty)
+                            Text('계정명: ${user.accountName}'),
+                        ],
+                      ),
+                      isThreeLine: user.accountName != null && user.accountName!.isNotEmpty,
+                      trailing: user.userId == viewModel.user.userId 
                         ? const Chip(
                             label: Text('폴더 생성자'),
                             backgroundColor: Colors.blue,

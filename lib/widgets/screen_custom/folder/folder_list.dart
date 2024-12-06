@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:picto/services/photo_store.dart';
+import 'package:picto/services/user_manager_service.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/folder/folder_model.dart';
@@ -27,8 +28,10 @@ class _FolderListState extends State<FolderList> {
     // FolderViewModel 초기화
     final dio = Dio();
     final folderService = FolderService(dio);
-    final photoStore = PhotoStoreService();
-    viewModel = Get.put(FolderViewModel(folderService: folderService, user: widget.user));
+    final photoStore = PhotoStoreService(baseUrl: 'http://52.78.237.242:8084');
+    final userManager = UserManagerService(host: 'http://3.35.153.213:8086');
+    viewModel = Get.put(FolderViewModel(
+      userManagerService: userManager, photoStoreService:photoStore, folderService: folderService, user: widget.user));
     
     // 폴더 목록 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {

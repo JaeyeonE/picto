@@ -206,6 +206,7 @@ class FolderViewModel extends GetxController {
   }
 
   void setCurrentFolder(String? folderName, int folderId) {
+    _currentFolderName.value = folderName;  // 이 줄이 빠져있었습니다
     _currentFolderId.value = folderId;
     update();
   }
