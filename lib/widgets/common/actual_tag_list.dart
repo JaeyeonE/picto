@@ -43,15 +43,13 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
   void _initializeFilterOptions() {
     filterOptions = {
       '순서': [
-        FilterOption('좋아요순', false),
-        FilterOption('최근순', false),
+        FilterOption('좋아요순', true),
         FilterOption('조회순', false),
-        FilterOption('최근 업로드순', false),
       ],
       '시간': [
         FilterOption('하루', false),
         FilterOption('일주일', false),
-        FilterOption('한달', false),
+        FilterOption('한달', true),
         FilterOption('일년', false),
         FilterOption('전체', false),
       ],

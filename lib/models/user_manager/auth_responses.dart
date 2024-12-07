@@ -12,20 +12,18 @@ class LoginResponse {
   final String? message;
   final int userId;
 
-  LoginResponse({
-    required this.accessToken,
-    required this.success,
-    this.message,
-    required this.userId
-  });
+  LoginResponse(
+      {required this.accessToken,
+      required this.success,
+      this.message,
+      required this.userId});
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
-      accessToken: json['accessToken'],
-      success: true,
-      message: json['message'],
-      userId: json['userId']
-    );
+        accessToken: json['accessToken'],
+        success: true,
+        message: json['message'],
+        userId: json['userId']);
   }
 }
 
@@ -54,8 +52,11 @@ class UserInfoResponse {
   final UserFilter filter;
   final UserSettings userSetting;
   final List<UserTag> tags;
-  final List<dynamic> titles;  // 필요한 경우 Title 모델 추가
+  final List<dynamic> titles;
   final List<Photo> photos;
+  final List marks; // 현재 비어있음
+  final List blocks; // 현재 비어있음
+  final List<Folder> folders; 
 
   UserInfoResponse({
     required this.user,
@@ -64,6 +65,9 @@ class UserInfoResponse {
     required this.tags,
     required this.titles,
     required this.photos,
+    required this.marks, // 문제생기면 이거 자료형 때문이다
+    required this.blocks,
+    required this.folders,
   });
 
   factory UserInfoResponse.fromJson(Map<String, dynamic> json) {
@@ -71,13 +75,42 @@ class UserInfoResponse {
       user: User.fromJson(json['user']),
       filter: UserFilter.fromJson(json['filter']),
       userSetting: UserSettings.fromJson(json['userSetting']),
-      tags: (json['tags'] as List)
-          .map((tag) => UserTag.fromJson(tag))
-          .toList(),
+      tags: (json['tags'] as List).map((tag) => UserTag.fromJson(tag)).toList(),
       titles: json['titles'] as List,
       photos: (json['photos'] as List)
           .map((photo) => Photo.fromJson(photo))
           .toList(),
+      marks: json['marks'] as List,
+      blocks: json['blocks'] as List, 
+      folders: (json['folders'] as List)
+          .map((folder) => Folder.fromJson(folder))
+          .toList(),
+    );
+  }
+}
+
+class Folder {
+  final int folderId;
+  final int createdDatetime;
+  final String folderName;
+  final String folderContent;
+  final List<int> members;
+
+  Folder({
+    required this.folderId,
+    required this.createdDatetime,
+    required this.folderName,
+    required this.folderContent,
+    required this.members,
+  });
+
+  factory Folder.fromJson(Map<String, dynamic> json) {
+    return Folder(
+      folderId: json['folderId'],
+      createdDatetime: json['createdDatetime'],
+      folderName: json['folderName'],
+      folderContent: json['folderContent'],
+      members: List<int>.from(json['members']),
     );
   }
 }
