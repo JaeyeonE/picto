@@ -1,4 +1,4 @@
-import '../common/photo.dart';
+import '../photo_manager/photo.dart';
 
 class GalleryModel{
   final List<Photo> selected;

@@ -1,29 +1,48 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:picto/services/photo_store.dart';
+import 'package:picto/services/user_manager_service.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/folder/folder_model.dart';
 import 'photo_list.dart';
 import 'package:picto/views/folder/folder.dart';
+import 'package:picto/models/user_manager/user.dart';
+import 'package:picto/services/folder_service.dart';
 
 class FolderList extends StatefulWidget {
-  final int userId;
-  const FolderList({super.key, required this.userId});
+  final User user;
+  FolderList({super.key, required this.user});
 
   @override
   State<FolderList> createState() => _FolderListState();
 }
 
 class _FolderListState extends State<FolderList> {
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
-
+  late final FolderViewModel viewModel;
+  
   @override
   void initState() {
     super.initState();
+    // FolderViewModel 초기화
+    final dio = Dio();
+    final folderService = FolderService(dio);
+    final photoStore = PhotoStoreService(baseUrl: 'http://52.78.237.242:8084');
+    final userManager = UserManagerService(host: 'http://3.35.153.213:8086');
+    viewModel = Get.put(FolderViewModel(
+      userManagerService: userManager, photoStoreService:photoStore, folderService: folderService, user: widget.user));
+    
     // 폴더 목록 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
       viewModel.loadFolders();
     });
+  }
+
+  @override
+  void dispose() {
+    Get.delete<FolderViewModel>();  // 메모리 누수 방지를 위한 cleanup
+    super.dispose();
   }
 
   @override

@@ -1,5 +1,5 @@
 class FolderModel {
-  final int? folderId;
+  final int folderId;
   final int? generatorId;
   final String? name;
   final String? link;
@@ -7,7 +7,7 @@ class FolderModel {
   final int? createdDateTime;
 
   FolderModel({
-    this.folderId,
+    required this.folderId,
     required this.generatorId,
     this.name,
     this.link,

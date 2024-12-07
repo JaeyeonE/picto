@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
-import 'package:picto/models/common/photo.dart';
-import 'package:picto/widgets/screen_custom/folder/photo_detail.dart';
+import 'package:picto/models/photo_manager/photo.dart';
+import 'package:picto/widgets/screen_custom/folder/feed.dart';
 
 class PhotoListWidget extends StatefulWidget {
-  final int? folderId; // 파라미터로 받음
+  final int folderId; // 파라미터로 받음
+  // map에서 photo list가져오는데 필요한 데이터
 
   const PhotoListWidget({
     Key? key,
-    this.folderId,
+    required this.folderId,
   }) : super(key: key);
 
   @override
@@ -19,6 +20,7 @@ class PhotoListWidget extends StatefulWidget {
 
 class _PhotoListWidgetState extends State<PhotoListWidget> {
   final FolderViewModel viewModel = Get.find<FolderViewModel>();
+  // photoManager
 
   @override
   void initState() {
@@ -90,7 +92,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PhotoDetail(
+            builder: (context) => Feed(
               initialPhotoIndex: index,
               folderId: widget.folderId,
               photoId: photo.photoId,
@@ -102,7 +104,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           image: DecorationImage(
-            image: NetworkImage(photo.photoUrl),
+            image: NetworkImage(photo.photoPath),
             fit: BoxFit.cover,
           ),
         ),

@@ -37,9 +37,26 @@ class FolderUserDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
+<<<<<<< HEAD
           child: const Text('닫기'),
+=======
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => _handleSubmit(context),
+          child: const Text('Join'),
+>>>>>>> burdock
         ),
       ],
     );
   }
+<<<<<<< HEAD
+=======
+  
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+>>>>>>> burdock
 }

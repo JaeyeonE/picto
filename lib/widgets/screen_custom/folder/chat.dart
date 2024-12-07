@@ -50,7 +50,7 @@ class Chat extends GetView<ChatViewModel> {
     });
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(

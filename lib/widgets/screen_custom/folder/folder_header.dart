@@ -9,6 +9,7 @@ import 'package:picto/widgets/screen_custom/folder/enter_code_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_user_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/share_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/update_folder_dialog.dart';
+import 'package:picto/widgets/screen_custom/folder/manage_member_dialog.dart';
 
 class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBackPressed;
@@ -105,6 +106,17 @@ Widget build(BuildContext context) {
             );
           },
         ),
+         ListTile (
+            leading: const Icon(Icons.share),
+            title: const Text('enter invitation code'),
+            onTap: () {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (context) =>const EnterCodeDialog(),
+              );
+            },
+          ),
       ],
     ),
   );
@@ -133,9 +145,9 @@ Widget build(BuildContext context) {
             onTap:() {
               Navigator.pop(context);
               showDialog(
-              context: context,
-              builder: (context) => const FolderUserDialog(),
-            );
+                context: context,
+                builder: (context) => const ManageMemberDialog()
+              );
             },
           ),
           ListTile (
@@ -157,17 +169,6 @@ Widget build(BuildContext context) {
               showDialog(
                 context: context,
                 builder: (context) =>const ShareFolderDialog(),
-              );
-            },
-          ),
-          ListTile (
-            leading: const Icon(Icons.share),
-            title: const Text('enter invitation code'),
-            onTap: () {
-              Navigator.pop(context);
-              showDialog(
-                context: context,
-                builder: (context) =>const EnterCodeDialog(),
               );
             },
           ),

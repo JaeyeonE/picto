@@ -1,6 +1,6 @@
 // title: 사진들 위에 있는 제목들 ex) 좋아요 많이 받은 사진들
 // photos: 사진들 
-import 'package:picto/models/common/photo.dart';
+import 'package:picto/models/photo_manager/photo.dart';
 
 class PhotoSection{
   final String title;

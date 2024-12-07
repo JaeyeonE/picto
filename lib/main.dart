@@ -57,118 +57,70 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: FolderHeader(
-        onBackPressed: null, // 메인 화면에서는 뒤로가기 버튼 비활성화
-        onMenuPressed: () {
-          // 메뉴 버튼 처리
-          showModalBottomSheet(
+    return MaterialApp(
+      title: 'PICTO',
+      theme: AppThemeExtension.appTheme,
+      home: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, dynamic data) async {
+          if (didPop) return Future.value(true);
+
+          final shouldPop = await showDialog<bool>(
             context: context,
-            builder: (context) => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.create_new_folder),
-                  title: const Text('새 폴더 만들기'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showCreateFolderDialog(context);
+            builder: (BuildContext context) => AlertDialog(
+              title: const Text('로그아웃'),
+              content: const Text('앱을 종료하기 전에 로그아웃 하시겠습니까?'),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    await _handleLogout(context);
+                    if (context.mounted) {
+                      Navigator.pop(context, true);
+                    }
                   },
+                  child: const Text('네'),
                 ),
-                // 추가 메뉴 아이템...
+                TextButton(
+                  onPressed: () async {
+                    // '아니오'를 선택한 경우에도 세션은 종료
+                    try {
+                      final userId = await _userService.getUserId();
+                      if (userId != null) {
+                        await _sessionService.exitSession(userId);
+                      }
+                      _sessionService.dispose();
+                    } catch (e) {
+                      debugPrint('Session closure error: $e');
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context, false);
+                    }
+                  },
+                  child: const Text('아니오'),
+                ),
               ],
             ),
           );
+
+          return Future.value(shouldPop ?? false);
         },
+        child: FutureBuilder<User?>(
+          future: checkAuthState(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (snapshot.data == null) {
+              return const LoginScreen();
+            }
+
+            return MapScreen(initialUser: snapshot.data!);
+          },
+        ),
       ),
-      body: const FolderList(userId: 1),
-    );
-  }
-
-  void _showCreateFolderDialog(BuildContext context) {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController descController = TextEditingController();
-    final FolderViewModel viewModel = Get.find<FolderViewModel>();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('새 폴더 만들기'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: '폴더 이름',
-                  hintText: '폴더 이름을 입력하세요',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(
-                  labelText: '설명 (선택사항)',
-                  hintText: '폴더에 대한 설명을 입력하세요',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('취소'),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (nameController.text.isNotEmpty) {
-                  await viewModel.createFolder(
-                    nameController.text,
-                    descController.text,
-                  );
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                }
-              },
-              child: const Text('만들기'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
-
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
-// import 'package:picto/widgets/screen_custom/folder/chat.dart';  // Chat 위젯이 있는 파일 경로를 적절히 수정해주세요
-
-// void main() {
-//   runApp(const MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   const MyApp({Key? key}) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return GetMaterialApp(  // GetX를 사용하므로 MaterialApp 대신 GetMaterialApp 사용
-//       title: 'Chat App',
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue,
-//         scaffoldBackgroundColor: Colors.white,
-//         appBarTheme: const AppBarTheme(
-//           backgroundColor: Colors.white,
-//           foregroundColor: Colors.black,
-//           elevation: 1,
-//         ),
-//       ),
-//       home: Chat(
-//         currentUserId: 2,  // 실제 사용시에는 로그인한 사용자의 ID를 전달
-//         folderId: 487,      // 실제 사용시에는 선택된 폴더/채팅방의 ID를 전달
-//       ),
-//     );
-//   }
-// }

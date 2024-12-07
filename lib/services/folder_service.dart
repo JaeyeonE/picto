@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 
-import 'package:picto/models/common/photo.dart';
+import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/folder/folder_model.dart';
 import 'package:picto/models/folder/folder_user.dart';
 
@@ -176,6 +176,7 @@ class FolderService {
       return notice?['id'];
     } on DioException catch (e) {
       print('Error getting notice ID: ${e.message}');
+      print('Error getting notice ID: ${e.message}');
       throw _handleDioError(e);
     }
   }
@@ -213,7 +214,7 @@ class FolderService {
     }
   }
 
-  Future<List<Photo>> getPhotos(int userId, int? folderId) async {
+  Future<List<Photo>> getPhotos(int userId, int folderId) async {
     print('Fetching photos for folder: $folderId');
     try {
       if (folderId == null) throw ArgumentError('folderId cannot be null');
