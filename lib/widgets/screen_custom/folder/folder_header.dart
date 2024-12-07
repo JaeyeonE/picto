@@ -5,6 +5,8 @@ import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/utils/constant.dart';
 import 'package:picto/widgets/screen_custom/folder/create_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/delete_folder_dialog.dart';
+import 'package:picto/widgets/screen_custom/folder/enter_code_dialog.dart';
+import 'package:picto/widgets/screen_custom/folder/share_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/update_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/manage_member_dialog.dart';
 
@@ -57,7 +59,6 @@ Widget build(BuildContext context) {
     }),
     actions: [
   Obx(() {
-    final folderName = viewModel.currentFolderName;
     final folderId = viewModel.currentFolderId;
     
     return Row(
@@ -104,6 +105,17 @@ Widget build(BuildContext context) {
             );
           },
         ),
+         ListTile (
+            leading: const Icon(Icons.share),
+            title: const Text('enter invitation code'),
+            onTap: () {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (context) =>const EnterCodeDialog(),
+              );
+            },
+          ),
       ],
     ),
   );
@@ -145,6 +157,17 @@ Widget build(BuildContext context) {
               showDialog(
                 context: context,
                 builder: (context) =>const DeleteFolderDialog(),
+              );
+            },
+          ),
+          ListTile (
+            leading: const Icon(Icons.share),
+            title: const Text('share folder'),
+            onTap: () {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (context) =>const ShareFolderDialog(),
               );
             },
           ),

@@ -7,11 +7,13 @@ import 'package:picto/viewmodles/folder_view_model.dart';
 class Feed extends StatefulWidget {
   final int initialPhotoIndex;
   final int? folderId;
+  final int photoId;
 
   const Feed({
     Key? key,
     required this.initialPhotoIndex,
     required this.folderId,
+    required this.photoId,
   }) : super(key: key);
 
   @override
@@ -50,7 +52,7 @@ class _FeedState extends State<Feed> {
           ListTile(
             leading: const Icon(Icons.delete),
             title: const Text('삭제하기'),
-            onTap: () => Navigator.pop(context),
+            onTap: () => {Navigator.pop(context), viewModel.deletePhoto(viewModel.currentFolderId, widget.photoId),}
           ),
           ListTile(
             leading: const Icon(Icons.visibility_off),

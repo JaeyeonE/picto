@@ -194,6 +194,82 @@ class FolderViewModel extends GetxController {
     }
   }
 
+  Future<void> inviteUserToFolder(int receiverId, int? folderId) async {
+    _isLoading.value = true;
+    try {
+      if (folderId == null) throw ArgumentError('folderId cannot be null');
+      await _folderService.value?.inviteToFolder(user.userId, receiverId, folderId);
+      print('Successfully sent folder invitation');
+    } catch (e) {
+      print('Error sending folder invitation: $e');
+      rethrow;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> respondToFolderInvitation(int noticeId, bool accept) async {
+    _isLoading.value = true;
+    try {
+      await _folderService.value?.acceptInvitation(noticeId, user.userId);
+      if (accept) {
+        await loadFolders(); // Refresh folders list if accepted
+      }
+      print('Successfully responded to folder invitation');
+    } catch (e) {
+      print('Error responding to folder invitation: $e');
+      rethrow;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  String generateInviteCode(int? folderId) {
+    if (folderId == null) return '';
+    return (folderId * 7 + 11).toString();
+  }
+
+  int? getFolderIdFromCode(String code) {
+    try {
+      int numericCode = int.parse(code);
+      if ((numericCode - 11) % 7 == 0) {
+        return (numericCode - 11) ~/ 7;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 코드로 폴더 참여하기
+  Future<void> joinFolderWithCode(String code) async {
+    _isLoading.value = true;
+    try {
+      final folderId = getFolderIdFromCode(code);
+      if (folderId == null) {
+        throw ArgumentError('Invalid invitation code');
+      }
+      
+      // 1. noticeId 얻기
+      final noticeId = await _folderService.value?.getNoticeIdForInvitation(user.userId, folderId);
+      if (noticeId == null) {
+        throw Exception('Could not find invitation notice');
+      }
+
+      // 2. 초대 수락하기
+      await _folderService.value?.acceptInvitation(noticeId, user.userId);
+      
+      // 3. 폴더 목록 새로고침
+      await loadFolders();
+      print('Successfully joined folder with code');
+    } catch (e) {
+      print('Error joining folder with code: $e');
+      rethrow;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
   // UI 상태 관리 메서드
   void togglePhotoListView() {
     _isPhotoList.value = !_isPhotoList.value;
