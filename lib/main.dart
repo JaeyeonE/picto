@@ -24,7 +24,7 @@ class PhotoSharingApp extends StatelessWidget {
   PhotoSharingApp({super.key});
 
   final UserManagerService _userService =
-      UserManagerService(host: 'http://3.35.153.213:8086');
+      UserManagerService();
   final SessionService _sessionService = SessionService();
 
   Future<User?> checkAuthState() async {

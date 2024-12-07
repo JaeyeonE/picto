@@ -20,7 +20,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _verificationCodeController = TextEditingController();
-  final _userService = UserManagerService(host: 'http://3.35.153.213:8086');
+  final _userService = UserManagerService();
   
   Position? _currentPosition;
 

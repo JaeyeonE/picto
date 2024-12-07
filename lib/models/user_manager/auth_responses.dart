@@ -55,7 +55,7 @@ class UserInfoResponse {
   final UserSettings userSetting;
   final List<UserTag> tags;
   final List<dynamic> titles;  // 필요한 경우 Title 모델 추가
-  final List<Photo> photos;    // Photo 모델 필요
+  final List<Photo> photos;
 
   UserInfoResponse({
     required this.user,

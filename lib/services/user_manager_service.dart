@@ -14,9 +14,9 @@ class UserManagerService {
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
 
-  UserManagerService({required String host})
+  UserManagerService()
       : _dio = Dio(BaseOptions(
-          baseUrl: '$host/user-manager',
+          baseUrl: 'http://3.35.153.213:8086/user-manager',
           headers: {'Content-Type': 'application/json'},
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),

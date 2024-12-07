@@ -37,7 +37,7 @@ class CustomNavigationBar extends StatelessWidget {
           screen =  MapScreen(initialUser: currentUser); // 지도 화면
           break;
         case 3:
-          screen = FolderList(user: currentUser); // 폴더 화면 -> 수정할 것
+          screen = MapScreen(initialUser: currentUser); //FolderList(user: currentUser); // 폴더 화면 -> 수정할 것
           break;
         case 4:
           screen = const ProfileScreen(); // 로그아웃 버튼

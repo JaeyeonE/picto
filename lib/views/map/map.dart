@@ -38,7 +38,7 @@ class _MapScreenState extends State<MapScreen> {
   Set<Marker> markers = {}; // 모든 마커 세트
   String _currentLocationType = 'large'; // 현재 위치 타입(large/middle/small)
   final _userService =
-      UserManagerService(host: 'http://3.35.153.213:8086'); // 사용자 관리 서비스
+      UserManagerService(); // 사용자 관리 서비스
   final _photoService =
       PhotoManagerService(host: 'http://3.35.153.213:8082'); // 사진 관리 서비스
   bool _isLoading = false; // 로딩 상태
@@ -358,6 +358,29 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // 필터 업데이트 메서드 추가
+Future<void> _updateUserFilter(String sort, String period, int startDatetime, int endDatetime) async {
+  try {
+    final userId = await _userService.getUserId();
+    if (userId != null) {
+      await _userService.updateFilter(
+        userId: userId,
+        sort: sort,
+        period: period,
+        startDatetime: startDatetime,
+        endDatetime: endDatetime,
+      );
+      _refreshMap(); // 필터 업데이트 후 지도 새로고침
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('필터 업데이트 실패: $e')),
+      );
+    }
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
@@ -444,6 +467,9 @@ class _MapScreenState extends State<MapScreen> {
                     child: TagSelector(
                       selectedTags: selectedTags,
                       onTagsSelected: onTagsSelected,
+                      onFilterUpdate: (sort, period, startDatetime, endDatetime) {
+                        _updateUserFilter(sort, period, startDatetime, endDatetime);
+                      },
                     ),
                   ),
                 ],

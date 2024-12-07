@@ -9,6 +9,7 @@ class User {
   final String? intro; 
   final bool profileActive; 
   final String? password; 
+  //final List<dynamic>? folders;
 
   User({
     required this.accountName,
@@ -19,6 +20,7 @@ class User {
     required this.profileActive,
     required this.email,
     required this.password,
+    //this.folders,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
@@ -30,6 +32,7 @@ class User {
         profileActive: json['profileActive'],
         email: json['email'],
         password: json['password'],
+        //folders: json['folders'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -41,6 +44,7 @@ class User {
         'intro': intro,
         'profilePath': profilePath,
         'password': password,
+        //'folders': folders,
       };
 
   factory User.empty() => User(
