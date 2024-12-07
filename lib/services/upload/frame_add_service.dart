@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:picto/services/location_service.dart';
 
 class FrameAddService {
@@ -6,23 +8,28 @@ class FrameAddService {
   Future<Map<String, dynamic>> addFrame() async {
     final Dio dio = Dio();
     final position = await LocationService().getCurrentLocation();
+
     try {
-      final requestData = {
+      Map<String, dynamic> requestData = {
         'userId': 2,
         'lat': position.latitude,
         'lng': position.longitude,
-        'location': LocationService.getAddressFromCoordinates(
-            position.latitude, position.longitude),
         'registerTime': DateTime.now().millisecondsSinceEpoch,
         'frameActive': true,
       };
 
       final response = await dio.post(
         AddUrl,
-        data: requestData,
+        data: FormData.fromMap({
+          'request': MultipartFile.fromString(
+            jsonEncode(requestData),
+            contentType: MediaType.parse('application/json'),
+          ),
+        }),
         options: Options(
+          contentType: Headers.multipartFormDataContentType,
           headers: {
-            'Content-Type': "multipart/form-data",
+            'Accept': 'application/json',
           },
         ),
       );

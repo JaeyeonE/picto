@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/services/location_service.dart';
+import 'package:dio/dio.dart';
 
 class FrameListService {
   static const String ListUrl =
@@ -46,7 +47,7 @@ class FrameListService {
             // API 응답의 모든 필드를 Photo 모델에 맞게 매핑
             Map<String, dynamic> photoData = {
               'photoId': frameData['photoId'],
-              'userId': userId.toString(),
+              'userId': userId,
               'photoPath': frameData['photoPath'] ?? '',
               'lat': frameData['lat'],
               'lng': frameData['lng'],
@@ -59,7 +60,6 @@ class FrameListService {
                   DateTime.now().millisecondsSinceEpoch,
               'updateDatetime': frameData['uploadTime'] ??
                   DateTime.now().millisecondsSinceEpoch,
-              'user': null,
             };
             print('매핑된 Photo 데이터: $photoData');
 
@@ -67,6 +67,7 @@ class FrameListService {
             print('생성된 Photo 객체: ${photo.toJson()}');
 
             frames.add(photo);
+            print(frames);
             print('프레임 #$i 처리 완료');
           } catch (e, stackTrace) {
             print('\n!! 프레임 #$i 처리 중 오류 발생 !!');
