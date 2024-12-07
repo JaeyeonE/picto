@@ -172,7 +172,7 @@ class FolderService {
         (notice) => notice['folderId'] == folderId,
         orElse: () => null,
       );
-      print('noticeId: ${notice?['id']}')
+      print('noticeId: ${notice?['id']}');
       return notice?['id'];
     } on DioException catch (e) {
       print('Error getting notice ID: ${e.message}');

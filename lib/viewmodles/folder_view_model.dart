@@ -11,7 +11,7 @@ import 'package:picto/services/photo_store.dart';
 import 'package:picto/services/user_manager_service.dart';
 
 class FolderViewModel extends GetxController {
-  final User user;
+  final Future<User> user;
   final Rxn<FolderService> _folderService;
   final PhotoStoreService _photoStoreService;
   final UserManagerService _userManagerService;
