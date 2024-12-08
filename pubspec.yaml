@@ -21,21 +21,21 @@ dependencies:
   lucide_icons: ^0.257.0
   web_socket_channel: ^3.0.1
 
-  #권한 및 정보 관련
-  permission_handler: ^11.3.1
-  device_info_plus: ^11.1.1
+  # #권한 및 정보 관련
+  # permission_handler: ^11.3.1
+  # device_info_plus: ^11.1.1
 
-  #이미지 관련
-  image_picker: ^1.1.2
-  photo_manager: ^3.6.3
-  photo_manager_image_provider: ^2.2.0
+  # #이미지 관련
+  # image_picker: ^1.1.2
+  # photo_manager: ^3.6.3
+  # photo_manager_image_provider: ^2.2.0
 
-  #map 및 위치
-  google_maps_flutter: ^2.10.0
-  geocoding: ^3.0.0
-  geolocator: ^13.0.2
-  flutter_secure_storage: ^9.2.2
-  image: ^4.3.0
+  # #map 및 위치
+  # google_maps_flutter: ^2.10.0
+  # geocoding: ^3.0.0
+  # geolocator: ^13.0.2
+  # flutter_secure_storage: ^9.2.2
+  # image: ^4.3.0
 
 dev_dependencies:
   flutter_test:
