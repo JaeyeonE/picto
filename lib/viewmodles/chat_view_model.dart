@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../services/chat_service.dart';
 import '../models/folder/chat_message_model.dart';
 
@@ -19,8 +19,8 @@ class ChatViewModel extends ChangeNotifier {
     required this.folderId,
     required this.currentUserId,
   }) : _chatService = ChatService(
-         senderId: currentUserId,
-       ) {
+          senderId: currentUserId,
+        ) {
     _initializeChat();
   }
 
@@ -34,7 +34,7 @@ class ChatViewModel extends ChangeNotifier {
   void dispose() {
     _leaveChat();
     _messageSubscription?.cancel();
-    _reconnectTimer?.cancel();
+    _reconnectTimer?.cancel(); 
     _chatService.dispose();
     super.dispose();
   }
@@ -46,12 +46,14 @@ class ChatViewModel extends ChangeNotifier {
     try {
       await _chatService.initializeWebSocket(folderId);
       _isConnected = true;
+      notifyListeners();
       
       await _chatService.enterChat(folderId);
       _subscribeToMessages();
     } catch (e) {
       print('Error initializing chat: $e');
       _isConnected = false;
+      notifyListeners();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -67,20 +69,23 @@ class ChatViewModel extends ChangeNotifier {
           switch (message.type) {
             case 'MESSAGE':
               _messages.add(message);
+              notifyListeners();
               break;
             case 'DELETE':
               _messages.removeWhere((m) => m.senderId == message.senderId);
+              notifyListeners();
               break;
             case 'ENTER':
               if (!_members.contains(message.senderId)) {
                 _members.add(message.senderId);
+                notifyListeners();
               }
               break;
             case 'EXIT':
               _members.remove(message.senderId);
+              notifyListeners();
               break;
           }
-          notifyListeners();
         },
         onError: (error) {
           print('Error in chat message stream: $error');
@@ -135,8 +140,8 @@ class ChatViewModel extends ChangeNotifier {
     try {
       _chatService.leaveChat(folderId);
       _isConnected = false;
-      _messages = [];
-      _members = [];
+      _messages.clear();
+      _members.clear();
       notifyListeners();
     } catch (e) {
       print('Error leaving chat: $e');
