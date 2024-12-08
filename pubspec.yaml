@@ -28,6 +28,7 @@ dependencies:
   image_picker: ^1.1.2
   photo_manager: ^3.6.3
   photo_manager_image_provider: ^2.2.0
+  intl: ^0.20.1
 
   #map 및 위치
   google_maps_flutter: ^2.10.0
