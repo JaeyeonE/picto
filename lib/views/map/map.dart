@@ -37,14 +37,17 @@ class _MapScreenState extends State<MapScreen> {
   StreamSubscription<Position>? _positionStreamSubscription; // 위치 업데이트 구독
   Set<Marker> markers = {}; // 모든 마커 세트
   String _currentLocationType = 'large'; // 현재 위치 타입(large/middle/small)
-  final _userService =
-      UserManagerService(host: 'http://3.35.153.213:8086'); // 사용자 관리 서비스
+  final _userService = UserManagerService(); // 사용자 관리 서비스
   final _photoService =
       PhotoManagerService(host: 'http://3.35.153.213:8082'); // 사진 관리 서비스
   bool _isLoading = false; // 로딩 상태
   final _searchController = TextEditingController(); // 검색 컨트롤러
   User? currentUser; // 현재 사용자 정보
   MarkerManager? _markerManager; // 마커 관리자
+  LatLng? _lastRefreshLocation; // 마지막 새로고침 위치 저장
+  static const double _minimumRefreshDistance = 10.0; // 최소 새로고침 거리 (미터)
+  String? _previousLocationType; // 이전 위치 타입 저장
+  Set<Circle> circles = {};
 
   @override
   void initState() {
@@ -80,28 +83,31 @@ class _MapScreenState extends State<MapScreen> {
 
   // 카메라 이동 시 실행되는 함수 - 줌 레벨에 따라 위치 타입 변경
   void _onCameraMove(CameraPosition position) {
-    if (currentUser == null || _markerManager == null)
-      return; // 사용자 정보가 없으면 처리하지 않음
+    if (currentUser == null || _markerManager == null) return;
 
     String newLocationType;
     if (position.zoom >= 15) {
-      newLocationType = 'small'; // 읍/면/동 수준
+      newLocationType = 'small';
     } else if (position.zoom >= 12) {
-      newLocationType = 'middle'; // 시/군/구 수준
+      newLocationType = 'middle';
     } else {
-      newLocationType = 'large'; // 도/광역시 수준
+      newLocationType = 'large';
     }
 
+    // 위치 타입이 변경되었을 때만 새로고침
     if (_currentLocationType != newLocationType) {
       setState(() {
         _currentLocationType = newLocationType;
+        _previousLocationType = _currentLocationType;
       });
 
-      // 줌 레벨에 따라 적절한 함수 호출
-      if (newLocationType == 'small') {
-        _loadNearbyPhotos();
-      } else {
-        _loadRepresentativePhotos();
+      // 위치 타입이 변경됐을 때만 새로고침
+      if (_previousLocationType != newLocationType) {
+        if (newLocationType == 'small') {
+          _loadNearbyPhotos();
+        } else {
+          _loadRepresentativePhotos();
+        }
       }
     }
 
@@ -109,6 +115,34 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       markers = _markerManager!.getMarkersForZoomLevel(position.zoom);
     });
+  }
+
+  // 현재 위치 업데이트 및 필요시 새로고침
+  void _handleLocationUpdate(LatLng newLocation) {
+    setState(() {
+      currentLocation = newLocation;
+    });
+    _updateMyLocationMarker(newLocation);
+
+    // 마지막 새로고침 위치와 비교하여 10m 이상 이동했는지 확인
+    if (_shouldRefresh(newLocation)) {
+      _refreshMap();
+      _lastRefreshLocation = newLocation;
+    }
+  }
+
+  // 새로고침이 필요한지 확인하는 함수
+  bool _shouldRefresh(LatLng newLocation) {
+    if (_lastRefreshLocation == null) return true;
+
+    final distanceInMeters = Geolocator.distanceBetween(
+      _lastRefreshLocation!.latitude,
+      _lastRefreshLocation!.longitude,
+      newLocation.latitude,
+      newLocation.longitude,
+    );
+
+    return distanceInMeters >= _minimumRefreshDistance;
   }
 
   // 대표 사진들을 로드하는 함수
@@ -229,6 +263,7 @@ class _MapScreenState extends State<MapScreen> {
   // 현재 위치 마커를 업데이트하는 함수
   void _updateMyLocationMarker(LatLng location) {
     setState(() {
+      // 기존 현재 위치 마커 업데이트
       markers.removeWhere(
           (marker) => marker.markerId == const MarkerId("myLocation"));
       markers.add(
@@ -238,6 +273,20 @@ class _MapScreenState extends State<MapScreen> {
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           infoWindow: const InfoWindow(title: "현재 위치"),
+        ),
+      );
+
+      // 3km 반경 원 업데이트
+      circles.clear();
+      circles.add(
+        Circle(
+          circleId: const CircleId('currentLocationRadius'),
+          center: location,
+          radius: 3000, // 3km를 미터 단위로
+          fillColor: Colors.purple.withOpacity(0.0), // 투명 채우기
+          strokeColor: Color.fromARGB(255, 0, 55, 255)
+              .withOpacity(0.2), // 80% 투명도의 보라색 테두리
+          strokeWidth: 2,
         ),
       );
     });
@@ -287,7 +336,7 @@ class _MapScreenState extends State<MapScreen> {
 
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 30, // 30미터마다 위치 업데이트
+      distanceFilter: 10,
     );
 
     _positionStreamSubscription = Geolocator.getPositionStream(
@@ -307,10 +356,17 @@ class _MapScreenState extends State<MapScreen> {
 
   // 지도를 새로고침하는 함수
   Future<void> _refreshMap() async {
+    if (_isLoading) return;
+
     if (_currentLocationType == 'small') {
       await _loadNearbyPhotos();
     } else {
       await _loadRepresentativePhotos();
+    }
+
+    // 새로고침 후 현재 위치를 마지막 새로고침 위치로 저장
+    if (currentLocation != null) {
+      _lastRefreshLocation = currentLocation;
     }
   }
 
@@ -358,6 +414,30 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // 필터 업데이트 메서드 추가
+  Future<void> _updateUserFilter(
+      String sort, String period, int startDatetime, int endDatetime) async {
+    try {
+      final userId = await _userService.getUserId();
+      if (userId != null) {
+        await _userService.updateFilter(
+          userId: userId,
+          sort: sort,
+          period: period,
+          startDatetime: startDatetime,
+          endDatetime: endDatetime,
+        );
+        _refreshMap(); // 필터 업데이트 후 지도 새로고침
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('필터 업데이트 실패: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
@@ -371,16 +451,16 @@ class _MapScreenState extends State<MapScreen> {
                 onMapCreated: (GoogleMapController controller) {
                   mapController = controller;
                   if (currentLocation != null && currentUser != null) {
-                    _loadRepresentativePhotos();
+                    _refreshMap();
                   }
                 },
                 onCameraMove: _onCameraMove,
-                onCameraIdle: _loadRepresentativePhotos,
                 initialCameraPosition: CameraPosition(
                   target: currentLocation ?? const LatLng(37.5665, 126.9780),
                   zoom: 11.0,
                 ),
                 markers: markers,
+                circles: circles,
                 myLocationEnabled: true,
                 myLocationButtonEnabled: false,
                 zoomControlsEnabled: false,
@@ -444,6 +524,11 @@ class _MapScreenState extends State<MapScreen> {
                     child: TagSelector(
                       selectedTags: selectedTags,
                       onTagsSelected: onTagsSelected,
+                      onFilterUpdate:
+                          (sort, period, startDatetime, endDatetime) {
+                        _updateUserFilter(
+                            sort, period, startDatetime, endDatetime);
+                      },
                     ),
                   ),
                 ],
@@ -459,7 +544,7 @@ class _MapScreenState extends State<MapScreen> {
             // 오른쪽 하단 새로고침 버튼
             Positioned(
               right: 16,
-              bottom: 50,
+              bottom: 20,
               child: RepaintBoundary(
                 // 새로고침 버튼도 RepaintBoundary로 감싸기
                 child: Column(
@@ -476,12 +561,14 @@ class _MapScreenState extends State<MapScreen> {
             ),
 
             Positioned(
-              // zoom 정도 표시
-              top: 100,
+              bottom: 18,
               left: 0,
               right: 0,
-              child: LocationLevelIndicator(locationType: _currentLocationType),
-            ),
+              child: Center(
+                child:
+                    LocationLevelIndicator(locationType: _currentLocationType),
+              ),
+            )
           ],
         ),
 

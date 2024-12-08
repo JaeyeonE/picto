@@ -11,7 +11,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _userService = UserManagerService(host: 'http://3.35.153.213:8086');
+  final _userService = UserManagerService();
   User? currentUser;
   bool _isLoading = false;
 
