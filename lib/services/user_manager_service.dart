@@ -424,6 +424,61 @@ class UserManagerService {
     }
   }
 
+  // userId로 사용자 프로필 조회
+  Future<User> getUserProfileById(int userId) async {
+    try {
+      final token = await getToken();
+      final currentUserId = await getUserId();
+      
+      final response = await _dio.get(
+        '/users/$userId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Token': token,
+            'User-Id': currentUserId,
+          },
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        return User.fromJson(response.data);
+      } else {
+        throw Exception('사용자 정보 로드 실패: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // email로 사용자 프로필 조회
+  Future<User> getUserProfileByEmail(String email) async {
+    try {
+      final token = await getToken();
+      final userId = await getUserId();
+      
+      final response = await _dio.get(
+        '/users',
+        data: {'email': email},
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Token': token,
+            'User-Id': userId,
+          },
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        return User.fromJson(response.data);
+      } else {
+        throw Exception('사용자 정보 로드 실패: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // 에러 핸들링
   ApiException _handleAuthError(DioException error) {
     if (error.response?.statusCode == 404) {
