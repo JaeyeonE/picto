@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
+import 'package:picto/services/photo_store.dart';
+import 'package:picto/services/user_manager_service.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/folder/folder_model.dart';
@@ -11,7 +13,7 @@ import 'package:picto/services/folder_service.dart';
 
 class FolderList extends StatefulWidget {
   final User user;
-  FolderList({super.key, required this.user});
+  const FolderList({super.key, required this.user});
 
   @override
   State<FolderList> createState() => _FolderListState();
@@ -26,7 +28,15 @@ class _FolderListState extends State<FolderList> {
     // FolderViewModel 초기화
     final dio = Dio();
     final folderService = FolderService(dio);
-    viewModel = Get.put(FolderViewModel(folderService: folderService, user: widget.user));
+    final photoStore = PhotoStoreService(baseUrl: 'http://52.78.237.242:8084');
+    final userManager = UserManagerService(host: 'http://3.35.153.213:8086');
+    
+    viewModel = FolderViewModel(
+      user: widget.user,
+      folderService: folderService,
+      photoStoreService: photoStore,
+      userManagerService: userManager,
+    );
     
     // 폴더 목록 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -36,29 +46,33 @@ class _FolderListState extends State<FolderList> {
 
   @override
   void dispose() {
-    Get.delete<FolderViewModel>();  // 메모리 누수 방지를 위한 cleanup
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      return GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-        ),
-        itemCount: viewModel.isLoading ? 12 : viewModel.folders.length,
-        itemBuilder: (context, index) {
-          if (viewModel.isLoading) {
-            return _buildEmptyFolder();
-          }
-          return _buildFolder(viewModel.folders[index]);
+    return ChangeNotifierProvider.value(
+      value: viewModel,
+      child: Consumer<FolderViewModel>(
+        builder: (context, viewModel, child) {
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+            ),
+            itemCount: viewModel.isLoading ? 12 : viewModel.folders.length,
+            itemBuilder: (context, index) {
+              if (viewModel.isLoading) {
+                return _buildEmptyFolder();
+              }
+              return _buildFolder(context, viewModel.folders[index]);
+            },
+          );
         },
-      );
-    });
+      ),
+    );
   }
 
   Widget _buildEmptyFolder() {
@@ -85,12 +99,12 @@ class _FolderListState extends State<FolderList> {
     );
   }
 
-  Widget _buildFolder(FolderModel folder) {
+  Widget _buildFolder(BuildContext context, FolderModel folder) {
     return InkWell(
       onTap: () {
         // 폴더 선택 시 상태 업데이트
         viewModel.toggleFirst();
-      // null 체크 추가
+        // null 체크 추가
         if (folder.folderId != null) {
           viewModel.setCurrentFolder(folder.name, folder.folderId);
           viewModel.loadPhotos(folder.folderId);
