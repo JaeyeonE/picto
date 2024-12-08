@@ -12,7 +12,7 @@ class ContentView extends StatelessWidget {
     return Consumer<FolderViewModel>(
       builder: (context, viewModel, child) {
         return viewModel.isPhotoMode
-            ? PhotoListWidget(folderId: viewModel.currentFolderId!)
+            ? PhotoListWidget(type: PhotoListType.folder, folderId: viewModel.currentFolderId!)
             : Chat(
                 folderId: viewModel.currentFolderId,
                 currentUserId: viewModel.user.userId,

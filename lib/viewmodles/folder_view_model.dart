@@ -155,6 +155,38 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
+  //유저 프로필 사진 가져오기
+  Future<void> loadUserPhotos(String userId) async {
+    _isLoading = true;
+    _currentUserId = userId;
+    notifyListeners();
+    
+    try {
+      final photos = await _photoStoreService.getUserPhotos(userId);
+      if (photos != null) {
+        for (var photo in photos) {
+          try {
+            final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
+            if (response.statusCode == 200) {
+              photo.photoPath = response.body;
+            }
+          } catch (e) {
+            print('Error downloading photo ${photo.photoId}: $e');
+          }
+        }
+        _photos = photos;
+      } else {
+        _photos = [];
+      }
+    } catch (e) {
+      print('Error loading user photos: $e');
+      _photos = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // 폴더 사용자 목록 로드
   Future<void> loadFolderUsers(int? folderId) async {
     _isLoading = true;

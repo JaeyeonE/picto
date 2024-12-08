@@ -7,14 +7,18 @@ import 'package:picto/viewmodles/folder_view_model.dart';
 class Feed extends StatefulWidget {
   final int initialPhotoIndex;
   final int? folderId;
+  final String? userId;
   final int photoId;
 
   const Feed({
     Key? key,
     required this.initialPhotoIndex,
-    required this.folderId,
+    this.folderId,
+    this.userId,
     required this.photoId,
-  }) : super(key: key);
+  }) : assert(folderId != null || userId != null, 
+       'Either folderId or userId must be provided'),
+       super(key: key);
 
   @override
   State<Feed> createState() => _FeedState();
@@ -39,24 +43,33 @@ class _FeedState extends State<Feed> {
 
   void _showOptionsMenu(BuildContext context) {
     final viewModel = context.read<FolderViewModel>();
+    final bool isFolderView = widget.folderId != null;
+    final bool isCurrentUser = widget.userId == viewModel.user.userId;
+
     showModalBottomSheet(
       context: context,
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('수정하기'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete),
-            title: const Text('삭제하기'),
-            onTap: () {
-              Navigator.pop(context);
-              viewModel.deletePhoto(viewModel.currentFolderId, widget.photoId);
-            }
-          ),
+          if (isFolderView || isCurrentUser)
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('수정하기'),
+              onTap: () => Navigator.pop(context),
+            ),
+          if (isFolderView || isCurrentUser)
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('삭제하기'),
+              onTap: () {
+                Navigator.pop(context);
+                if (isFolderView) {
+                  viewModel.deletePhoto(widget.folderId, widget.photoId);
+                } else {
+                  // 사용자 사진 삭제 로직 추가 필요
+                }
+              }
+            ),
           ListTile(
             leading: const Icon(Icons.visibility_off),
             title: const Text('숨기기'),
@@ -165,85 +178,89 @@ class _FeedState extends State<Feed> {
                       ],
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Profile and stats row
-                      Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 16,
-                            backgroundColor: Colors.grey,
-                            child: Icon(Icons.person, color: Colors.white),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '@user_${DateTime.now().millisecondsSinceEpoch % 1000}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '포토그래퍼 Lv.${(DateTime.now().millisecondsSinceEpoch % 5) + 1}',
-                                  style: TextStyle(
-                                    color: Colors.grey[300],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              const Icon(Icons.favorite, color: Colors.red, size: 20),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${photos[currentIndex].likes}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (photos[currentIndex].location != null)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                photos[currentIndex].location!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
+                  child: _buildBottomInfo(context, photos[currentIndex]),
                 ),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildBottomInfo(BuildContext context, Photo photo) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Profile and stats row
+        Row(
+          children: [
+            const CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.grey,
+              child: Icon(Icons.person, color: Colors.white),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.userId ?? '@user_${DateTime.now().millisecondsSinceEpoch % 1000}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '포토그래퍼 Lv.${(DateTime.now().millisecondsSinceEpoch % 5) + 1}',
+                    style: TextStyle(
+                      color: Colors.grey[300],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.favorite, color: Colors.red, size: 20),
+                const SizedBox(width: 4),
+                Text(
+                  '${photo.likes}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (photo.location != null)
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on,
+                color: Colors.white,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  photo.location!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }
