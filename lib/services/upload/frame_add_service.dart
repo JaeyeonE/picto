@@ -2,16 +2,20 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:picto/services/location_service.dart';
+import 'package:picto/services/user_manager_service.dart';
 
 class FrameAddService {
   static const String AddUrl = 'http://52.78.237.242:8084/photo-store/photos';
+  late final UserManagerService _userManagerService;
+
   Future<Map<String, dynamic>> addFrame() async {
     final Dio dio = Dio();
     final position = await LocationService().getCurrentLocation();
+    int? userId = await _userManagerService.getUserId();
 
     try {
       Map<String, dynamic> requestData = {
-        'userId': 2,
+        'userId': userId,
         'lat': position.latitude,
         'lng': position.longitude,
         'registerTime': DateTime.now().millisecondsSinceEpoch,
