@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 
 class EnterCodeDialog extends StatefulWidget {
@@ -13,11 +13,9 @@ class _EnterCodeDialogState extends State<EnterCodeDialog> {
   final TextEditingController _codeController = TextEditingController();
   String _errorMessage = '';
 
-  // Reverse formula to get folderId from code
   int? _getFolderIdFromCode(String code) {
     try {
       int numericCode = int.parse(code);
-      // Reverse the formula: (code - 11) / 7
       if ((numericCode - 11) % 7 == 0) {
         return (numericCode - 11) ~/ 7;
       }
@@ -28,17 +26,16 @@ class _EnterCodeDialogState extends State<EnterCodeDialog> {
   }
 
   void _handleSubmit(BuildContext context) async {
+    final viewModel = context.read<FolderViewModel>();
     final folderId = _getFolderIdFromCode(_codeController.text.trim());
     
     if (folderId != null) {
-      final viewModel = Get.find<FolderViewModel>();
       try {
         await viewModel.joinFolderWithCode(_codeController.text.trim());
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Successfully joined the folder!')),
         );
-        // Refresh folders list
         viewModel.loadFolders();
       } catch (e) {
         setState(() {

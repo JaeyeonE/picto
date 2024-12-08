@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
+
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/user_manager/user.dart';
 
@@ -11,11 +12,12 @@ class ManageMemberDialog extends StatefulWidget {
 }
 
 class _ManageMemberDialogState extends State<ManageMemberDialog> {
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
+  late FolderViewModel viewModel;
 
   @override
   void initState() {
     super.initState();
+    viewModel = Provider.of<FolderViewModel>(context, listen: false);
     _loadFolderUsers();
   }
 
@@ -69,46 +71,48 @@ class _ManageMemberDialogState extends State<ManageMemberDialog> {
             ),
             const Divider(),
             Expanded(
-              child: Obx(() {
-                if (viewModel.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (viewModel.folderUsers.isEmpty) {
-                  return const Center(
-                    child: Text('폴더에 멤버가 없습니다.'),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: viewModel.userProfiles.length,
-                  itemBuilder: (context, index) {
-                    final user = viewModel.userProfiles[index];
-                    return ListTile(
-                      leading: _buildAvatar(user),
-                      title: Text(user.name),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(user.email),
-                          if (user.accountName != null && user.accountName!.isNotEmpty)
-                            Text('계정명: ${user.accountName}'),
-                        ],
-                      ),
-                      isThreeLine: user.accountName != null && user.accountName!.isNotEmpty,
-                      trailing: user.userId == viewModel.user.userId 
-                        ? const Chip(
-                            label: Text('폴더 생성자'),
-                            backgroundColor: Colors.blue,
-                            labelStyle: TextStyle(color: Colors.white),
-                          )
-                        : null,
+              child: Consumer<FolderViewModel>(
+                builder: (context, viewModel, child) {
+                  if (viewModel.isLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
                     );
-                  },
-                );
-              }),
+                  }
+
+                  if (viewModel.folderUsers.isEmpty) {
+                    return const Center(
+                      child: Text('폴더에 멤버가 없습니다.'),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: viewModel.userProfiles.length,
+                    itemBuilder: (context, index) {
+                      final user = viewModel.userProfiles[index];
+                      return ListTile(
+                        leading: _buildAvatar(user),
+                        title: Text(user.name),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(user.email),
+                            if (user.accountName != null && user.accountName!.isNotEmpty)
+                              Text('계정명: ${user.accountName}'),
+                          ],
+                        ),
+                        isThreeLine: user.accountName != null && user.accountName!.isNotEmpty,
+                        trailing: user.userId == viewModel.user.userId 
+                          ? const Chip(
+                              label: Text('폴더 생성자'),
+                              backgroundColor: Colors.blue,
+                              labelStyle: TextStyle(color: Colors.white),
+                            )
+                          : null,
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),

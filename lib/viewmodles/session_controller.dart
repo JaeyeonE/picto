@@ -1,78 +1,81 @@
+import 'package:flutter/material.dart';
 import 'dart:async';
-
-import 'package:get/get.dart';
 import '../services/session_service.dart';
 import '../models/common/session_message.dart';
 
-
-class SessionController extends GetxController {
+class SessionController extends ChangeNotifier {
   final SessionService sessionService;
   final int sessionId;
   StreamSubscription? _sessionSubscription;
 
-  final RxList<SessionMessage> messages = <SessionMessage>[].obs;
-  final RxBool isInSession = false.obs;
-  final RxBool isConnecting = false.obs;
+  List<SessionMessage> _messages = [];
+  bool _isInSession = false;
+  bool _isConnecting = false;
 
   SessionController({
     required this.sessionId,
-  }) : sessionService = SessionService();
-
-  @override
-  void onInit() {
-    super.onInit();
+  }) : sessionService = SessionService() {
     _initializeSession();
   }
 
+  // Getters
+  List<SessionMessage> get messages => _messages;
+  bool get isInSession => _isInSession;
+  bool get isConnecting => _isConnecting;
+
   @override
-  void onClose() {
+  void dispose() {
     _exitSession();
-    _sessionSubscription?.cancel();  // 구독 취소
+    _sessionSubscription?.cancel();
     sessionService.dispose();
-    super.onClose();
+    super.dispose();
   }
 
   Future<void> _initializeSession() async {
-    isConnecting.value = true;
+    _isConnecting = true;
+    notifyListeners();
+
     try {
       await sessionService.initializeWebSocket(sessionId);
       sessionService.enterSession(sessionId);
-      isInSession.value = true;
+      _isInSession = true;
       _startMessageStream();
     } catch (e) {
       print('Error initializing session: $e');
     } finally {
-      isConnecting.value = false;
+      _isConnecting = false;
+      notifyListeners();
     }
   }
 
   void _startMessageStream() {
     final stream = sessionService.getSessionStream();
     if (stream != null) {
-      _sessionSubscription?.cancel();  // 기존 구독 취소
+      _sessionSubscription?.cancel();
       _sessionSubscription = stream.listen(
         (message) {
-          messages.add(message);
+          _messages.add(message);
           if (message.messageType == 'EXIT') {
-            isInSession.value = false;
+            _isInSession = false;
           }
+          notifyListeners();
         },
         onError: (error) {
           print('Error in session message stream: $error');
-          isInSession.value = false;
-          // 즉시 재연결하지 않음
+          _isInSession = false;
+          notifyListeners();
         },
         onDone: () {
           print('Session stream closed');
-          isInSession.value = false;
-          // 즉시 재연결하지 않음
+          _isInSession = false;
+          notifyListeners();
         },
       );
     }
   }
 
   void sendLocation(double lat, double lng) {
-    if (!isInSession.value || !sessionService.isConnected) return;
+    if (!_isInSession || !sessionService.isConnected) return;
     
     try {
       sessionService.sendLocation(sessionId, lat, lng);
@@ -83,20 +86,21 @@ class SessionController extends GetxController {
   }
 
   void _exitSession() {
-    if (!isInSession.value || !sessionService.isConnected) return;
+    if (!_isInSession || !sessionService.isConnected) return;
     
     try {
       sessionService.exitSession(sessionId);
-      isInSession.value = false;
+      _isInSession = false;
+      notifyListeners();
     } catch (e) {
       print('Error exiting session: $e');
     }
   }
 
   Future<void> _tryReconnect() async {
-    if (!isInSession.value && !isConnecting.value) {
-      await Future.delayed(const Duration(seconds: 5));  // 재연결 전 딜레이
-      if (!isInSession.value && !isConnecting.value) {  // 상태 재확인
+    if (!_isInSession && !_isConnecting) {
+      await Future.delayed(const Duration(seconds: 5));
+      if (!_isInSession && !_isConnecting) {
         await _initializeSession();
       }
     }

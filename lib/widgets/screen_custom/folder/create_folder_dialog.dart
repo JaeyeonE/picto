@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 
 class CreateFolderDialog extends StatefulWidget {
@@ -13,7 +13,6 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _contentController = TextEditingController();
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
 
   @override
   void dispose() {
@@ -70,10 +69,10 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
         TextButton(
           onPressed: () async {
             if (_formKey.currentState!.validate()) {
-              await viewModel.createFolder(
-                _nameController.text,
-                _contentController.text,
-              );
+              await context.read<FolderViewModel>().createFolder(
+                    _nameController.text,
+                    _contentController.text,
+                  );
               if (context.mounted) {
                 Navigator.of(context).pop();
               }

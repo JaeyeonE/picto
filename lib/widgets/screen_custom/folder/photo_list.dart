@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-
+import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/widgets/screen_custom/folder/feed.dart';
 
 class PhotoListWidget extends StatefulWidget {
-  final int folderId; // 파라미터로 받음
-  // map에서 photo list가져오는데 필요한 데이터
+  final int folderId;
 
   const PhotoListWidget({
     Key? key,
@@ -19,13 +17,13 @@ class PhotoListWidget extends StatefulWidget {
 }
 
 class _PhotoListWidgetState extends State<PhotoListWidget> {
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
-  // photoManager
+  late FolderViewModel viewModel;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_){
+    viewModel = Provider.of<FolderViewModel>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       viewModel.loadPhotos(widget.folderId);
       viewModel.loadFolderUsers(widget.folderId);
     });
@@ -34,55 +32,61 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(   
-      body: Obx((){
-        if (viewModel.photos.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.photo_library_outlined,
-                  size: 64,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'no photos',
-                  style: TextStyle(
-                    color: Color.fromARGB(255, 128, 128, 128),
-                    fontSize: 16,
+      body: Consumer<FolderViewModel>(
+        builder: (context, viewModel, child) {
+          if (viewModel.photos.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.photo_library_outlined,
+                    size: 64,
+                    color: Colors.grey[400],
                   ),
-                ),
-                const SizedBox(height: 24,),
-                ElevatedButton.icon(
-                  onPressed: () => _uploadPhoto(),
-                  icon: const Icon(Icons.add_photo_alternate),
-                  label: const Text('add photo'),
-                ),
-              ],
-            ),
-          );
-        }
+                  const SizedBox(height: 16),
+                  const Text(
+                    'no photos',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 128, 128, 128),
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => _uploadPhoto(),
+                    icon: const Icon(Icons.add_photo_alternate),
+                    label: const Text('add photo'),
+                  ),
+                ],
+              ),
+            );
+          }
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(8),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: viewModel.photos.length,
-          itemBuilder: (context, index) {
-            return _buildPhotoItem(viewModel.photos[index], index); // index 추가
-          },
-        );
-      }),
-      floatingActionButton: !viewModel.isLoading && viewModel.photos.isNotEmpty
-        ? FloatingActionButton(
-          onPressed: () => _uploadPhoto(),
-          child: const Icon(Icons.add_photo_alternate),
-        )
-        : null,
+          return GridView.builder(
+            padding: const EdgeInsets.all(8),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: viewModel.photos.length,
+            itemBuilder: (context, index) {
+              return _buildPhotoItem(viewModel.photos[index], index);
+            },
+          );
+        },
+      ),
+      floatingActionButton: Consumer<FolderViewModel>(
+        builder: (context, viewModel, child) {
+          return !viewModel.isLoading && viewModel.photos.isNotEmpty
+            ? FloatingActionButton(
+                onPressed: () => _uploadPhoto(),
+                child: const Icon(Icons.add_photo_alternate),
+              )
+            : const SizedBox.shrink();
+        },
+      ),
     );
   }
 
@@ -130,11 +134,8 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
               await viewModel.deletePhoto(widget.folderId, photo.photoId);
             },
           ),
-          // other options with ListTile()
         ],
       ),
     );
   }
-
-  
 }
