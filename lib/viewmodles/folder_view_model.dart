@@ -12,7 +12,7 @@ import 'package:picto/services/photo_store.dart';
 import 'package:picto/services/user_manager_service.dart';
 
 class FolderViewModel extends ChangeNotifier {
-  final User user;
+  late final User user;
   final FolderService _folderService;
   final PhotoStoreService _photoStoreService;
   final UserManagerService _userManagerService;

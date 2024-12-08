@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:provider/provider.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/map/map.dart';
 import 'package:picto/views/profile/logout.dart';
 import 'package:picto/views/sign_in/login_screen.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_list.dart';
+import 'package:picto/services/folder_service.dart';
+import 'package:picto/services/photo_store.dart';
+import 'package:picto/services/user_manager_service.dart';
+import 'package:picto/viewmodles/folder_view_model.dart';
 
 class CustomNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -19,6 +25,7 @@ class CustomNavigationBar extends StatelessWidget {
   });
 
   void _navigateToScreen(BuildContext context, int index) {
+    Dio dio = Dio();
     if (index == 2 && ModalRoute.of(context)?.settings.name == '/map') {
       Navigator.pushReplacement(
         context,
@@ -37,14 +44,22 @@ class CustomNavigationBar extends StatelessWidget {
           screen = MapScreen(initialUser: currentUser); // 지도 화면
           break;
         case 3:
-          screen = Scaffold(
+          screen = ChangeNotifierProvider(
+          create: (context) => FolderViewModel(
+            user: currentUser,
+            folderService: FolderService(dio, userId: currentUser.userId),
+            photoStoreService: PhotoStoreService(baseUrl: 'http://52.78.237.242:8084'),
+            userManagerService: UserManagerService(),
+          ),
+          child: Scaffold(
             body: FolderList(user: currentUser),
             bottomNavigationBar: CustomNavigationBar(
               selectedIndex: selectedIndex,
               onItemSelected: onItemSelected,
               currentUser: currentUser,
             ),
-          );
+          ),
+        );
           break;
         case 4:
           screen = const ProfileScreen(); // 로그아웃 버튼
