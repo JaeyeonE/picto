@@ -20,7 +20,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _verificationCodeController = TextEditingController();
-  final _userService = UserManagerService(host: 'http://3.35.153.213:8086');
+  final _userService = UserManagerService();
   
   Position? _currentPosition;
 
@@ -200,7 +200,7 @@ Future<void> _getCurrentLocation() async {
       appBar: AppBar(
         title: const Text('회원가입'),
         leading: IconButton(
-          icon: Image.asset('assets/common/arrow_back_black.png'),
+          icon: Image.asset('lib/assets/common/picto_letter_logo.png'),
           onPressed: () => Navigator.pop(context),
         ),
       ),
