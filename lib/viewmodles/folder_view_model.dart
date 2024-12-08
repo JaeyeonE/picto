@@ -82,7 +82,7 @@ class FolderViewModel extends ChangeNotifier {
       final newFolder = await _folderService.createFolder(user.userId, name, content);
       if (newFolder != null) {
         _folders.add(newFolder);
-        print('created folder: ${newFolder.toJson()}');
+        print('created folder: ${newFolder.toJson()}'); 
       }
     } catch (e) {
       print('Error creating folder: $e');
