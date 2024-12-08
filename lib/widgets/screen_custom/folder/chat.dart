@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:picto/viewmodles/chat_view_model.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/services/session_service.dart';
@@ -52,7 +52,7 @@ class _ChatState extends State<Chat> {
     });
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => ChatViewModel(
@@ -154,8 +154,8 @@ class _ChatState extends State<Chat> {
     );
   }
 
-  Widget _buildMessageInput(BuildContext context) {
-    return SafeArea(
+  Widget _buildMessageInput() {
+    return SafeArea(  // 키보드 영역 처리
       child: Container(
         padding: const EdgeInsets.all(8.0),
         decoration: BoxDecoration(
@@ -180,12 +180,12 @@ class _ChatState extends State<Chat> {
                 ),
                 maxLines: null,
                 textInputAction: TextInputAction.send,
-                onSubmitted: (text) => _handleSubmit(context, text),
+                onSubmitted: _handleSubmit,
               ),
             ),
             IconButton(
               icon: const Icon(Icons.send),
-              onPressed: () => _handleSubmit(context, _textController.text),
+              onPressed: () => _handleSubmit(_textController.text),
             ),
           ],
         ),
@@ -193,7 +193,7 @@ class _ChatState extends State<Chat> {
     );
   }
 
-  void _handleSubmit(BuildContext context, String text) {
+  void _handleSubmit(String text) {
     if (text.trim().isEmpty) return;
     
     final trimmedText = text.trim();
@@ -233,7 +233,7 @@ class _ChatState extends State<Chat> {
     );
 
     if (confirmed == true) {
-      context.read<ChatViewModel>().deleteMessage(message);
+      controller.deleteMessage(message); // await 제거
     }
   }
 
@@ -285,7 +285,7 @@ class MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final String senderName;
   final bool isCurrentUser;
-  final VoidCallback onDelete;
+  final VoidCallback onDelete;  // Function 타입 대신 VoidCallback 사용
 
   const MessageBubble({
     Key? key,
@@ -298,13 +298,13 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onLongPress: isCurrentUser ? onDelete : null,
+      onLongPress: isCurrentUser ? onDelete : null,  // 현재 사용자의 메시지만 삭제 가능
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
           mainAxisAlignment:
               isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,  // 메시지와 아바타 하단 정렬
           children: [
             if (!isCurrentUser) _buildAvatar(),
             const SizedBox(width: 8),
@@ -353,7 +353,7 @@ class MessageBubble extends StatelessWidget {
   Widget _buildAvatar() {
     return CircleAvatar(
       backgroundColor: Colors.grey[300],
-      radius: 16,
+      radius: 16,  // 크기 조정
       child: Text(
         senderName[0].toUpperCase(),
         style: const TextStyle(

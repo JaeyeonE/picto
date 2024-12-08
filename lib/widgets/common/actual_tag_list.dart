@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:picto/services/user_manager_service.dart';
+import 'package:picto/services/user_manager_service.dart'; // 폴더 리스트 뽑으려고..
 import 'package:picto/utils/app_color.dart';
 
 class TagSelector extends StatefulWidget {
@@ -93,14 +93,57 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
   }
 
   void _handleSpecialTag() {
-    List<String> newSelectedTags = List.from(widget.selectedTags);
-    if (newSelectedTags.contains('#강아지_사진대회')) {
-      newSelectedTags.remove('#강아지_사진대회');
-    } else {
-      newSelectedTags = ['#강아지_사진대회'];
-    }
-    widget.onTagsSelected(newSelectedTags);
+  // 커스텀 메시지 표시
+  OverlayEntry overlayEntry = OverlayEntry(
+    builder: (context) => Positioned(
+      top: 400,  // 태그 선택기 아래쪽에 위치하도록 조정
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  spreadRadius: 0,
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Text(
+              '다음 시즌에 만나요!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  // Overlay에 추가하고 2초 후 제거
+  Overlay.of(context).insert(overlayEntry);
+  Future.delayed(const Duration(seconds: 2), () {
+    overlayEntry.remove();
+  });
+
+  List<String> newSelectedTags = List.from(widget.selectedTags);
+  if (newSelectedTags.contains('#강아지_사진대회')) {
+    newSelectedTags.remove('#강아지_사진대회');
+  } else {
+    newSelectedTags = ['#강아지_사진대회'];
   }
+  widget.onTagsSelected(newSelectedTags);
+}
 
   Future<void> _showDropdownDialog(BuildContext context, String tag) async {
     final options = filterOptions[tag]!;
@@ -272,8 +315,10 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
         itemCount: baseTags.length,
         itemBuilder: (context, index) {
           final tag = baseTags[index];
-          final isSelected = widget.selectedTags.contains(tag) ||
-              (filterOptions[tag]?.any((opt) => widget.selectedTags.contains(opt.title)) ?? false);
+          final isSelected = widget.selectedTags.contains('전체') 
+    ? tag == '전체'
+    : widget.selectedTags.contains(tag) ||
+      (filterOptions[tag]?.any((opt) => widget.selectedTags.contains(opt.title)) ?? false);
           
           return Padding(
             padding: const EdgeInsets.only(right: 8),

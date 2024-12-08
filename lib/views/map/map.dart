@@ -7,7 +7,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/services/photo_manager_service.dart';
+import 'package:picto/services/session/location_webSocket_handler.dart';
+import 'package:picto/services/session/session_service.dart';
 import 'package:picto/services/user_manager_service.dart';
+import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/map/zoom_position.dart';
 import 'package:picto/widgets/common/actual_tag_list.dart';
 import '../map/search_screen.dart';
@@ -30,31 +33,92 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   // 상태 변수들 정의
-  int selectedIndex = 2; // 네비게이션 바에서 선택된 인덱스
+  // UI 상태 관련
+  int selectedIndex = 2; // 네비게이션 바 선택 인덱스
   List<String> selectedTags = ['전체']; // 선택된 태그 목록
-  GoogleMapController? mapController; // 구글맵 컨트롤러
-  LatLng? currentLocation; // 현재 위치
-  StreamSubscription<Position>? _positionStreamSubscription; // 위치 업데이트 구독
-  Set<Marker> markers = {}; // 모든 마커 세트
-  String _currentLocationType = 'large'; // 현재 위치 타입(large/middle/small)
-  final _userService = UserManagerService(); // 사용자 관리 서비스
-  final _photoService =
-      PhotoManagerService(host: 'http://3.35.153.213:8082'); // 사진 관리 서비스
   bool _isLoading = false; // 로딩 상태
   final _searchController = TextEditingController(); // 검색 컨트롤러
-  User? currentUser; // 현재 사용자 정보
-  MarkerManager? _markerManager; // 마커 관리자
-  LatLng? _lastRefreshLocation; // 마지막 새로고침 위치 저장
-  static const double _minimumRefreshDistance = 10.0; // 최소 새로고침 거리 (미터)
-  String? _previousLocationType; // 이전 위치 타입 저장
-  Set<Circle> circles = {};
 
+  // 구글맵 관련
+  GoogleMapController? mapController; // 맵 컨트롤러
+  Set<Marker> markers = {}; // 마커 세트
+  Set<Circle> circles = {}; // 원 세트
+  MarkerManager? _markerManager; // 마커 관리자
+
+  // 위치 관련
+  LatLng? currentLocation; // 현재 위치
+  StreamSubscription<Position>? _positionStreamSubscription; // 위치 스트림
+  LatLng? _lastRefreshLocation; // 마지막 새로고침 위치
+  String _currentLocationType = 'large'; // 현재 위치 타입
+  String? _previousLocationType; // 이전 위치 타입
+  static const double _minimumRefreshDistance = 10.0; // 최소 새로고침 거리(미터)
+
+  // 서비스 인스턴스
+  final _userService = UserManagerService(); // 사용자 관리 서비스
+  final _photoService = PhotoManagerService(
+      // 사진 관리 서비스
+      host: 'http://3.35.153.213:8082');
+  final SessionService _sessionService = SessionService(); // 세션 서비스
+  late final LocationWebSocketHandler _locationHandler;
+
+// 사용자 데이터
+  User? currentUser;
+
+// 현재 사용자 정보
   @override
   void initState() {
     super.initState();
-    currentUser = widget.initialUser; // 현재 사용자 설정
-    _initializeUser(); // 기존 초기화 함수 유지
+    currentUser = widget.initialUser;
+    _initializeUser();
     _initializeLocationServices();
+    _locationHandler = LocationWebSocketHandler(_sessionService);
+    
+
+    // 세션 메시지 리스너 추가
+    _sessionService.getSessionStream().listen((message) async {
+      if (message.messagetype == 'LOCATION' &&
+          message.lat != null &&
+          message.lng != null &&
+          message.photoId != null &&
+          message.senderId != null &&
+          currentLocation != null) {
+        final photoLocation = LatLng(message.lat!, message.lng!);
+        final distanceInMeters = Geolocator.distanceBetween(
+          currentLocation!.latitude,
+          currentLocation!.longitude,
+          photoLocation.latitude,
+          photoLocation.longitude,
+        );
+
+        // 3km 반경 내의 사진일 경우만 처리
+        if (distanceInMeters <= 3000) {
+          try {
+            // getNearbyPhotos 호출하여 최신 사진 목록 가져오기
+            final photos =
+                await _photoService.getNearbyPhotos(message.senderId);
+
+            // 새로 업로드된 사진 찾기 (photoId로 매칭)
+            final newPhoto = photos
+                .where((photo) => photo.photoId == message.photoId)
+                .firstOrNull;
+
+            if (newPhoto != null && mounted) {
+              // MarkerManager로 마커 생성
+              final newMarkers = await _markerManager
+                  ?.createMarkersFromPhotos([newPhoto], 'small');
+
+              if (newMarkers != null) {
+                setState(() {
+                  markers.addAll(newMarkers);
+                });
+              }
+            }
+          } catch (e) {
+            debugPrint('실시간 사진 마커 생성 실패: $e');
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -62,6 +126,7 @@ class _MapScreenState extends State<MapScreen> {
     mapController?.dispose(); // 맵 컨트롤러 해제
     _positionStreamSubscription?.cancel(); // 위치 구독 취소
     _searchController.dispose(); // 검색 컨트롤러 해제
+    _locationHandler.dispose();
     super.dispose();
   }
 
@@ -118,13 +183,31 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // 현재 위치 업데이트 및 필요시 새로고침
-  void _handleLocationUpdate(LatLng newLocation) {
+  Future<void> _handleLocationUpdate(LatLng newLocation) async {
     setState(() {
       currentLocation = newLocation;
     });
     _updateMyLocationMarker(newLocation);
 
-    // 마지막 새로고침 위치와 비교하여 10m 이상 이동했는지 확인
+    try {
+      final userId = await _userService.getUserId();
+      if (userId != null) {
+        await _locationHandler.sendLocationWithRetry(
+          userId: userId,
+          latitude: newLocation.latitude,
+          longitude: newLocation.longitude,
+        );
+        debugPrint('위치 전송 완료');
+      }
+    } catch (e) {
+      debugPrint('Location update failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('위치 업데이트 실패: $e')),
+        );
+      }
+    }
+
     if (_shouldRefresh(newLocation)) {
       _refreshMap();
       _lastRefreshLocation = newLocation;
@@ -262,6 +345,10 @@ class _MapScreenState extends State<MapScreen> {
 
   // 현재 위치 마커를 업데이트하는 함수
   void _updateMyLocationMarker(LatLng location) {
+    // ARGB 색상을 HSV로 변환
+    final markerColor = const Color.fromARGB(255, 112, 56, 255);
+    final hsvColor = HSVColor.fromColor(markerColor);
+
     setState(() {
       // 기존 현재 위치 마커 업데이트
       markers.removeWhere(
@@ -270,8 +357,7 @@ class _MapScreenState extends State<MapScreen> {
         Marker(
           markerId: const MarkerId("myLocation"),
           position: location,
-          icon:
-              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          icon: BitmapDescriptor.defaultMarkerWithHue(hsvColor.hue),
           infoWindow: const InfoWindow(title: "현재 위치"),
         ),
       );
@@ -340,18 +426,15 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     _positionStreamSubscription = Geolocator.getPositionStream(
-      locationSettings: locationSettings,
-    ).listen(
-      (Position position) {
-        setState(() {
-          currentLocation = LatLng(position.latitude, position.longitude);
-        });
-        _updateMyLocationMarker(currentLocation!);
-      },
-      onError: (e) {
-        debugPrint('위치 스트림 에러: $e');
-      },
-    );
+  locationSettings: locationSettings,
+).listen(
+  (Position position) {
+    _handleLocationUpdate(LatLng(position.latitude, position.longitude));
+  },
+  onError: (e) {
+    debugPrint('위치 스트림 에러: $e');
+  },
+);
   }
 
   // 지도를 새로고침하는 함수
@@ -540,6 +623,30 @@ class _MapScreenState extends State<MapScreen> {
               const Center(
                 child: CircularProgressIndicator(),
               ),
+
+              // Map Screen의 build 메서드에서 Positioned 위젯 추가
+Positioned(
+  right: 16,
+  bottom: 90,
+  child: FloatingActionButton(
+    heroTag: 'sendLocation',
+    onPressed: () async {
+      if (currentLocation != null) {
+        await _handleLocationUpdate(currentLocation!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('map.dart 현재 위치 재전송 완료')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('현재 위치를 가져올 수 없습니다')),
+        );
+      }
+    },
+    child: const Icon(Icons.send),
+  ),
+),
 
             // 오른쪽 하단 새로고침 버튼
             Positioned(

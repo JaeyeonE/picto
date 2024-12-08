@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'dart:io';
 
 import 'package:picto/models/photo_manager/photo.dart';
@@ -7,10 +8,8 @@ import 'package:picto/models/folder/folder_user.dart';
 import 'package:picto/models/user_manager/auth_responses.dart';
 import 'package:picto/services/folder_service.dart';
 import 'package:picto/models/user_manager/user.dart';
-import 'package:picto/services/photo_store.dart';
-import 'package:picto/services/user_manager_service.dart';
 
-class FolderViewModel extends ChangeNotifier {
+class FolderViewModel extends GetxController {
   final User user;
   final FolderService _folderService;
   final PhotoStoreService _photoStoreService;
@@ -30,12 +29,8 @@ class FolderViewModel extends ChangeNotifier {
 
   FolderViewModel({
     required this.user,
-    required FolderService folderService,
-    required PhotoStoreService photoStoreService,
-    required UserManagerService userManagerService,
-  }) : _folderService = folderService,
-       _photoStoreService = photoStoreService,
-       _userManagerService = userManagerService;
+  required FolderService folderService,})
+      : _folderService = Rxn(folderService);
 
   // Getters
   List<FolderModel> get folders => _folders;
@@ -54,49 +49,41 @@ class FolderViewModel extends ChangeNotifier {
 
   // 폴더 목록 로드
   Future<void> loadFolders() async {
-    _isLoading = true;
-    notifyListeners();
-    
+    _isLoading.value = true;
     try {
-      final folders = await _folderService.getFolders(user.userId);
-      print('Loaded folders: ${folders?.map((f) => f.toJson())}');
-      _folders = folders ?? [];
+      final folders = await _folderService.value?.getFolders(user.userId);
+      print('Loaded folders: ${folders?.map((f) => f.toJson())}');  // 로깅 추가
+      _folders.assignAll(folders ?? []);
     } catch (e) {
       print('Error loading folders: $e');
-      _folders = [];
+      _folders.clear();
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _isLoading.value = false;
     }
   }
 
   // 폴더 생성
   Future<void> createFolder(String name, String content) async {
-    _isLoading = true;
-    notifyListeners();
-    
+    _isLoading.value = true;
     try {
-      final newFolder = await _folderService.createFolder(user.userId, name, content);
+      final newFolder = await _folderService.value?.createFolder(user.userId, name, content);
       if (newFolder != null) {
         _folders.add(newFolder);
-        print('created folder: ${newFolder.toJson()}');
+        print('created folder: ${newFolder.toJson()}'); 
       }
     } catch (e) {
       print('Error creating folder: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _isLoading.value = false;
     }
   }
 
   // 폴더 수정
   Future<void> updateFolder(int? folderId, String name, String content) async {
-    _isLoading = true;
-    notifyListeners();
-    
+    _isLoading.value = true;
     print('current folder ID: ${folderId}');
     try {
-      final updatedFolder = await _folderService.updateFolder(user.userId, folderId, name, content);
+      final updatedFolder = await _folderService.value?.updateFolder(user.userId, folderId, name, content);
       if (updatedFolder != null) {
         final index = _folders.indexWhere((folder) => folder.folderId == folderId);
         if (index != -1) {
@@ -107,24 +94,20 @@ class FolderViewModel extends ChangeNotifier {
     } catch (e) {
       print('Error updating folder: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _isLoading.value = false;
     }
   }
 
   // 폴더 삭제
   Future<void> deleteFolder(int folderId) async {
-    _isLoading = true;
-    notifyListeners();
-    
+    _isLoading.value = true;
     try {
-      await _folderService.deleteFolder(user.userId, folderId);
+      await _folderService.value?.deleteFolder(user.userId, folderId);
       _folders.removeWhere((folder) => folder.folderId == folderId);
     } catch (e) {
       print('Error deleting folder: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _isLoading.value = false;
     }
   }
 
@@ -197,55 +180,38 @@ class FolderViewModel extends ChangeNotifier {
 
   // 폴더 사용자 목록 로색
   Future<void> loadFolderUsers(int? folderId) async {
-    _isLoading = true;
-    notifyListeners();
-    
+    _isLoading.value = true;
     try {
-      final users = await _folderService.getFolderUsers(user.userId, folderId);
-      _folderUsers = users ?? [];
-      
-      _userProfiles = [];
-      for (var folderUser in _folderUsers) {
-        try {
-          final userProfile = await _userManagerService.getUserProfile(folderUser.userId);
-          _userProfiles.add(userProfile);
-        } catch (e) {
-          print('Error loading user profile for userId ${folderUser.userId}: $e');
-        }
-      }
+      final users = await _folderService.value?.getFolderUsers(user.userId, folderId);
+      _folderUsers.assignAll(users ?? []);
+      print('Loaded folder users: ${users?.map((f) => f.toJson())}');
     } catch (e) {
       print('Error loading folder users: $e');
-      _folderUsers = [];
-      _userProfiles = [];
+      _folderUsers.clear();
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _isLoading.value = false;
     }
   }
 
   // 사진 업로드
   Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
-    _isLoading = true;
-    notifyListeners();
-    
+    _isLoading.value = true;
     try {
-      await _folderService.uploadPhoto(folderId, photo, metadata);
+      await _folderService.value?.uploadPhoto(folderId, photo, metadata);
+      // 업로드 후 사진 목록 새로고침
       await loadPhotos(folderId);
     } catch (e) {
       print('Error uploading photo: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _isLoading.value = false;
     }
   }
 
   // 사진 삭제
   Future<void> deletePhoto(int? folderId, int photoId) async {
-    _isLoading = true;
-    notifyListeners();
-    
+    _isLoading.value = true;
     try {
-      await _folderService.deletePhoto(folderId, photoId);
+      await _folderService.value?.deletePhoto(folderId, photoId);
       _photos.removeWhere((photo) => photo.photoId == photoId);
     } catch (e) {
       print('Error deleting photo: $e');
@@ -316,23 +282,22 @@ class FolderViewModel extends ChangeNotifier {
 
   // UI 상태 관리 메서드
   void togglePhotoListView() {
-    _isPhotoList = !_isPhotoList;
-    notifyListeners();
+    _isPhotoList.value = !_isPhotoList.value;
+    update();
   }
 
   void toggleFirst() {
-    _isFirst = !_isFirst;
-    notifyListeners();
+    _isFirst.value = !_isFirst.value;
+    update();
   }
 
   void setCurrentFolder(String? folderName, int folderId) {
-    _currentFolderName = folderName;
-    _currentFolderId = folderId;
-    notifyListeners();
+    _currentFolderId.value = folderId;
+    update();
   }
 
   void toggleViewMode() {
-    _isPhotoMode = !_isPhotoMode;
-    notifyListeners();
+    _isPhotoMode.value = !_isPhotoMode.value;
   }
+  
 }

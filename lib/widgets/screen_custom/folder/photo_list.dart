@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
+
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/widgets/screen_custom/folder/feed.dart';
@@ -31,7 +32,7 @@ class PhotoListWidget extends StatefulWidget {
 }
 
 class _PhotoListWidgetState extends State<PhotoListWidget> {
-  late FolderViewModel viewModel;
+  final FolderViewModel viewModel = Get.find<FolderViewModel>();
 
   @override
   void initState() {
@@ -139,7 +140,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => Feed(
+            builder: (context) => PhotoDetail(
               initialPhotoIndex: index,
               folderId: widget.type == PhotoListType.folder ? widget.folderId : null,
               photoId: photo.photoId,
@@ -182,8 +183,11 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
               }
             },
           ),
+          // other options with ListTile()
         ],
       ),
     );
   }
+
+  
 }

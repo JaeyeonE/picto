@@ -1,18 +1,18 @@
-import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'dart:async';
 import '../services/chat_service.dart';
 import '../models/folder/chat_message_model.dart';
 
-class ChatViewModel extends ChangeNotifier {
+class ChatViewModel extends GetxController {
   final ChatService _chatService;
   final int folderId;
   final int currentUserId;
   Timer? _reconnectTimer;
 
-  List<ChatMessage> _messages = [];
-  List<String> _members = [];
-  bool _isLoading = true;
-  bool _isConnected = false;
+  final RxList<ChatMessage> messages = <ChatMessage>[].obs;
+  final RxList<String> members = <String>[].obs;
+  final RxBool isLoading = true.obs;
+  final RxBool isConnected = false.obs;
   StreamSubscription? _messageSubscription;
 
   ChatViewModel({
@@ -20,41 +20,38 @@ class ChatViewModel extends ChangeNotifier {
     required this.currentUserId,
   }) : _chatService = ChatService(
          senderId: currentUserId,
-       ) {
+       );
+
+  @override
+  void onInit() {
+    super.onInit();
     _initializeChat();
   }
 
-  // Getters
-  List<ChatMessage> get messages => _messages;
-  List<String> get members => _members;
-  bool get isLoading => _isLoading;
-  bool get isConnected => _isConnected;
-
   @override
-  void dispose() {
+  void onClose() {
     _leaveChat();
     _messageSubscription?.cancel();
-    _reconnectTimer?.cancel();
+    _reconnectTimer?.cancel(); 
     _chatService.dispose();
-    super.dispose();
+    super.onClose();
   }
 
   Future<void> _initializeChat() async {
-    _isLoading = true;
-    notifyListeners();
+    isLoading.value = true;
 
     try {
       await _chatService.initializeWebSocket(folderId);
-      _isConnected = true;
+      isConnected.value = true;
       
       await _chatService.enterChat(folderId);
+      
       _subscribeToMessages();
     } catch (e) {
       print('Error initializing chat: $e');
-      _isConnected = false;
+      isConnected.value = false;
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      isLoading.value = false;
     }
   }
 
@@ -66,32 +63,29 @@ class ChatViewModel extends ChangeNotifier {
         (message) {
           switch (message.type) {
             case 'MESSAGE':
-              _messages.add(message);
+              messages.add(message);
               break;
             case 'DELETE':
-              _messages.removeWhere((m) => m.senderId == message.senderId);
+              messages.removeWhere((m) => m.senderId == message.senderId);
               break;
             case 'ENTER':
-              if (!_members.contains(message.senderId)) {
-                _members.add(message.senderId);
+              if (!members.contains(message.senderId)) {
+                members.add(message.senderId);
               }
               break;
             case 'EXIT':
-              _members.remove(message.senderId);
+              members.remove(message.senderId);
               break;
           }
-          notifyListeners();
         },
         onError: (error) {
           print('Error in chat message stream: $error');
-          _isConnected = false;
-          notifyListeners();
+          isConnected.value = false;
           _scheduleReconnect();
         },
         onDone: () {
           print('Chat stream closed');
-          _isConnected = false;
-          notifyListeners();
+          isConnected.value = false;
           _scheduleReconnect();
         },
       );
@@ -101,14 +95,14 @@ class ChatViewModel extends ChangeNotifier {
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      if (!_isConnected && !_isLoading) {
+      if (!isConnected.value && !isLoading.value) {
         _initializeChat();
       }
     });
   }
 
   void sendMessage(String content) {
-    if (content.trim().isEmpty || !_isConnected) return;
+    if (content.trim().isEmpty || !isConnected.value) return;
     
     try {
       _chatService.sendMessage(folderId, content);
@@ -119,7 +113,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   void deleteMessage(ChatMessage message) {
-    if (!_isConnected) return;
+    if (!isConnected.value) return;
     
     try {
       _chatService.deleteMessage(folderId, int.parse(message.senderId));
@@ -130,27 +124,26 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   void _leaveChat() {
-    if (!_isConnected) return;
+    if (!isConnected.value) return;
     
     try {
       _chatService.leaveChat(folderId);
-      _isConnected = false;
-      _messages = [];
-      _members = [];
-      notifyListeners();
+      isConnected.value = false;
+      messages.clear();
+      members.clear();
     } catch (e) {
       print('Error leaving chat: $e');
     }
   }
 
   Future<void> _tryReconnect() async {
-    if (!_isConnected && !_isLoading) {
+    if (!isConnected.value && !isLoading.value) {
       await _initializeChat();
     }
   }
 
   Future<void> reconnect() async {
-    if (_isConnected) return;
+    if (isConnected.value) return;
     await _initializeChat();
   }
 

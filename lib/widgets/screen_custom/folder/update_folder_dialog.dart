@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 
 class UpdateFolderDialog extends StatefulWidget {
@@ -13,13 +13,7 @@ class _UpdateFolderDialogState extends State<UpdateFolderDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _contentController = TextEditingController();
-  late FolderViewModel viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-    viewModel = Provider.of<FolderViewModel>(context, listen: false);
-  }
+  final FolderViewModel viewModel = Get.find<FolderViewModel>();
 
   @override
   void dispose() {

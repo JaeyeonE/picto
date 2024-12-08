@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+<<<<<<< HEAD
 import 'package:picto/models/session.dart';
 import 'package:picto/services/session_service.dart';
 
@@ -48,15 +48,57 @@ class SessionController extends ChangeNotifier {
       _setupSubscriptions();
       await _sessionService.enterSession(_userId);
       _isInSession = true;
+=======
+
+import 'package:get/get.dart';
+import '../services/session_service.dart';
+import '../models/common/session_message.dart';
+
+
+class SessionController extends GetxController {
+  final SessionService sessionService;
+  final int sessionId;
+  StreamSubscription? _sessionSubscription;
+
+  final RxList<SessionMessage> messages = <SessionMessage>[].obs;
+  final RxBool isInSession = false.obs;
+  final RxBool isConnecting = false.obs;
+
+  SessionController({
+    required this.sessionId,
+  }) : sessionService = SessionService();
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeSession();
+  }
+
+  @override
+  void onClose() {
+    _exitSession();
+    _sessionSubscription?.cancel();  // 구독 취소
+    sessionService.dispose();
+    super.onClose();
+  }
+
+  Future<void> _initializeSession() async {
+    isConnecting.value = true;
+    try {
+      await sessionService.initializeWebSocket(sessionId);
+      sessionService.enterSession(sessionId);
+      isInSession.value = true;
+      _startMessageStream();
+>>>>>>> main
     } catch (e) {
       print('세션 초기화 오류: $e');
       _handleError(e);
     } finally {
-      _isConnecting = false;
-      notifyListeners();
+      isConnecting.value = false;
     }
   }
 
+<<<<<<< HEAD
   void _setupSubscriptions() {
     // 메시지 스트림 구독
     _messageSubscription = _sessionService.getSessionStream().listen(
@@ -83,6 +125,35 @@ class SessionController extends ChangeNotifier {
 
   void _handleMessage(SessionMessage message) {
     _messages.add(message);
+=======
+  void _startMessageStream() {
+    final stream = sessionService.getSessionStream();
+    if (stream != null) {
+      _sessionSubscription?.cancel();  // 기존 구독 취소
+      _sessionSubscription = stream.listen(
+        (message) {
+          messages.add(message);
+          if (message.messageType == 'EXIT') {
+            isInSession.value = false;
+          }
+        },
+        onError: (error) {
+          print('Error in session message stream: $error');
+          isInSession.value = false;
+          // 즉시 재연결하지 않음
+        },
+        onDone: () {
+          print('Session stream closed');
+          isInSession.value = false;
+          // 즉시 재연결하지 않음
+        },
+      );
+    }
+  }
+
+  void sendLocation(double lat, double lng) {
+    if (!isInSession.value || !sessionService.isConnected) return;
+>>>>>>> main
     
     if (message.type == 'EXIT' && message.senderId == _userId) {
       _isInSession = false;
@@ -101,6 +172,7 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+<<<<<<< HEAD
   void _handleError(dynamic error) {
     if (error is SessionServiceException) {
       if (error.code == 'NOT_CONNECTED' || error.code == 'CONNECTION_FAILED') {
@@ -140,6 +212,14 @@ class SessionController extends ChangeNotifier {
       await _sessionService.exitSession(_userId);
       _isInSession = false;
       notifyListeners();
+=======
+  void _exitSession() {
+    if (!isInSession.value || !sessionService.isConnected) return;
+    
+    try {
+      sessionService.exitSession(sessionId);
+      isInSession.value = false;
+>>>>>>> main
     } catch (e) {
       print('세션 퇴장 오류: $e');
       _handleError(e);
@@ -154,11 +234,19 @@ class SessionController extends ChangeNotifier {
   }
 
   Future<void> _tryReconnect() async {
+<<<<<<< HEAD
     if (_isConnecting) return;
 
     await Future.delayed(const Duration(seconds: 5));
     if (!isConnected && !_isConnecting) {
       await _initializeSession();
+=======
+    if (!isInSession.value && !isConnecting.value) {
+      await Future.delayed(const Duration(seconds: 5));  // 재연결 전 딜레이
+      if (!isInSession.value && !isConnecting.value) {  // 상태 재확인
+        await _initializeSession();
+      }
+>>>>>>> main
     }
   }
 }

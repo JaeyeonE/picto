@@ -17,6 +17,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   shared_preferences: ^2.3.3
   omni_datetime_picker: ^2.0.5
+  get: ^4.6.6
   lucide_icons: ^0.257.0
   web_socket_channel: ^3.0.1
 

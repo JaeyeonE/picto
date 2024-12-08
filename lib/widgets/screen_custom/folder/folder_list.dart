@@ -1,8 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:picto/services/photo_store.dart';
-import 'package:picto/services/user_manager_service.dart';
+import 'package:get/get.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/folder/folder_model.dart';
@@ -13,7 +11,7 @@ import 'package:picto/services/folder_service.dart';
 
 class FolderList extends StatefulWidget {
   final User user;
-  const FolderList({super.key, required this.user});
+  FolderList({super.key, required this.user});
 
   @override
   State<FolderList> createState() => _FolderListState();
@@ -51,28 +49,23 @@ class _FolderListState extends State<FolderList> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: viewModel,
-      child: Consumer<FolderViewModel>(
-        builder: (context, viewModel, child) {
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-            ),
-            itemCount: viewModel.isLoading ? 12 : viewModel.folders.length,
-            itemBuilder: (context, index) {
-              if (viewModel.isLoading) {
-                return _buildEmptyFolder();
-              }
-              return _buildFolder(context, viewModel.folders[index]);
-            },
-          );
+    return Obx(() {
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+        ),
+        itemCount: viewModel.isLoading ? 12 : viewModel.folders.length,
+        itemBuilder: (context, index) {
+          if (viewModel.isLoading) {
+            return _buildEmptyFolder();
+          }
+          return _buildFolder(viewModel.folders[index]);
         },
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildEmptyFolder() {
@@ -99,12 +92,12 @@ class _FolderListState extends State<FolderList> {
     );
   }
 
-  Widget _buildFolder(BuildContext context, FolderModel folder) {
+  Widget _buildFolder(FolderModel folder) {
     return InkWell(
       onTap: () {
         // 폴더 선택 시 상태 업데이트
         viewModel.toggleFirst();
-        // null 체크 추가
+      // null 체크 추가
         if (folder.folderId != null) {
           viewModel.setCurrentFolder(folder.name, folder.folderId);
           viewModel.loadPhotos(folder.folderId);
