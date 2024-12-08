@@ -34,10 +34,17 @@ class CustomNavigationBar extends StatelessWidget {
           screen = const LoginScreen(); // 실시간 화면 -> 우선 로그인 화면으로 구현
           break;
         case 2:
-          screen =  MapScreen(initialUser: currentUser); // 지도 화면
+          screen = MapScreen(initialUser: currentUser); // 지도 화면
           break;
         case 3:
-          screen = MapScreen(initialUser: currentUser); //FolderList(user: currentUser); // 폴더 화면 -> 수정할 것
+          screen = Scaffold(
+            body: FolderList(user: currentUser),
+            bottomNavigationBar: CustomNavigationBar(
+              selectedIndex: selectedIndex,
+              onItemSelected: onItemSelected,
+              currentUser: currentUser,
+            ),
+          );
           break;
         case 4:
           screen = const ProfileScreen(); // 로그아웃 버튼

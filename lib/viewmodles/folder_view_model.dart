@@ -140,6 +140,8 @@ class FolderViewModel extends ChangeNotifier {
       final photos = await _folderService.getPhotos(user.userId, folderId);
       if (photos != null) {
         for (var photo in photos) {
+          if (photo.photoId == null) continue;
+          
           try {
             final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
             if (response.statusCode == 200) {
