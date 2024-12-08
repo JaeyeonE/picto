@@ -1,6 +1,6 @@
 class Photo {
   final int photoId;
-  final String userId;
+  final int userId;
   String photoPath;
   final double? lat;
   final double? lng;
