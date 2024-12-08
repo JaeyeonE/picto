@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:picto/models/folder/invite_model.dart';
 import 'dart:io';
 
 import 'package:picto/models/photo_manager/photo.dart';
@@ -27,6 +28,7 @@ class FolderViewModel extends ChangeNotifier {
   bool _isFirst = true;
   bool _isPhotoMode = true;
   UserInfoResponse? _userInfo;
+  List<Invite> _invitations = [];
 
   FolderViewModel({
     required this.user,
@@ -50,6 +52,7 @@ class FolderViewModel extends ChangeNotifier {
   bool get isFirst => _isFirst;
   bool get isPhotoMode => _isPhotoMode;
   UserInfoResponse? get userInfo => _userInfo;
+  List<Invite> get invitations => _invitations;
   
 
   // 폴더 목록 로드
@@ -277,7 +280,7 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await _folderService.acceptInvitation(noticeId, user.userId);
+      await _folderService.acceptInvitation(noticeId, user.userId, accept);
       if (accept) {
         await loadFolders();
       }
@@ -291,22 +294,17 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-
   Future<void> loadInvitation(int userId) async {
     _isLoading = true;
     notifyListeners();
     
     try {
-    
-      final noticeId = await _folderService.getNoticeIdForInvitation(userId, folderId);
-      if (noticeId == null) {
-        throw Exception('Could not find invitation notice');
-      }
-
-      await _folderService.acceptInvitation(noticeId, user.userId);
-      print('Successfully joined folder');
+      final invites = await _folderService.getInvitations(userId);
+      _invitations = invites;
+      print('Loaded ${invites.length} invitations');
     } catch (e) {
-      print('Error joining folder: $e');
+      print('Error loading invitations: $e');
+      _invitations = [];
       rethrow;
     } finally {
       _isLoading = false;

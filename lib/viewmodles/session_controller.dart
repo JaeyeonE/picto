@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:picto/models/session.dart';
-import 'package:picto/services/session_service.dart';
+import 'package:picto/services/session/session_service.dart';
 
 
 class SessionController extends ChangeNotifier {

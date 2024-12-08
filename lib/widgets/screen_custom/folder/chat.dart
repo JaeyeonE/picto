@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/chat_view_model.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
-import 'package:picto/services/session_service.dart';
+import 'package:picto/services/session/session_service.dart';
 import '../../../models/folder/chat_message_model.dart';
 
 
