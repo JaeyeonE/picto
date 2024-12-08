@@ -1,3 +1,5 @@
+//lib/widgets/common/actual_tag_list.dart
+
 import 'package:flutter/material.dart';
 import 'package:picto/services/user_manager_service.dart'; // 폴더 리스트 뽑으려고..
 import 'package:picto/utils/app_color.dart';
@@ -6,6 +8,7 @@ class TagSelector extends StatefulWidget {
   final List<String> selectedTags;
   final Function(List<String>) onTagsSelected;
   final Function(String, String, int, int)? onFilterUpdate;
+  final VoidCallback? onRefresh;
   final List<String> folderNames;
 
   const TagSelector({
@@ -13,6 +16,7 @@ class TagSelector extends StatefulWidget {
     required this.selectedTags,
     required this.onTagsSelected,
     this.onFilterUpdate,
+    this.onRefresh,
     this.folderNames = const [],
   });
 
@@ -302,6 +306,7 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
       }
 
       widget.onTagsSelected(newSelectedTags);
+      widget.onRefresh?.call();
     });
   }
 
