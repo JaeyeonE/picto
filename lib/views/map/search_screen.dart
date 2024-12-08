@@ -1,5 +1,6 @@
 // /Users/jaeyeon/workzone/picto/lib/views/map/search_screen.dart
 import 'package:flutter/material.dart';
+import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../widgets/button/SearchInputField.dart';
@@ -22,23 +23,59 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<String> selectedTags = [];
+  final UserManagerService _userManagerService = UserManagerService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserFilters();
+  }
+
+  Future<void> _loadUserFilters() async {
+    try {
+      final filters = await _userManagerService.getSearchFilters();
+      if (filters.isNotEmpty) {
+        setState(() {
+          selectedTags.addAll(filters);
+          _updateSearchControllerText();
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load filters: $e');
+    }
+  }
+
+  void _updateSearchControllerText() {
+    _searchController.text = selectedTags.map((e) => "#$e").join(" ") + " ";
+    _searchController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _searchController.text.length),
+    );
+  }
+
+  void _addTag(String tag) {
+    setState(() {
+      if (selectedTags.contains(tag)) {
+        selectedTags.remove(tag);
+      } else {
+        selectedTags.add(tag);
+      }
+      _updateSearchControllerText();
+      _userManagerService.saveSearchFilters(selectedTags);
+    });
+  }
+
+  void _clearTags() {
+    setState(() {
+      selectedTags.clear();
+      _searchController.clear();
+      _userManagerService.saveSearchFilters([]);
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _addTag(String tag) {
-    setState(() {
-      if (!selectedTags.contains(tag)) {
-        selectedTags.add(tag);
-        _searchController.text = selectedTags.map((e) => "#$e").join(" ") + " ";
-        _searchController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _searchController.text.length),
-        );
-      }
-    });
   }
 
   @override
@@ -79,11 +116,15 @@ class _SearchScreenState extends State<SearchScreen> {
                                 _searchController.clear();
                               });
                             },
-                            child: Text(
-                              "전체해제",
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
+                            child: TextButton(
+                              onPressed:
+                                  _clearTags, // 직접 setState 호출 대신 _clearTags 메서드 사용
+                              child: Text(
+                                "전체해제",
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),

@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:picto/utils/app_color.dart';
-
 import 'package:picto/views/map/map.dart';
+import 'package:picto/views/profile/logout.dart';
 import 'package:picto/views/sign_in/login_screen.dart';
-import 'package:picto/views/sign_in/welcome_screen.dart';
-// 이동할 페이지들의 import 구문 추가
+import 'package:picto/models/user_manager/user.dart';
+import 'package:picto/widgets/screen_custom/folder/folder_list.dart';
 
 class CustomNavigationBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemSelected;
+  final User currentUser;
 
   const CustomNavigationBar({
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
+    required this.currentUser,
   });
 
   void _navigateToScreen(BuildContext context, int index) {
     if (index == 2 && ModalRoute.of(context)?.settings.name == '/map') {
-      // 현재 맵 화면에서 맵 버튼을 누른 경우 - 현재 위치로 이동하기 위한 처리
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -27,25 +28,24 @@ class CustomNavigationBar extends StatelessWidget {
       Widget screen;
       switch (index) {
         case 0:
-          screen = const LoginScreen();  // 설정 화면 -> 수정할것
+          screen = const LoginScreen(); // 설정 화면 -> 수정할것
           break;
         case 1:
-          screen = const LoginScreen();     // 실시간 화면 -> 우선 로그인 화면으로 구현
+          screen = const LoginScreen(); // 실시간 화면 -> 우선 로그인 화면으로 구현
           break;
         case 2:
-          screen = const MapScreen();  // 지도 화면
+          screen =  MapScreen(initialUser: currentUser); // 지도 화면
           break;
         case 3:
-          screen = const LoginScreen();  // 폴더 화면 -> 수정할 것
+          screen = MapScreen(initialUser: currentUser); //FolderList(user: currentUser); // 폴더 화면 -> 수정할 것
           break;
         case 4:
-          screen = const LoginScreen();  // 프로필 화면 -> 수정할 것
+          screen = const ProfileScreen(); // 로그아웃 버튼
           break;
         default:
-          screen = const LoginScreen();  // 기본값 설정
+          screen = const ProfileScreen(); // 로그아웃 버튼
           break;
       }
-      
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => screen),
