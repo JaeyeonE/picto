@@ -1,10 +1,6 @@
-// lib/models/photo_manager/photo.dart
-
-import 'package:picto/models/user_manager/user.dart';
-
 class Photo {
   final int photoId;
-  final String userId;
+  final int userId;
   String photoPath;
   final double? lat;
   final double? lng;
@@ -12,10 +8,10 @@ class Photo {
   final int registerDatetime;
   final int updateDatetime;
   final bool frameActive;
+  final bool sharedActive;
   final int likes;
   final int views;
   final String? tag;
-  final User? user; // API 응답에 따라 optional로 변경
 
   Photo({
     required this.photoId,
@@ -27,27 +23,29 @@ class Photo {
     required this.registerDatetime,
     required this.updateDatetime,
     required this.frameActive,
+    required this.sharedActive,
     required this.likes,
     required this.views,
     this.tag,
-    this.user,
   });
 
   factory Photo.fromJson(Map<String, dynamic> json) {
     return Photo(
       photoId: json['photoId'] as int? ?? 0,
-      userId: json['userId'].toString(),
-      photoPath: json['photoPath'] as String,
+      userId: json['userId'] as int? ?? 0,
+      photoPath: json['photoPath'] as String? ?? ' ',
       lat: json['lat']?.toDouble(),
       lng: json['lng']?.toDouble(),
       location: json['location'] as String?,
-      registerDatetime: json['registerDatetime'] as int,
-      updateDatetime: json['updateDatetime'] as int,
-      frameActive: json['frame_active'] as bool,
-      likes: json['likes'] as int,
-      views: json['views'] as int,
+      registerDatetime:
+          json['uploadTime'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+      updateDatetime:
+          json['uploadTime'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+      frameActive: json['frameActive'] as bool? ?? false, //액자 저장할 때만 true
+      sharedActive: json['sharedActive'] as bool? ?? false,
+      likes: json['likes'] as int? ?? 0,
+      views: json['views'] as int? ?? 0,
       tag: json['tag'] as String?,
-      user: json['user'] != null ? User.fromJson(json['user']) : null,
     );
   }
 
@@ -65,7 +63,6 @@ class Photo {
       'likes': likes,
       'views': views,
       'tag': tag,
-      if (user != null) 'user': user!.toJson(),
     };
   }
 }
