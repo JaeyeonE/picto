@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _userService = UserManagerService(host: 'http://3.35.153.213:8086');
+  final _userService = UserManagerService();
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
   bool _isLoading = false;

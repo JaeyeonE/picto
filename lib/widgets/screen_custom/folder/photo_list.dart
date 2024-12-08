@@ -1,86 +1,135 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-
+import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/photo_manager/photo.dart';
-import 'package:picto/widgets/screen_custom/folder/photo_detail.dart';
+import 'package:picto/widgets/screen_custom/folder/feed.dart';
+
+enum PhotoListType {
+  folder,
+  user,
+}
 
 class PhotoListWidget extends StatefulWidget {
-  final int folderId; // 파라미터로 받음
+  final PhotoListType type;
+  final int? folderId;
+  final String? userId;
 
   const PhotoListWidget({
     Key? key,
-    required this.folderId,
-  }) : super(key: key);
+    required this.type,
+    this.folderId,
+    this.userId,
+  }) : assert(
+          (type == PhotoListType.folder && folderId != null) ||
+          (type == PhotoListType.user && userId != null),
+          'folderId must be provided for folder type, userId for user type',
+        ),
+        super(key: key);
 
   @override
   State<PhotoListWidget> createState() => _PhotoListWidgetState();
 }
 
 class _PhotoListWidgetState extends State<PhotoListWidget> {
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
+  late FolderViewModel viewModel;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_){
-      viewModel.loadPhotos(widget.folderId);
-      viewModel.loadFolderUsers(widget.folderId);
+    viewModel = Provider.of<FolderViewModel>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPhotos();
     });
+  }
+
+  void _loadPhotos() {
+    switch (widget.type) {
+      case PhotoListType.folder:
+        viewModel.loadPhotos(widget.folderId!);
+        viewModel.loadFolderUsers(widget.folderId);
+        break;
+      case PhotoListType.user:
+        viewModel.loadUserPhotos(int.parse(widget.userId!));
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(   
-      body: Obx((){
-        if (viewModel.photos.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.photo_library_outlined,
-                  size: 64,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'no photos',
-                  style: TextStyle(
-                    color: Color.fromARGB(255, 128, 128, 128),
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 24,),
-                ElevatedButton.icon(
-                  onPressed: () => _uploadPhoto(),
-                  icon: const Icon(Icons.add_photo_alternate),
-                  label: const Text('add photo'),
-                ),
-              ],
+      body: Consumer<FolderViewModel>(
+        builder: (context, viewModel, child) {
+          if (viewModel.photos.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return GridView.builder(
+            padding: const EdgeInsets.all(8),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
             ),
+            itemCount: viewModel.photos.length,
+            itemBuilder: (context, index) {
+              return _buildPhotoItem(viewModel.photos[index], index);
+            },
+          );
+        },
+      ),
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.photo_library_outlined,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            widget.type == PhotoListType.folder 
+              ? '이 폴더에 사진이 없습니다'
+              : '이 사용자의 사진이 없습니다',
+            style: const TextStyle(
+              color: Color.fromARGB(255, 128, 128, 128),
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 24),
+          if (widget.type == PhotoListType.folder)
+            ElevatedButton.icon(
+              onPressed: () => _uploadPhoto(),
+              icon: const Icon(Icons.add_photo_alternate),
+              label: const Text('사진 추가'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return Consumer<FolderViewModel>(
+      builder: (context, viewModel, child) {
+        if (viewModel.isLoading || viewModel.photos.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // 폴더 뷰에서만 FAB 표시
+        if (widget.type == PhotoListType.folder) {
+          return FloatingActionButton(
+            onPressed: () => _uploadPhoto(),
+            child: const Icon(Icons.add_photo_alternate),
           );
         }
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(8),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: viewModel.photos.length,
-          itemBuilder: (context, index) {
-            return _buildPhotoItem(viewModel.photos[index], index); // index 추가
-          },
-        );
-      }),
-      floatingActionButton: !viewModel.isLoading && viewModel.photos.isNotEmpty
-        ? FloatingActionButton(
-          onPressed: () => _uploadPhoto(),
-          child: const Icon(Icons.add_photo_alternate),
-        )
-        : null,
+        return const SizedBox.shrink();
+      },
     );
   }
 
@@ -90,13 +139,17 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PhotoDetail(
+            builder: (context) => Feed(
               initialPhotoIndex: index,
-              folderId: widget.folderId,
+              folderId: widget.type == PhotoListType.folder ? widget.folderId : null,
+              photoId: photo.photoId,
             ),
           ),
         );
       },
+      onLongPress: widget.type == PhotoListType.folder 
+        ? () => _showPhotoOptions(photo)
+        : null,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
@@ -121,17 +174,16 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
         children: [
           ListTile(
             leading: const Icon(Icons.delete),
-            title: const Text('delete'),
+            title: const Text('삭제'),
             onTap: () async {
               Navigator.pop(context);
-              await viewModel.deletePhoto(widget.folderId, photo.photoId);
+              if (widget.type == PhotoListType.folder) {
+                await viewModel.deletePhoto(widget.folderId, photo.photoId);
+              }
             },
           ),
-          // other options with ListTile()
         ],
       ),
     );
   }
-
-  
 }

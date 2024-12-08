@@ -13,10 +13,11 @@ class UserManagerService {
   final FlutterSecureStorage _storage;
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
+  static const String _filtersKey = 'search_filters';
 
-  UserManagerService({required String host})
+  UserManagerService()
       : _dio = Dio(BaseOptions(
-          baseUrl: '$host/user-manager',
+          baseUrl: 'http://3.35.153.213:8086/user-manager',
           headers: {'Content-Type': 'application/json'},
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
@@ -423,6 +424,86 @@ class UserManagerService {
       throw _handleError(e);
     }
   }
+
+  // userId로 사용자 프로필 조회
+  Future<User> getUserProfileById(int userId) async {
+    try {
+      final token = await getToken();
+      final currentUserId = await getUserId();
+      
+      final response = await _dio.get(
+        '/users/$userId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Token': token,
+            'User-Id': currentUserId,
+          },
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        return User.fromJson(response.data);
+      } else {
+        throw Exception('사용자 정보 로드 실패: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // email로 사용자 프로필 조회
+  Future<User> getUserProfileByEmail(String email) async {
+    try {
+      final token = await getToken();
+      final userId = await getUserId();
+      
+      final response = await _dio.get(
+        '/users',
+        data: {'email': email},
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Token': token,
+            'User-Id': userId,
+          },
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        return User.fromJson(response.data);
+      } else {
+        throw Exception('사용자 정보 로드 실패: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  //필터 로컬에 저장
+  Future<List<String>> getSearchFilters() async {
+  try {
+    final filtersString = await _storage.read(key: _filtersKey);
+    if (filtersString == null || filtersString.isEmpty) {
+      return [];
+    }
+    return filtersString.split(',');
+  } catch (e) {
+    print('Error reading filters: $e');
+    return [];
+  }
+}
+
+Future<void> saveSearchFilters(List<String> filters) async {
+  try {
+    await _storage.write(
+      key: _filtersKey,
+      value: filters.join(','),
+    );
+  } catch (e) {
+    print('Error saving filters: $e');
+  }
+}
 
   // 에러 핸들링
   ApiException _handleAuthError(DioException error) {

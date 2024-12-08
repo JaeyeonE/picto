@@ -11,6 +11,7 @@ class PhotoManagerService {
   final FlutterSecureStorage _storage;
   static const String _servicePath = '/photo-manager';
   static const String _tokenKey = 'auth_token';
+  static const String _userIdKey = 'user_id';
 
   PhotoManagerService({required String host})
       : _dio = Dio(BaseOptions(
@@ -26,7 +27,12 @@ class PhotoManagerService {
     return await _storage.read(key: _tokenKey);
   }
 
-  // 지역 대표 사진 조회
+  // userId 가져오기 함수 추가
+  Future<int?> getUserId() async {
+    final value = await _storage.read(key: _userIdKey);
+    return value != null ? int.parse(value) : null;
+  }
+
   Future<List<Photo>> getRepresentativePhotos({
     String? eventType,
     required String locationType,
@@ -34,6 +40,11 @@ class PhotoManagerService {
     required int count,
   }) async {
     try {
+      final senderId = await getUserId(); // userId 가져오기
+      if (senderId == null) {
+        throw UnauthorizedException('사용자 ID가 없습니다.');
+      }
+
       final response = await _dio.get(
         '/photos/representative',
         data: {
@@ -41,6 +52,7 @@ class PhotoManagerService {
           'locationType': locationType,
           if (locationName != null) 'locationName': locationName,
           'count': count,
+          'senderId': senderId, // senderId 추가
         },
         options: Options(
           headers: {
@@ -58,14 +70,20 @@ class PhotoManagerService {
   }
 
   // 주변 사진 조회
-  Future<List<Photo>> getNearbyPhotos(int senderId) async {
+  Future<List<Photo>> getNearbyPhotos() async { // senderId 파라미터 제거
     try {
+      final senderId = await getUserId(); // userId 가져오기
+      if (senderId == null) {
+        throw UnauthorizedException('사용자 ID가 없습니다.');
+      }
+
       final response = await _dio.get(
         '/photos/around',
         data: {'senderId': senderId},
         options: Options(
           headers: {
             'Content-Type': 'application/json',
+            'senderId': senderId.toString(),
           },
         ),
       );

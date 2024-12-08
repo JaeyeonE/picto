@@ -36,7 +36,7 @@ class SearchInputField extends StatelessWidget {
   location = location.trim();
   
   // 선택된 태그 업데이트 (새로운 로직 추가)
-  final userService = UserManagerService(host: 'http://3.35.153.213:8086');
+  final userService = UserManagerService();
     try {
       final userId = await userService.getUserId();
       if (userId == null) {

@@ -5,7 +5,7 @@ import 'package:picto/models/user_manager/user.dart';
 class Photo {
   final int photoId;
   final String userId;
-  final String photoPath;
+  String photoPath;
   final double? lat;
   final double? lng;
   final String? location;
