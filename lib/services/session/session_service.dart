@@ -185,7 +185,7 @@ class SessionService {
 
     try {
       final message = SessionMessage(
-        type: 'LOCATION',
+        messagetype: 'LOCATION',
         senderId: senderId,
         lat: lat,
         lng: lng,
@@ -214,7 +214,7 @@ class SessionService {
 
     try {
       final message = SessionMessage(
-        type: 'SHARE',
+        messagetype: 'SHARE',
         senderId: senderId,
         photoId: photoId,
         lat: lat,
@@ -251,7 +251,7 @@ class SessionService {
 
     try {
       final message = SessionMessage(
-        type: 'ENTER',
+        messagetype: 'ENTER',
         senderId: senderId,
         sendDateTime: DateTime.now().toUtc().toIso8601String(),
       );
@@ -277,7 +277,7 @@ class SessionService {
 
     try {
       final message = SessionMessage(
-        type: 'EXIT',
+        messagetype: 'EXIT',
         senderId: senderId,
         sendDateTime: DateTime.now().toUtc().toIso8601String(),
       );

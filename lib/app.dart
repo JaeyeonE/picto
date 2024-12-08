@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/services/session/session_service.dart';
@@ -25,13 +26,13 @@ class _PhotoSharingAppState extends State<PhotoSharingApp> {
 
   void _setupSessionListeners() {
     _sessionService.getStatusStream().listen((status) {
-      debugPrint('WebSocket Status: $status');
+      debugPrint('app.dart WebSocket Status: $status');
     }, onError: (error) {
       debugPrint('WebSocket Status Error: $error');
     });
 
     _sessionService.getSessionStream().listen((message) {
-      debugPrint('Received message: ${message.type}');
+      debugPrint('Received message: ${message.messagetype}');
     }, onError: (error) {
       debugPrint('WebSocket Message Error: $error');
     });
