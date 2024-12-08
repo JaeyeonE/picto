@@ -368,7 +368,7 @@ class _MapScreenState extends State<MapScreen> {
           center: location,
           radius: 3000, // 3km를 미터 단위로
           fillColor: Colors.purple.withOpacity(0.0), // 투명 채우기
-          strokeColor: Color.fromARGB(255, 0, 55, 255)
+          strokeColor: Color.fromARGB(255, 111, 0, 255)
               .withOpacity(0.2), // 80% 투명도의 보라색 테두리
           strokeWidth: 2,
         ),
@@ -503,7 +503,7 @@ class _MapScreenState extends State<MapScreen> {
       if (userId != null) {
         await _userService.updateFilter(
           userId: userId,
-          sort: sort,
+          sort: '좋아요순',
           period: period,
           startDatetime: startDatetime,
           endDatetime: endDatetime,

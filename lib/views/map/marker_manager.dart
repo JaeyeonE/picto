@@ -28,6 +28,7 @@ class MarkerManager {
   Future<Set<Marker>> createMarkersFromPhotos(
       List<Photo> photos, String locationType) async {
     final newMarkers = <Marker>{};
+    final existingMarkerIds = _getExistingMarkerIds(locationType);
 
     for (var photo in photos) {
       if (photo.lat == null || photo.lng == null) {
@@ -35,15 +36,26 @@ class MarkerManager {
         continue;
       }
 
+      final markerId = MarkerId('${locationType}_${photo.photoId}');
+
+      // 이미 존재하는 마커인지 확인
+      if (existingMarkerIds.contains(markerId.value)) {
+        // 기존 마커 재사용
+        final existingMarker = _getExistingMarker(locationType, markerId.value);
+        if (existingMarker != null) {
+          newMarkers.add(existingMarker);
+          continue;
+        }
+      }
+
+      // 새로운 마커 생성
       final markerIcon = await MarkerImageProcessor.createMarkerIcon(
         photo.photoPath,
         photo.userId == currentUserId,
       );
 
-      print("Marker icon created for photo ${photo.photoId}");
-
       final marker = Marker(
-        markerId: MarkerId('${locationType}_${photo.photoId}'),
+        markerId: markerId,
         position: LatLng(photo.lat!, photo.lng!),
         icon: markerIcon,
         infoWindow: InfoWindow(
@@ -67,36 +79,120 @@ class MarkerManager {
         _smallMarkers = newMarkers;
         break;
     }
-    print("Created ${newMarkers.length} markers");
+
     _allMarkers = {..._largeMarkers, ..._middleMarkers, ..._smallMarkers};
     return newMarkers;
   }
 
-  // 마커 초기화
-  void clearMarkers(String locationType) {
+// 기존 마커 ID 가져오기
+  Set<String> _getExistingMarkerIds(String locationType) {
     switch (locationType) {
       case 'large':
-        _largeMarkers.clear();
+        return _largeMarkers.map((m) => m.markerId.value).toSet();
+      case 'middle':
+        return _middleMarkers.map((m) => m.markerId.value).toSet();
+      case 'small':
+        return _smallMarkers.map((m) => m.markerId.value).toSet();
+      default:
+        return {};
+    }
+  }
+
+// 기존 마커 가져오기
+  Marker? _getExistingMarker(String locationType, String markerId) {
+    Set<Marker> markers;
+    switch (locationType) {
+      case 'large':
+        markers = _largeMarkers;
         break;
       case 'middle':
-        _middleMarkers.clear();
+        markers = _middleMarkers;
         break;
       case 'small':
-        _smallMarkers.clear();
+        markers = _smallMarkers;
         break;
+      default:
+        return null;
     }
-    _updateAllMarkers();
+    try {
+      return markers.firstWhere((m) => m.markerId.value == markerId);
+    } catch (e) {
+      return null;
+    }
   }
 
-  void _updateAllMarkers() {
-    _allMarkers = {..._largeMarkers, ..._middleMarkers, ..._smallMarkers};
-  }
+  // Future<Set<Marker>> createMarkersFromPhotos(
+  //     List<Photo> photos, String locationType) async {
+  //   final newMarkers = <Marker>{};
 
-  // 모든 마커 초기화
-  void clearAllMarkers() {
-    _largeMarkers.clear();
-    _middleMarkers.clear();
-    _smallMarkers.clear();
-    _allMarkers.clear();
-  }
+  //   for (var photo in photos) {
+  //     if (photo.lat == null || photo.lng == null) {
+  //       print("Skipping photo due to null coordinates");
+  //       continue;
+  //     }
+
+  //     final markerIcon = await MarkerImageProcessor.createMarkerIcon(
+  //       photo.photoPath,
+  //       photo.userId == currentUserId,
+  //     );
+
+  //     print("Marker icon created for photo ${photo.photoId}");
+
+  //     final marker = Marker(
+  //       markerId: MarkerId('${locationType}_${photo.photoId}'),
+  //       position: LatLng(photo.lat!, photo.lng!),
+  //       icon: markerIcon,
+  //       infoWindow: InfoWindow(
+  //         title: photo.location ?? '위치 정보 없음',
+  //         snippet: photo.tag ?? '',
+  //       ),
+  //     );
+
+  //     newMarkers.add(marker);
+  //   }
+
+  //   // 위치 타입에 따라 적절한 Set에 저장
+  //   switch (locationType) {
+  //     case 'large':
+  //       _largeMarkers = newMarkers;
+  //       break;
+  //     case 'middle':
+  //       _middleMarkers = newMarkers;
+  //       break;
+  //     case 'small':
+  //       _smallMarkers = newMarkers;
+  //       break;
+  //   }
+  //   print("Created ${newMarkers.length} markers");
+  //   _allMarkers = {..._largeMarkers, ..._middleMarkers, ..._smallMarkers};
+  //   return newMarkers;
+  // }
+
+  // // 마커 초기화
+  // void clearMarkers(String locationType) {
+  //   switch (locationType) {
+  //     case 'large':
+  //       _largeMarkers.clear();
+  //       break;
+  //     case 'middle':
+  //       _middleMarkers.clear();
+  //       break;
+  //     case 'small':
+  //       _smallMarkers.clear();
+  //       break;
+  //   }
+  //   _updateAllMarkers();
+  // }
+
+  // void _updateAllMarkers() {
+  //   _allMarkers = {..._largeMarkers, ..._middleMarkers, ..._smallMarkers};
+  // }
+
+  // // 모든 마커 초기화
+  // void clearAllMarkers() {
+  //   _largeMarkers.clear();
+  //   _middleMarkers.clear();
+  //   _smallMarkers.clear();
+  //   _allMarkers.clear();
+  // }
 }
