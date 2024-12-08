@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/services/location_service.dart';
 import 'package:dio/dio.dart';
@@ -56,6 +57,7 @@ class FrameListService {
               'likes': frameData['likes'] ?? 0,
               'views': frameData['views'] ?? 0,
               'frameActive': true,
+              'sharedActive': frameData['shareActive'] ?? false,
               'registerDatetime': frameData['uploadTime'] ??
                   DateTime.now().millisecondsSinceEpoch,
               'updateDatetime': frameData['uploadTime'] ??
@@ -124,7 +126,8 @@ class FrameListService {
   }
 
   void dispose() {
-    print('\n====== FrameListService 종료 ======');
-    _dio.close();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dio.close();
+    });
   }
 }

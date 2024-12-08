@@ -19,7 +19,7 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   final UploadController _controller = UploadController();
-  final ImageUploadData _uploadService = ImageUploadData();
+  final ImageUploadService _uploadService = ImageUploadService();
   final FrameUploadService _frameUploadService = FrameUploadService();
   final FrameListService _frameListService = FrameListService();
   Photo? _selectedFrame;
@@ -38,10 +38,8 @@ class _UploadScreenState extends State<UploadScreen> {
 
       if (_selectedFrame != null) {
         // 프레임이 선택된 경우 프레임 업로드 서비스 사용
-        response = await _frameUploadService.uploadImage(
-          _controller.image!,
-          _selectedFrame!.photoId,
-        );
+        response = await _frameUploadService.uploadFrame(
+            _controller.image!, _selectedFrame!);
 
         // 프레임 업로드 성공 후 프레임 목록 새로고침
         await _refreshFrameList();
@@ -67,7 +65,7 @@ class _UploadScreenState extends State<UploadScreen> {
 
   Future<void> _refreshFrameList() async {
     try {
-      await _frameListService.getFrames(2); // userId는 실제 사용자 ID로 변경 필요
+      await _frameListService.getFrames(3); // userId는 실제 사용자 ID로 변경 필요
       if (mounted) {
         setState(() {
           _selectedFrame = null;
@@ -86,7 +84,7 @@ class _UploadScreenState extends State<UploadScreen> {
 
   @override
   void dispose() {
-    _frameUploadService.dispose();
+    // _frameUploadService.dispose();
     _frameListService.dispose();
     super.dispose();
   }
@@ -150,7 +148,12 @@ class _UploadScreenState extends State<UploadScreen> {
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: FrameSelectionWidget(
-                onFrameSelected: _handleFrameSelected,
+                onFrameSelected: (Photo? frame) {
+                  setState(() {
+                    _selectedFrame = frame;
+                    print("Selected frame: ${frame?.photoId}"); // 디버깅용
+                  });
+                },
               ),
             ),
           ),
@@ -168,11 +171,14 @@ class _UploadScreenState extends State<UploadScreen> {
                 color: Colors.white,
               ),
               onPressed: () async {
-                if (await _controller.checkCameraPermission()) {
+                try {
                   await _controller.getImage(ImageSource.camera);
                   setState(() {});
-                } else {
-                  await PhotoManager.openSetting();
+                } catch (e) {
+                  // 권한이 거부된 경우 에러 메시지를 표시할 수 있습니다
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
                 }
               },
             ),

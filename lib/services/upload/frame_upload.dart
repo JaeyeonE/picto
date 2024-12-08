@@ -1,98 +1,84 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'dart:convert';
+import 'package:mime/mime.dart';
+import 'package:picto/models/photo_manager/photo.dart';
+import 'package:picto/services/upload/frame_list.dart';
+import '/services/user_manager_service.dart';
+import 'package:picto/services/location_service.dart';
 
 class FrameUploadService {
-  final Dio dio;
+  // 실제 서버 URL로 변경
+  static const String validationUrl = 'http://10.0.2.2:8083/validate';
+  static const String taggingUrl = 'http://10.0.2.2:8083/tag';
 
-  FrameUploadService() : dio = Dio() {
-    dio.options.baseUrl = 'http://10.0.2.2:8083/vaildate'; // 서버 주소 설정
-  }
+  late final UserManagerService _userManagerService;
 
-  Future<String> uploadImage(File file, int photoId) async {
+  Future<String> uploadFrame(File image, Photo photo) async {
     try {
-      print('\n====== 프레임 이미지 업로드 시작 ======');
-      print('photoId: $photoId');
-      print('파일 경로: ${file.path}');
+      final targetUrl = photo.sharedActive ? validationUrl : taggingUrl;
 
-      final requestData = {
-        'tag': ' ',
-        'registerTime': DateTime.now().millisecondsSinceEpoch,
-        'frameActive': false,
-        'sharedActive': true,
-      };
+      var request = http.MultipartRequest('POST', Uri.parse(targetUrl));
+      String? mimeType = lookupMimeType(image.path);
 
-      print('\n====== 요청 데이터 ======');
-      print('Request Data: $requestData');
-
-      print('\n====== 요청 정보 ======');
-      print('URL: ${dio.options.baseUrl}/photo-store/photos/frame/$photoId');
-      print('Method: PATCH');
-      print('Headers: Content-Type: multipart/form-data');
-      print('데이터 구조:');
-      print('- file: MultipartFile');
-      print('- request: $requestData');
-
-      final response = await dio.patch(
-        '/photo-store/photos/frame/$photoId',
-        data: {
-          'file': await MultipartFile.fromFile(file.path),
-          'request': requestData,
-        },
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          responseType: ResponseType.json,
-        ),
+      // multipart/form-data 형식에 맞게 파일 추가
+      var multipartFile = await http.MultipartFile.fromPath(
+        'file',
+        image.path,
+        contentType: mimeType != null ? MediaType.parse(mimeType) : null,
       );
+      request.files.add(multipartFile);
 
-      print('\n====== 응답 정보 ======');
-      print('Status Code: ${response.statusCode}');
-      print('Response Data: ${response.data}');
-      print('Response Headers: ${response.headers}');
+      try {
+        // PhotoUploadRequest 형식에 맞게 데이터 구성
+        Map<String, dynamic> Frame = {
+          'tag': '', // 서버에서 자동 생성됨
+          'photoId': photo.photoId,
+          'registerTime': DateTime.now().millisecondsSinceEpoch,
+          'frameActive': true,
+          'sharedActive': true,
+        };
+
+        request.fields['request'] = json.encode(Frame);
+        print('Request data: ${request.fields['request']}');
+      } catch (e) {
+        print('Location fetch failed: $e');
+        Map<String, dynamic> FrameData = {
+          'tag': '',
+          'photo': 0,
+          'registerTime': DateTime.now().millisecondsSinceEpoch,
+          'frameActive': true,
+          'sharedActive': true,
+        };
+        request.fields['request'] = json.encode(FrameData);
+      }
+
+      print('Sending request to server...');
+      var streamedResponse = await request.send();
+      print('Server response code: ${streamedResponse.statusCode}');
+
+      var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        print('\n이미지 업로드 성공!');
-        return '이미지가 성공적으로 업로드되었습니다.';
+        var responseData = json.decode(response.body);
+        return 'Upload successful: ${responseData['tag'] ?? "No tag"}';
       } else {
-        print('\n====== 응답 에러 발생 ======');
-        print('Status Code: ${response.statusCode}');
-        print('Response Data: ${response.data}');
-        throw DioException(
-          requestOptions:
-              RequestOptions(path: '/photo-store/photos/frame/$photoId'),
-          response: response,
-          error: '이미지 업로드 실패: ${response.statusCode}',
-        );
+        var errorData = json.decode(response.body);
+        print('Server error response: $errorData');
+        if (errorData['error'] == 'person') {
+          return '사람이 포함된 이미지는 업로드할 수 없습니다.';
+        } else if (errorData['error'] == 'nsfw') {
+          return '부적절한 콘텐츠가 감지되었습니다.';
+        } else if (errorData['error'] == 'text') {
+          return '텍스트가 포함된 이미지는 업로드할 수 없습니다.';
+        }
+        return '업로드 실패: ${errorData['error']}';
       }
-    } on DioException catch (e) {
-      print('\n====== Dio 에러 상세 ======');
-      print('에러 타입: ${e.type}');
-      print('에러 메시지: ${e.message}');
-      print('요청 URL: ${e.requestOptions.uri}');
-      print('요청 메소드: ${e.requestOptions.method}');
-      print('요청 헤더: ${e.requestOptions.headers}');
-      print('요청 데이터: ${e.requestOptions.data}');
-
-      if (e.response != null) {
-        print('\n====== 에러 응답 상세 ======');
-        print('응답 상태 코드: ${e.response?.statusCode}');
-        print('응답 데이터: ${e.response?.data}');
-        print('응답 헤더: ${e.response?.headers}');
-      }
-
-      throw Exception('이미지 업로드 실패: ${e.message}');
-    } catch (e, stackTrace) {
-      print('\n====== 일반 에러 상세 ======');
-      print('에러 타입: ${e.runtimeType}');
-      print('에러 메시지: $e');
-      print('스택 트레이스:\n$stackTrace');
-      throw Exception('이미지 업로드 실패: $e');
+    } catch (e) {
+      print('Exception: $e');
+      return '업로드 실패: $e';
     }
-  }
-
-  void dispose() {
-    print('\n====== FrameUploadService 종료 ======');
-    dio.close(); // Dio 인스턴스 정리
   }
 }

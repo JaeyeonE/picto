@@ -7,7 +7,7 @@ import 'package:mime/mime.dart';
 import '/services/user_manager_service.dart';
 import 'package:picto/services/location_service.dart';
 
-class ImageUploadData {
+class ImageUploadService {
   // 실제 서버 URL로 변경
   static const String validationUrl = 'http://10.0.2.2:8083/validate';
   static const String taggingUrl = 'http://10.0.2.2:8083/tag';
