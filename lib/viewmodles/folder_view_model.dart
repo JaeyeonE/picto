@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/folder/folder_model.dart';
 import 'package:picto/models/folder/folder_user.dart';
+import 'package:picto/models/user_manager/auth_responses.dart';
 import 'package:picto/services/folder_service.dart';
 import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/services/photo_store.dart';
@@ -25,6 +26,7 @@ class FolderViewModel extends ChangeNotifier {
   bool _isPhotoList = true;
   bool _isFirst = true;
   bool _isPhotoMode = true;
+  UserInfoResponse? _userInfo;
 
   FolderViewModel({
     required this.user,
@@ -37,6 +39,7 @@ class FolderViewModel extends ChangeNotifier {
 
   // Getters
   List<FolderModel> get folders => _folders;
+  UserManagerService get userManagerService => _userManagerService;
   List<Photo> get photos => _photos;
   List<FolderUser> get folderUsers => _folderUsers;
   List<User> get userProfiles => _userProfiles;
@@ -46,6 +49,8 @@ class FolderViewModel extends ChangeNotifier {
   bool get isPhotoList => _isPhotoList;
   bool get isFirst => _isFirst;
   bool get isPhotoMode => _isPhotoMode;
+  UserInfoResponse? get userInfo => _userInfo;
+  
 
   // 폴더 목록 로드
   Future<void> loadFolders() async {
@@ -155,32 +160,33 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  //유저 프로필 사진 가져오기
-  Future<void> loadUserPhotos(String userId) async {
+  //유저가 업로드한 사진 가져오기
+  Future<void> loadUserPhotos(int userId) async {
     _isLoading = true;
-    _currentUserId = userId;
     notifyListeners();
     
     try {
-      final photos = await _photoStoreService.getUserPhotos(userId);
-      if (photos != null) {
-        for (var photo in photos) {
-          try {
-            final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
-            if (response.statusCode == 200) {
-              photo.photoPath = response.body;
-            }
-          } catch (e) {
-            print('Error downloading photo ${photo.photoId}: $e');
+      final userInfo = await _userManagerService.getUserAllInfo(userId);
+      _userInfo = userInfo;
+      
+      // 사진 경로 로드
+      final List<Photo> photos = [];
+      for (var photo in userInfo.photos) {
+        try {
+          final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
+          if (response.statusCode == 200) {
+            photo.photoPath = response.body;
+            photos.add(photo);
           }
+        } catch (e) {
+          print('Error downloading photo ${photo.photoId}: $e');
         }
-        _photos = photos;
-      } else {
-        _photos = [];
       }
+      _photos = photos;
     } catch (e) {
       print('Error loading user photos: $e');
       _photos = [];
+      _userInfo = null;
     } finally {
       _isLoading = false;
       notifyListeners();

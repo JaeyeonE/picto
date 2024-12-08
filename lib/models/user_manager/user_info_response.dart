@@ -51,7 +51,7 @@ class UserAllInfo {
 }
 
 class User {
-  final int usreId;
+  final int userId;
   final String name;
   final String accountName;
   final String email;
@@ -60,7 +60,7 @@ class User {
   final String? profilePath;
 
   User({
-    required this.usreId,
+    required this.userId,
     required this.name,
     required this.accountName,
     required this.email,
@@ -71,7 +71,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      usreId: json['usreId'],
+      userId: json['usreId'],
       name: json['name'],
       accountName: json['accountName'],
       email: json['email'],
@@ -82,7 +82,7 @@ class User {
   }
 
   Map<String, dynamic> toJson() => {
-    'usreId': usreId,
+    'usreId': userId,
     'name': name,
     'accountName': accountName,
     'email': email,

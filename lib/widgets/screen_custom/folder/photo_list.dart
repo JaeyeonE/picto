@@ -49,8 +49,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
         viewModel.loadFolderUsers(widget.folderId);
         break;
       case PhotoListType.user:
-        // 현재 FolderViewModel에는 user의 사진을 로드하는 메서드가 없으므로
-        // 이 기능을 추가해야 합니다
+        viewModel.loadUserPhotos(int.parse(widget.userId!));
         break;
     }
   }

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
+import 'package:picto/widgets/screen_custom/profile/user_profile.dart';
+
 
 class Feed extends StatefulWidget {
   final int initialPhotoIndex;
@@ -16,9 +18,7 @@ class Feed extends StatefulWidget {
     this.folderId,
     this.userId,
     required this.photoId,
-  }) : assert(folderId != null || userId != null, 
-       'Either folderId or userId must be provided'),
-       super(key: key);
+  }) : super(key: key);
 
   @override
   State<Feed> createState() => _FeedState();
@@ -166,20 +166,7 @@ class _FeedState extends State<Feed> {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.7),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: _buildBottomInfo(context, photos[currentIndex]),
-                ),
+                child: _buildBottomInfo(context, photos[currentIndex], viewModel),
               ),
             ],
           );
@@ -188,79 +175,116 @@ class _FeedState extends State<Feed> {
     );
   }
 
-  Widget _buildBottomInfo(BuildContext context, Photo photo) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Profile and stats row
-        Row(
-          children: [
-            const CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.grey,
-              child: Icon(Icons.person, color: Colors.white),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildBottomInfo(BuildContext context, Photo photo, FolderViewModel viewModel) {
+    final user = viewModel.userInfo?.user;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Colors.black.withOpacity(0.7),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Profile and stats row
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (user != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserProfile(user: user),
+                      ),
+                    );
+                  }
+                },
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage: user?.profilePath != null 
+                        ? NetworkImage(user!.profilePath!)
+                        : null,
+                      child: user?.profilePath == null 
+                        ? const Icon(Icons.person, color: Colors.white)
+                        : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '@${user?.accountName ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            user?.name ?? '',
+                            style: TextStyle(
+                              color: Colors.grey[300],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Row(
                 children: [
+                  const Icon(Icons.favorite, color: Colors.red, size: 20),
+                  const SizedBox(width: 4),
                   Text(
-                    widget.userId ?? '@user_${DateTime.now().millisecondsSinceEpoch % 1000}',
+                    '${photo.likes}',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '포토그래퍼 Lv.${(DateTime.now().millisecondsSinceEpoch % 5) + 1}',
-                    style: TextStyle(
-                      color: Colors.grey[300],
-                      fontSize: 12,
+                      fontSize: 14,
                     ),
                   ),
                 ],
               ),
-            ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (photo.location!.isNotEmpty)
             Row(
               children: [
-                const Icon(Icons.favorite, color: Colors.red, size: 20),
+                const Icon(
+                  Icons.location_on,
+                  color: Colors.white,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
-                Text(
-                  '${photo.likes}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
+                Expanded(
+                  child: Text(
+                    photo.location ?? '위치정보 없음',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (photo.location != null)
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on,
-                color: Colors.white,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  photo.location!,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-      ],
+        ],
+      ),
     );
   }
+
 }

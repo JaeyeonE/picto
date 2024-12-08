@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:picto/models/user_manager/user.dart';
-import 'package:picto/services/session/session_service.dart';
+import 'package:picto/services/session_service.dart';
 import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/map/map.dart';

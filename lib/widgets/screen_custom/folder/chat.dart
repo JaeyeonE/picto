@@ -1,27 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/chat_view_model.dart';
-import 'package:picto/viewmodles/session_controller.dart';
+import 'package:picto/viewmodles/folder_view_model.dart';
+import 'package:picto/services/session_service.dart';
 import '../../../models/folder/chat_message_model.dart';
-import '../../../services/session_service.dart';
 
-class Chat extends StatelessWidget {
+
+class Chat extends StatefulWidget {
   final int currentUserId;
   final int folderId;
-  final TextEditingController _textController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  late SessionService _sessionService;
 
-  Chat({
+  const Chat({
     Key? key,
     required this.currentUserId,
     required this.folderId,
   }) : super(key: key);
 
   @override
+  State<Chat> createState() => _ChatState();
+}
+
+class _ChatState extends State<Chat> {
+  final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -37,21 +44,22 @@ class Chat extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // 폴더 사용자 목록 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<FolderViewModel>().loadFolderUsers(widget.folderId);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) => SessionController(sessionId: currentUserId),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ChatViewModel(
-            folderId: folderId,
-            currentUserId: currentUserId,
-          ),
-        ),
-      ],
+    return ChangeNotifierProvider(
+      create: (_) => ChatViewModel(
+        folderId: widget.folderId,
+        currentUserId: widget.currentUserId,
+      ),
       child: Builder(builder: (context) {
-        _sessionService = context.read<SessionController>().sessionService;
         return _buildScaffold(context);
       }),
     );
@@ -60,25 +68,56 @@ class Chat extends StatelessWidget {
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Consumer<ChatViewModel>(
-          builder: (context, viewModel, child) =>
-              Text('Chat (${viewModel.members.length}명)'),
+        title: Consumer2<ChatViewModel, FolderViewModel>(
+          builder: (context, chatVM, folderVM, child) {
+            final memberCount = folderVM.folderUsers.length;
+            return Text('채팅 ($memberCount명)');
+          },
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.people),
             onPressed: () => _showMembersList(context),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _sessionService.initializeWebSocket(currentUserId),
-          )
+          Consumer<ChatViewModel>(
+            builder: (context, viewModel, child) {
+              return IconButton(
+                icon: Icon(
+                  Icons.wifi,
+                  color: viewModel.isConnected ? Colors.green : Colors.red,
+                ),
+                onPressed: viewModel.isLoading ? null : viewModel.reconnect,
+              );
+            },
+          ),
         ],
       ),
-      body: Consumer<ChatViewModel>(
-        builder: (context, viewModel, child) {
-          if (viewModel.isLoading) {
+      body: Consumer2<ChatViewModel, SessionService>(
+        builder: (context, chatVM, sessionService, child) {
+          if (!sessionService.isConnected) {
+            return const Center(
+              child: Text('세션이 연결되어 있지 않습니다. 다시 로그인해주세요.'),
+            );
+          }
+
+          if (chatVM.isLoading) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!chatVM.isConnected) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('채팅 연결이 끊어졌습니다.'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: chatVM.reconnect,
+                    child: const Text('재연결'),
+                  ),
+                ],
+              ),
+            );
           }
 
           return Column(
@@ -87,20 +126,27 @@ class Chat extends StatelessWidget {
                 child: ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(8.0),
-                  itemCount: viewModel.messages.length,
+                  itemCount: chatVM.messages.length,
                   itemBuilder: (context, index) {
-                    final message = viewModel.messages[index];
-                    final isCurrentUser = viewModel.isCurrentUser(message.senderId);
+                    final message = chatVM.messages[index];
+                    final isCurrentUser = chatVM.isCurrentUser(message.senderId);
+                    final sender = context.select<FolderViewModel, String>((vm) {
+                      final user = vm.userProfiles
+                        .where((u) => u.userId.toString() == message.senderId)
+                        .firstOrNull;
+                      return user?.accountName ?? message.senderId;
+                    });
 
                     return MessageBubble(
                       message: message,
+                      senderName: sender,
                       isCurrentUser: isCurrentUser,
                       onDelete: () => _handleDelete(context, message),
                     );
                   },
                 ),
               ),
-              _buildMessageInput(context),
+              if (chatVM.isConnected) _buildMessageInput(context),
             ],
           );
         },
@@ -153,8 +199,15 @@ class Chat extends StatelessWidget {
     final trimmedText = text.trim();
     _textController.clear();
     
-    context.read<ChatViewModel>().sendMessage(trimmedText);
-    _scrollToBottom();
+    final chatVM = context.read<ChatViewModel>();
+    if (chatVM.isConnected) {
+      chatVM.sendMessage(trimmedText);
+      _scrollToBottom();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('메시지를 전송할 수 없습니다. 연결 상태를 확인해주세요.')),
+      );
+    }
   }
 
   void _handleDelete(BuildContext context, ChatMessage message) async {
@@ -189,9 +242,9 @@ class Chat extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('채팅방 멤버'),
-        content: Consumer<ChatViewModel>(
+        content: Consumer<FolderViewModel>(
           builder: (context, viewModel, child) {
-            if (viewModel.members.isEmpty) {
+            if (viewModel.userProfiles.isEmpty) {
               return const Text('멤버가 없습니다.');
             }
 
@@ -199,18 +252,18 @@ class Chat extends StatelessWidget {
               width: double.maxFinite,
               child: ListView.builder(
                 shrinkWrap: true,
-                itemCount: viewModel.members.length,
+                itemCount: viewModel.userProfiles.length,
                 itemBuilder: (context, index) {
-                  final member = viewModel.members[index];
+                  final user = viewModel.userProfiles[index];
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.grey[300],
                       child: Text(
-                        member[0].toUpperCase(),
+                        user.accountName![0].toUpperCase(),
                         style: const TextStyle(color: Colors.black),
                       ),
                     ),
-                    title: Text(member),
+                    title: Text(user.accountName ?? 'null'),
                   );
                 },
               ),
@@ -230,12 +283,14 @@ class Chat extends StatelessWidget {
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
+  final String senderName;
   final bool isCurrentUser;
   final VoidCallback onDelete;
 
   const MessageBubble({
     Key? key,
     required this.message,
+    required this.senderName,
     required this.isCurrentUser,
     required this.onDelete,
   }) : super(key: key);
@@ -267,7 +322,7 @@ class MessageBubble extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
-                          message.senderId,
+                          senderName,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
@@ -300,7 +355,7 @@ class MessageBubble extends StatelessWidget {
       backgroundColor: Colors.grey[300],
       radius: 16,
       child: Text(
-        message.senderId[0].toUpperCase(),
+        senderName[0].toUpperCase(),
         style: const TextStyle(
           color: Colors.black,
           fontSize: 12,

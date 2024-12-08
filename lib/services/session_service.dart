@@ -1,205 +1,342 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:picto/models/session.dart';
+import 'package:picto/services/websocket_logging_interceptor.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
 
+class SessionService {
+  static const int maxReconnectAttempts = 3;
+  static const Duration reconnectDelay = Duration(seconds: 5);
 
+  final WebSocketLoggingInterceptor _logger = WebSocketLoggingInterceptor();
+  StompClient? _stompClient;
+  StreamController<SessionMessage>? _messageController;
+  StreamController<WebSocketStatus>? _statusController;
+  Completer<void>? _connectionCompleter;
+  bool _isConnected = false;
+  Timer? _heartbeatTimer;
+  Timer? _reconnectTimer;
+  int? _currentSessionId;
+  int _reconnectAttempts = 0;
+  bool _isReconnecting = false;
 
+  SessionService() {
+    _messageController = StreamController<SessionMessage>.broadcast();
+    _statusController = StreamController<WebSocketStatus>.broadcast();
+    print('세션 서비스가 초기화되었습니다');
+  }
 
+  Future<void> initializeWebSocket(int sessionId) async {
+    print('세션 ID: $sessionId에 대한 웹소켓 초기화 중');
+    _currentSessionId = sessionId;
+    _connectionCompleter = Completer<void>();
+    await _connectWebSocket();
 
-// import 'dart:async';
-// import 'dart:convert';
-// import 'package:web_socket_channel/web_socket_channel.dart';
-// import '../models/common/session_message.dart';
-// import '../models/common/websocket_status.dart';
+    // 연결이 완료될 때까지 대기
+    try {
+      await _connectionCompleter!.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw SessionServiceException('웹소켓 연결 시간 초과',
+              code: 'CONNECTION_TIMEOUT');
+        },
+      );
+    } catch (e) {
+      print('웹소켓 초기화 실패: $e');
+      rethrow;
+    }
+  }
 
-// class SessionServiceException implements Exception {
-//   final String message;
-//   final String? code;
-//   SessionServiceException(this.message, {this.code});
-//   @override
-//   String toString() => 'SessionServiceException: $message${code != null ? ' (Code: $code)' : ''}';
-// }
+  Future<void> _connectWebSocket() async {
+    if (_currentSessionId == null) return;
 
-// class SessionService {
-//   static const int maxReconnectAttempts = 3;
-//   static const Duration reconnectDelay = Duration(seconds: 5);
-  
-//   WebSocketChannel? _channel;
-//   Stream<SessionMessage>? _messageStream;
-//   bool _isConnected = false;
-//   Timer? _heartbeatTimer;
-//   Timer? _reconnectTimer;
-//   StreamController<WebSocketStatus>? _statusController;
-//   int? _currentSessionId;
-//   int _reconnectAttempts = 0;
-//   bool _isReconnecting = false;
+    final url = 'http://52.79.109.62:8085/session-scheduler';
+    try {
+      _stompClient?.deactivate();
+      _logger.onConnect(url, null);
 
-//   SessionService() {
-//     _statusController = StreamController<WebSocketStatus>.broadcast();
-//     print('SessionService initialized');
-//   }
+      _stompClient = StompClient(
+        config: StompConfig.sockJS(
+          url: url,
+          onConnect: _onConnect,
+          beforeConnect: () async {
+            // Future<void>를 명시적으로 반환
+            _logger.onConnect(url, null);
+            return; // 또는 return Future<void>.value();
+          },
+          onWebSocketError: (dynamic error) {
+            _logger.onError(error);
+            _handleConnectionError();
+          },
+          onDisconnect: (_) {
+            _logger.onDisconnect();
+            _isConnected = false;
+            _statusController?.add(WebSocketStatus.disconnected);
+          },
+          onStompError: (frame) {
+            _logger.onError('STOMP 오류: ${frame.body}');
+          },
+        ),
+      );
 
-//   Future<void> initializeWebSocket(int sessionId) async {
-//     print('Initializing Session WebSocket for session: $sessionId');
-//     _currentSessionId = sessionId;
-//     await _connectWebSocket();
-//   }
+      _stompClient?.activate();
+    } catch (e) {
+      _logger.onError('세션 웹소켓 연결 실패: $e');
+      _isConnected = false;
+      _handleConnectionError();
+    }
+  }
 
-//   Future<void> _connectWebSocket() async {
-//     if (_currentSessionId == null) return;
+  void _onConnect(StompFrame frame) {
+    print('연결됨: ${frame.body}');
+    _isConnected = true;
+    _reconnectAttempts = 0;
+    _isReconnecting = false;
+    _setupHeartbeat();
+    _statusController?.add(WebSocketStatus.connected);
+
+    // 세션 메시지 구독
+    final destination = '/session/${_currentSessionId}';
+    _logger.onSubscribe(destination);
+
+    _stompClient?.subscribe(
+      destination: destination,
+      callback: (StompFrame frame) {
+        try {
+          if (frame.body != null) {
+            _logger.onMessage(destination, frame.body!);
+            final jsonData = jsonDecode(frame.body!);
+            final message = SessionMessage.fromJson(jsonData);
+            _messageController?.add(message);
+          }
+        } catch (e) {
+          _logger.onError('세션 메시지 파싱 오류: $e');
+        }
+      },
+    );
+
+    print('세션 구독 성공');
+
+    // 연결 완료 알림
+    _connectionCompleter?.complete();
+  }
+
+  void _handleConnectionError() {
+    if (_isReconnecting) return;
+
+    _isConnected = false;
+    _statusController?.add(WebSocketStatus.disconnected);
+
+    // 연결 실패 알림
+    if (!(_connectionCompleter?.isCompleted ?? true)) {
+      _connectionCompleter?.completeError(
+          SessionServiceException('웹소켓 연결 실패', code: 'CONNECTION_FAILED'));
+    }
+    if (_reconnectAttempts >= maxReconnectAttempts) {
+      _logger.onError('최대 재연결 시도 횟수 도달');
+      return;
+    }
+
+    _isReconnecting = true;
+    _reconnectAttempts++;
+
+    print(
+        '$_reconnectAttempts/$maxReconnectAttempts 번째 재연결 시도 중... ${reconnectDelay.inSeconds}초 후 시도합니다.');
+
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(reconnectDelay, () async {
+      try {
+        await _connectWebSocket();
+      } catch (e) {
+        _logger.onError('재연결 시도 실패: $e');
+        _handleConnectionError();
+      }
+    });
+  }
+
+  void _setupHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (_isConnected) {
+        try {
+          final message = {
+            'type': 'PING',
+            'timestamp': DateTime.now().toUtc().toIso8601String(),
+          };
+          final destination = '/send/session/ping';
+          final body = jsonEncode(message);
+
+          _logger.onSend(destination, body);
+          _stompClient?.send(
+            destination: destination,
+            body: body,
+          );
+        } catch (e) {
+          _logger.onError('세션 하트비트 실패: $e');
+          _handleConnectionError();
+        }
+      }
+    });
+  }
+
+  Future<void> sendLocation(int senderId, double lat, double lng) async {
+    print('위치 전송 중 - 사용자: $senderId, 위도: $lat, 경도: $lng');
+    _validateConnection();
+
+    try {
+      final message = SessionMessage(
+        type: 'LOCATION',
+        senderId: senderId,
+        lat: lat,
+        lng: lng,
+        sendDateTime: DateTime.now().toUtc().toIso8601String(),
+      );
+
+      final destination = '/send/session/location';
+      final body = jsonEncode(message.toJson());
+
+      _logger.onSend(destination, body);
+      _stompClient?.send(
+        destination: destination,
+        body: body,
+      );
+      print('위치 전송 성공');
+    } catch (e) {
+      _logger.onError('위치 전송 실패: $e');
+      throw SessionServiceException('위치 전송 실패: ${e.toString()}');
+    }
+  }
+
+  Future<void> sharePhoto(
+      int senderId, int photoId, double lat, double lng) async {
+    print('사진 공유 중 - 사용자: $senderId, 사진ID: $photoId, 위도: $lat, 경도: $lng');
+    _validateConnection();
+
+    try {
+      final message = SessionMessage(
+        type: 'SHARE',
+        senderId: senderId,
+        photoId: photoId,
+        lat: lat,
+        lng: lng,
+        sendDateTime: DateTime.now().toUtc().toIso8601String(),
+      );
+
+      final destination = '/send/session/shared';
+      final body = jsonEncode(message.toJson());
+
+      _logger.onSend(destination, body);
+      _stompClient?.send(
+        destination: destination,
+        body: body,
+      );
+      print('사진 공유 성공');
+    } catch (e) {
+      _logger.onError('사진 공유 실패: $e');
+      throw SessionServiceException('사진 공유 실패: ${e.toString()}');
+    }
+  }
+
+  // enterSession 메서드 수정
+  Future<void> enterSession(int senderId) async {
+    print('사용자 세션 입장 시도: $senderId');
     
-//     final wsUrl = Uri(
-//       scheme: 'ws',
-//       host: '52.79.109.62',
-//       port: 8085,
-//       path: '/session-scheduler/session/$_currentSessionId'
-//     );
-
-//     try {
-//       await _channel?.sink.close();
-//       _channel = WebSocketChannel.connect(wsUrl);
-      
-//       _messageStream = _channel?.stream.map((data) {
-//         try {
-//           final jsonData = jsonDecode(data);
-//           return SessionMessage.fromJson(jsonData);
-//         } catch (e) {
-//           print('Error parsing session message: $e');
-//           throw SessionServiceException('Invalid message format', code: 'PARSE_ERROR');
-//         }
-//       }).handleError((error) {
-//         print('Session stream error: $error');
-//         _handleConnectionError();
-//       });
-
-//       _isConnected = true;
-//       _reconnectAttempts = 0;
-//       _isReconnecting = false;
-//       _setupHeartbeat();
-//       _statusController?.add(WebSocketStatus.connected);
-//       print('Session WebSocket connected to: $wsUrl');
-      
-//     } catch (e) {
-//       print('Session WebSocket connection failed: $e');
-//       _isConnected = false;
-//       _handleConnectionError();
-//     }
-//   }
-
-//   void _handleConnectionError() {
-//     if (_isReconnecting) return;
+    // 연결이 아직 진행 중이라면 완료될 때까지 대기
+    if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
+      print('웹소켓 연결 대기 중...');
+      await _connectionCompleter!.future;
+    }
     
-//     _isConnected = false;
-//     _statusController?.add(WebSocketStatus.disconnected);
-    
-//     if (_reconnectAttempts >= maxReconnectAttempts) {
-//       print('Max reconnection attempts reached');
-//       return;
-//     }
+    _validateConnection();
 
-//     _isReconnecting = true;
-//     _reconnectAttempts++;
-    
-//     print('Attempting to reconnect in ${reconnectDelay.inSeconds} seconds (Attempt $_reconnectAttempts/$maxReconnectAttempts)');
-    
-//     _reconnectTimer?.cancel();
-//     _reconnectTimer = Timer(reconnectDelay, () async {
-//       try {
-//         await _connectWebSocket();
-//       } catch (e) {
-//         print('Reconnection attempt failed: $e');
-//         _handleConnectionError();
-//       }
-//     });
-//   }
+    try {
+      final message = SessionMessage(
+        type: 'ENTER',
+        senderId: senderId,
+        sendDateTime: DateTime.now().toUtc().toIso8601String(),
+      );
 
-//   void _setupHeartbeat() {
-//     _heartbeatTimer?.cancel();
-//     _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-//       if (_isConnected) {
-//         try {
-//           _channel?.sink.add(jsonEncode({
-//             'type': 'PING',
-//             'timestamp': DateTime.now().toUtc().toIso8601String(),
-//           }));
-//         } catch (e) {
-//           print('Session heartbeat failed: $e');
-//           _handleConnectionError();
-//         }
-//       }
-//     });
-//   }
+      final destination = '/send/session/enter';
+      final body = jsonEncode(message.toJson());
 
-//   Future<void> sendLocation(int senderId, double lat, double lng) async {
-//     print('Sending location - User: $senderId, Lat: $lat, Lng: $lng');
-//     _validateConnection();
+      _logger.onSend(destination, body);
+      _stompClient?.send(
+        destination: destination,
+        body: body,
+      );
+      print('세션 입장 성공');
+    } catch (e) {
+      _logger.onError('세션 입장 실패: $e');
+      throw SessionServiceException('세션 입장 실패: ${e.toString()}');
+    }
+  }
 
-//     try {
-//       final message = {
-//         'type': 'LOCATION',
-//         'senderId': senderId,
-//         'lat': lat,
-//         'lng': lng,
-//         'sendDateTime': DateTime.now().toUtc().toIso8601String(),
-//       };
-//       _channel?.sink.add(jsonEncode(message));
-//       print('Location sent successfully');
-//     } catch (e) {
-//       print('Failed to send location: $e');
-//       throw SessionServiceException('Failed to send location: ${e.toString()}');
-//     }
-//   }
+  Future<void> exitSession(int senderId) async {
+    print('사용자 세션 퇴장: $senderId');
+    _validateConnection();
 
-//   Future<void> enterSession(int senderId) async {
-//     print('User entering session: $senderId');
-//     _validateConnection();
+    try {
+      final message = SessionMessage(
+        type: 'EXIT',
+        senderId: senderId,
+        sendDateTime: DateTime.now().toUtc().toIso8601String(),
+      );
 
-//     try {
-//       final message = {
-//         'type': 'ENTER',
-//         'senderId': senderId,
-//         'sendDateTime': DateTime.now().toUtc().toIso8601String(),
-//       };
-//       _channel?.sink.add(jsonEncode(message));
-//       print('Successfully entered session');
-//     } catch (e) {
-//       print('Failed to enter session: $e');
-//       throw SessionServiceException('Failed to enter session: ${e.toString()}');
-//     }
-//   }
+      final destination = '/send/session/exit';
+      final body = jsonEncode(message.toJson());
 
-//   Future<void> exitSession(int senderId) async {
-//     print('User exiting session: $senderId');
-//     _validateConnection();
+      _logger.onSend(destination, body);
+      _stompClient?.send(
+        destination: destination,
+        body: body,
+      );
+      print('세션 퇴장 성공');
+    } catch (e) {
+      _logger.onError('세션 퇴장 실패: $e');
+      throw SessionServiceException('세션 퇴장 실패: ${e.toString()}');
+    }
+  }
 
-//     try {
-//       final message = {
-//         'type': 'EXIT',
-//         'senderId': senderId,
-//         'sendDateTime': DateTime.now().toUtc().toIso8601String(),
-//       };
-//       _channel?.sink.add(jsonEncode(message));
-//       print('Successfully exited session');
-//     } catch (e) {
-//       print('Failed to exit session: $e');
-//       throw SessionServiceException('Failed to exit session: ${e.toString()}');
-//     }
-//   }
+  void _validateConnection() {
+    if (!_isConnected) {
+      throw SessionServiceException('웹소켓이 연결되지 않았습니다', code: 'NOT_CONNECTED');
+    }
+  }
 
-//   void _validateConnection() {
-//     if (!_isConnected) {
-//       throw SessionServiceException('WebSocket not connected', code: 'NOT_CONNECTED');
-//     }
-//   }
+  Stream<SessionMessage> getSessionStream() => _messageController!.stream;
+  Stream<WebSocketStatus> getStatusStream() => _statusController!.stream;
+  bool get isConnected => _isConnected;
 
-//   Stream<SessionMessage>? getSessionStream() => _messageStream;
-//   Stream<WebSocketStatus>? getStatusStream() => _statusController?.stream;
-//   bool get isConnected => _isConnected;
+  @override
+  void dispose() {
+    print('세션 서비스 정리 중');
+    _heartbeatTimer?.cancel();
+    _reconnectTimer?.cancel();
+    _stompClient?.deactivate();
+    _messageController?.close();
+    _statusController?.close();
+    _isConnected = false;
+    // Completer 정리
+    if (!(_connectionCompleter?.isCompleted ?? true)) {
+      _connectionCompleter?.completeError(
+        SessionServiceException('서비스가 종료됨', code: 'SERVICE_DISPOSED')
+      );
+    }
+    _connectionCompleter = null;
+  }
+}
 
-//   void dispose() {
-//     print('Disposing SessionService');
-//     _heartbeatTimer?.cancel();
-//     _reconnectTimer?.cancel();
-//     _channel?.sink.close();
-//     _messageStream = null;
-//     _isConnected = false;
-//     _statusController?.close();
-//   }
-// }
+// SessionServiceException 클래스
+class SessionServiceException implements Exception {
+  final String message;
+  final String? code;
+
+  /// 세션 서비스 예외를 생성합니다.
+  /// [message]는 예외 메시지입니다.
+  /// [code]는 선택적 에러 코드입니다.
+  SessionServiceException(this.message, {this.code});
+
+  @override
+  String toString() =>
+      'SessionServiceException: $message${code != null ? ' (코드: $code)' : ''}';
+}

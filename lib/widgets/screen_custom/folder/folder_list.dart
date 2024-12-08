@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/services/photo_store.dart';
@@ -8,6 +9,7 @@ import 'package:picto/models/folder/folder_model.dart';
 import 'photo_list.dart';
 import 'package:picto/views/folder/folder.dart';
 import 'package:picto/models/user_manager/user.dart';
+import 'package:picto/services/folder_service.dart';
 
 class FolderList extends StatefulWidget {
   final User user;
@@ -18,16 +20,16 @@ class FolderList extends StatefulWidget {
 }
 
 class _FolderListState extends State<FolderList> {
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
-
+  late final FolderViewModel viewModel;
+  
   @override
   void initState() {
     super.initState();
     // FolderViewModel 초기화
     final dio = Dio();
-    final folderService = FolderService(dio);
+    final folderService = FolderService(dio, userId: widget.user.userId);
     final photoStore = PhotoStoreService(baseUrl: 'http://52.78.237.242:8084');
-    final userManager = UserManagerService(host: 'http://3.35.153.213:8086');
+    final userManager = UserManagerService();
     
     viewModel = FolderViewModel(
       user: widget.user,
