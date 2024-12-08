@@ -13,6 +13,7 @@ class UserManagerService {
   final FlutterSecureStorage _storage;
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
+  static const String _filtersKey = 'search_filters';
 
   UserManagerService()
       : _dio = Dio(BaseOptions(
@@ -478,6 +479,31 @@ class UserManagerService {
       throw _handleError(e);
     }
   }
+
+  //필터 로컬에 저장
+  Future<List<String>> getSearchFilters() async {
+  try {
+    final filtersString = await _storage.read(key: _filtersKey);
+    if (filtersString == null || filtersString.isEmpty) {
+      return [];
+    }
+    return filtersString.split(',');
+  } catch (e) {
+    print('Error reading filters: $e');
+    return [];
+  }
+}
+
+Future<void> saveSearchFilters(List<String> filters) async {
+  try {
+    await _storage.write(
+      key: _filtersKey,
+      value: filters.join(','),
+    );
+  } catch (e) {
+    print('Error saving filters: $e');
+  }
+}
 
   // 에러 핸들링
   ApiException _handleAuthError(DioException error) {

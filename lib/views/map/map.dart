@@ -72,7 +72,6 @@ class _MapScreenState extends State<MapScreen> {
     _initializeUser();
     _initializeLocationServices();
     _locationHandler = LocationWebSocketHandler(_sessionService);
-    
 
     // 세션 메시지 리스너 추가
     _sessionService.getSessionStream().listen((message) async {
@@ -94,8 +93,7 @@ class _MapScreenState extends State<MapScreen> {
         if (distanceInMeters <= 3000) {
           try {
             // getNearbyPhotos 호출하여 최신 사진 목록 가져오기
-            final photos =
-                await _photoService.getNearbyPhotos(message.senderId);
+            final photos = await _photoService.getNearbyPhotos();
 
             // 새로 업로드된 사진 찾기 (photoId로 매칭)
             final newPhoto = photos
@@ -304,7 +302,7 @@ class _MapScreenState extends State<MapScreen> {
         return;
       }
 
-      final photos = await _photoService.getNearbyPhotos(userId);
+      final photos = await _photoService.getNearbyPhotos();
       Text("Received photos: $photos");
 
       // 태그 필터링된 사진만 선택
@@ -426,15 +424,15 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     _positionStreamSubscription = Geolocator.getPositionStream(
-  locationSettings: locationSettings,
-).listen(
-  (Position position) {
-    _handleLocationUpdate(LatLng(position.latitude, position.longitude));
-  },
-  onError: (e) {
-    debugPrint('위치 스트림 에러: $e');
-  },
-);
+      locationSettings: locationSettings,
+    ).listen(
+      (Position position) {
+        _handleLocationUpdate(LatLng(position.latitude, position.longitude));
+      },
+      onError: (e) {
+        debugPrint('위치 스트림 에러: $e');
+      },
+    );
   }
 
   // 지도를 새로고침하는 함수
@@ -606,7 +604,12 @@ class _MapScreenState extends State<MapScreen> {
                   RepaintBoundary(
                     child: TagSelector(
                       selectedTags: selectedTags,
-                      onTagsSelected: onTagsSelected,
+                      onTagsSelected: (tags) {
+                        setState(() {
+                          selectedTags = tags;
+                        });
+                        _refreshMap(); // 태그 선택 시 _refreshMap 호출
+                      },
                       onFilterUpdate:
                           (sort, period, startDatetime, endDatetime) {
                         _updateUserFilter(
@@ -624,29 +627,29 @@ class _MapScreenState extends State<MapScreen> {
                 child: CircularProgressIndicator(),
               ),
 
-              // Map Screen의 build 메서드에서 Positioned 위젯 추가
-Positioned(
-  right: 16,
-  bottom: 90,
-  child: FloatingActionButton(
-    heroTag: 'sendLocation',
-    onPressed: () async {
-      if (currentLocation != null) {
-        await _handleLocationUpdate(currentLocation!);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('map.dart 현재 위치 재전송 완료')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('현재 위치를 가져올 수 없습니다')),
-        );
-      }
-    },
-    child: const Icon(Icons.send),
-  ),
-),
+            // Map Screen의 build 메서드에서 Positioned 위젯 추가
+            Positioned(
+              right: 16,
+              bottom: 90,
+              child: FloatingActionButton(
+                heroTag: 'sendLocation',
+                onPressed: () async {
+                  if (currentLocation != null) {
+                    await _handleLocationUpdate(currentLocation!);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('map.dart 현재 위치 재전송 완료')),
+                      );
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('현재 위치를 가져올 수 없습니다')),
+                    );
+                  }
+                },
+                child: const Icon(Icons.send),
+              ),
+            ),
 
             // 오른쪽 하단 새로고침 버튼
             Positioned(

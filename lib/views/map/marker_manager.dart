@@ -1,3 +1,5 @@
+///picto/lib/views/map/marker_manager.dart
+
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'marker_image_processor.dart';
