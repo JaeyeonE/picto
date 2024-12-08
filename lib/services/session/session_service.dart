@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:picto/services/session/session.dart';
+import 'package:picto/models/session.dart';
 import 'package:picto/services/session/websocket_logging_interceptor.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
