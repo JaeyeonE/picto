@@ -35,7 +35,7 @@ class Photo {
 
   factory Photo.fromJson(Map<String, dynamic> json) {
     return Photo(
-      photoId: json['photoId'] as int,
+      photoId: json['photoId'] as int? ?? 0,
       userId: json['userId'].toString(),
       photoPath: json['photoPath'] as String,
       lat: json['lat']?.toDouble(),
