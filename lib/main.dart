@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:picto/models/user_manager/user.dart';
 
@@ -10,17 +10,44 @@ import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_list.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_header.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Dio 설정
+  final dio = Dio()
+    ..options = BaseOptions(
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 3),
+    );
+
+  // Services
+  final folderService = FolderService(dio);
+  final photoStore = PhotoStoreService(baseUrl: 'http://52.78.237.242:8084');
+  final userManager = UserManagerService(host: 'http://3.35.153.213:8086');
+  User user = await userManager.getUserProfile(1);
+
+  // ViewModel
+  final folderViewModel = FolderViewModel(
+    userManagerService: userManager, 
+    photoStoreService: photoStore, 
+    folderService: folderService,
+    user: user
+  );
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => folderViewModel,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return MaterialApp(
       title: 'Picto',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -37,23 +64,6 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const MainScreen(),
-      initialBinding: BindingsBuilder(() {
-        // Dio 설정
-        final dio = Dio()
-          ..options = BaseOptions(
-            connectTimeout: const Duration(seconds: 5),
-            receiveTimeout: const Duration(seconds: 3),
-          );
-
-        // Services
-        final folderService = FolderService(dio);
-        final photoStore = PhotoStoreService(baseUrl: 'http://52.78.237.242:8084');
-        final userManager = UserManagerService(host: 'http://3.35.153.213:8086');
-        Future<User> user = userManager.getUserProfile(1);
-
-        // ViewModels
-        Get.put(FolderViewModel(userManagerService: userManager, photoStoreService: photoStore, folderService: folderService, user: user));
-      }),
     );
   }
 }
@@ -63,11 +73,12 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<FolderViewModel>(context);
+    
     return Scaffold(
       appBar: FolderHeader(
-        onBackPressed: null, // 메인 화면에서는 뒤로가기 버튼 비활성화
+        onBackPressed: null,
         onMenuPressed: () {
-          // 메뉴 버튼 처리
           showModalBottomSheet(
             context: context,
             builder: (context) => Column(
@@ -81,20 +92,19 @@ class MainScreen extends StatelessWidget {
                     _showCreateFolderDialog(context);
                   },
                 ),
-                // 추가 메뉴 아이템...
               ],
             ),
           );
         },
       ),
-      body: const FolderList(userId: 1),
+      body: FolderList(user: viewModel.user),
     );
   }
 
   void _showCreateFolderDialog(BuildContext context) {
     final TextEditingController nameController = TextEditingController();
     final TextEditingController descController = TextEditingController();
-    final FolderViewModel viewModel = Get.find<FolderViewModel>();
+    final viewModel = Provider.of<FolderViewModel>(context, listen: false);
 
     showDialog(
       context: context,

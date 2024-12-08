@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
@@ -21,7 +21,6 @@ class Feed extends StatefulWidget {
 }
 
 class _FeedState extends State<Feed> {
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
   late PageController _pageController;
   int currentIndex = 0;
 
@@ -38,7 +37,8 @@ class _FeedState extends State<Feed> {
     super.dispose();
   }
 
-  void _showOptionsMenu() {
+  void _showOptionsMenu(BuildContext context) {
+    final viewModel = context.read<FolderViewModel>();
     showModalBottomSheet(
       context: context,
       builder: (context) => Column(
@@ -52,7 +52,10 @@ class _FeedState extends State<Feed> {
           ListTile(
             leading: const Icon(Icons.delete),
             title: const Text('삭제하기'),
-            onTap: () => {Navigator.pop(context), viewModel.deletePhoto(viewModel.currentFolderId, widget.photoId),}
+            onTap: () {
+              Navigator.pop(context);
+              viewModel.deletePhoto(viewModel.currentFolderId, widget.photoId);
+            }
           ),
           ListTile(
             leading: const Icon(Icons.visibility_off),
@@ -78,173 +81,169 @@ class _FeedState extends State<Feed> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Obx(() {
-        final photos = viewModel.photos;
-        
-        if (photos.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+      body: Consumer<FolderViewModel>(
+        builder: (context, viewModel, child) {
+          final photos = viewModel.photos;
+          
+          if (photos.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        return Stack(
-          children: [
-            // 사진 PageView
-            GestureDetector(
-              onTapUp: (details) {
-                final screenWidth = MediaQuery.of(context).size.width;
-                final tapPosition = details.globalPosition.dx;
-                
-                if (tapPosition < screenWidth * 0.25) {
-                  // 왼쪽 1/4 터치
-                  if (currentIndex > 0) {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
+          return Stack(
+            children: [
+              // 사진 PageView
+              GestureDetector(
+                onTapUp: (details) {
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final tapPosition = details.globalPosition.dx;
+                  
+                  if (tapPosition < screenWidth * 0.25) {
+                    // 왼쪽 1/4 터치
+                    if (currentIndex > 0) {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  } else if (tapPosition > screenWidth * 0.75) {
+                    // 오른쪽 1/4 터치
+                    if (currentIndex < photos.length - 1) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
                   }
-                } else if (tapPosition > screenWidth * 0.75) {
-                  // 오른쪽 1/4 터치
-                  if (currentIndex < photos.length - 1) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
+                },
+                child: PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      currentIndex = index;
+                    });
+                  },
+                  itemCount: photos.length,
+                  itemBuilder: (context, index) {
+                    final photo = photos[index];
+                    return Center(
+                      child: Image.network(
+                        photo.photoPath,
+                        fit: BoxFit.contain,
+                      ),
                     );
-                  }
-                }
-              },
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    currentIndex = index;
-                  });
-                },
-                itemCount: photos.length,
-                itemBuilder: (context, index) {
-                  final photo = photos[index];
-                  return Center(
-                    child: Image.network(
-                      photo.photoPath,
-                      fit: BoxFit.contain,
-                    ),
-                  );
-                },
-              ),
-            ),
-            
-            // Top bar with kebab menu
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 16,
-              right: 16,
-              child: IconButton(
-                icon: const Icon(
-                  LucideIcons.moreVertical,
-                  color: Colors.white,
+                  },
                 ),
-                onPressed: _showOptionsMenu,
               ),
-            ),
-            
-            // Bottom info bar
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.7),
-                      Colors.transparent,
-                    ],
+              
+              // Top bar with kebab menu
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                right: 16,
+                child: IconButton(
+                  icon: const Icon(
+                    LucideIcons.moreVertical,
+                    color: Colors.white,
                   ),
+                  onPressed: () => _showOptionsMenu(context),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Profile and stats row
-                    Row(
-                      children: [
-                        // Profile image
-                        const CircleAvatar(
-                          radius: 16,
-                          backgroundColor: Colors.grey,
-                          child: Icon(Icons.person, color: Colors.white),
-                        ),
-                        const SizedBox(width: 8),
-                        // User info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              
+              // Bottom info bar
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Profile and stats row
+                      Row(
+                        children: [
+                          const CircleAvatar(
+                            radius: 16,
+                            backgroundColor: Colors.grey,
+                            child: Icon(Icons.person, color: Colors.white),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '@user_${DateTime.now().millisecondsSinceEpoch % 1000}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '포토그래퍼 Lv.${(DateTime.now().millisecondsSinceEpoch % 5) + 1}',
+                                  style: TextStyle(
+                                    color: Colors.grey[300],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Row(
                             children: [
-                              // Random username
+                              const Icon(Icons.favorite, color: Colors.red, size: 20),
+                              const SizedBox(width: 4),
                               Text(
-                                '@user_${DateTime.now().millisecondsSinceEpoch % 1000}',
+                                '${photos[currentIndex].likes}',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              // Random title
-                              Text(
-                                '포토그래퍼 Lv.${(DateTime.now().millisecondsSinceEpoch % 5) + 1}',
-                                style: TextStyle(
-                                  color: Colors.grey[300],
-                                  fontSize: 12,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        // Likes
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (photos[currentIndex].location != null)
                         Row(
                           children: [
-                            const Icon(Icons.favorite, color: Colors.red, size: 20),
+                            const Icon(
+                              Icons.location_on,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                             const SizedBox(width: 4),
-                            Text(
-                              '${photos[currentIndex].likes}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
+                            Expanded(
+                              child: Text(
+                                photos[currentIndex].location!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Location
-                    if (photos[currentIndex].location != null)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              photos[currentIndex].location!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      }),
+            ],
+          );
+        },
+      ),
     );
   }
 }

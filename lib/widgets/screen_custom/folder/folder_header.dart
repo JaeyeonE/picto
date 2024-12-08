@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/utils/constant.dart';
@@ -15,9 +15,8 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBackPressed;
   final VoidCallback? onMenuPressed;
   final String logoPath;
-  final FolderViewModel viewModel = Get.find<FolderViewModel>();
 
-  FolderHeader({
+  const FolderHeader({
     Key? key,
     this.onBackPressed,
     this.onMenuPressed,
@@ -25,102 +24,108 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
   }) : super(key: key);
 
   @override
-Widget build(BuildContext context) {
-  return AppBar(
-    title: Obx(() {
-      final currentFolderName = viewModel.currentFolderName;
-      
-      // currentFolderName이 null이거나 비어있으면 로고를 표시
-      if (currentFolderName == null || currentFolderName.isEmpty) {
-        return Image.asset(
-          logoPath,
-          height: 32,
-          fit: BoxFit.contain,
+  Widget build(BuildContext context) {
+    return Consumer<FolderViewModel>(
+      builder: (context, viewModel, child) {
+        return AppBar(
+          title: Builder(
+            builder: (context) {
+              final currentFolderName = viewModel.currentFolderName;
+              
+              if (currentFolderName == null || currentFolderName.isEmpty) {
+                return Image.asset(
+                  logoPath,
+                  height: 32,
+                  fit: BoxFit.contain,
+                );
+              }
+              return Text(currentFolderName);
+            },
+          ),
+          centerTitle: true,
+          leading: Builder(
+            builder: (context) {
+              final currentFolderName = viewModel.currentFolderName;
+              
+              if (currentFolderName == null || currentFolderName.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  viewModel.setCurrentFolder('', -1);
+                  Navigator.of(context).pop();
+                },
+              );
+            },
+          ),
+          actions: [
+            Builder(
+              builder: (context) {
+                final folderId = viewModel.currentFolderId;
+                
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications),
+                      onPressed: () {
+                        _showNotificationDialog(context);
+                        print('Notification pressed');
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.more_vert),
+                      onPressed: () {
+                        if (folderId == null) {
+                          _showFolderListOptions(context);
+                        } else {
+                          _showFolderOptions(context);
+                        }
+                      },
+                    )
+                  ],
+                );
+              },
+            ),
+          ],
         );
-      }
-      // 폴더 이름이 있으면 표시
-      return Text(currentFolderName);
-    }),
-    centerTitle: true,
-    leading: Obx(() {
-      final currentFolderName = viewModel.currentFolderName;
-      
-      // currentFolderName이 null이거나 비어있으면 뒤로가기 버튼을 숨김
-      if (currentFolderName == null || currentFolderName.isEmpty) {
-        return const SizedBox.shrink();
-      }
-      return IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () {
-          // 뒤로가기 시 폴더 이름 초기화
-          viewModel.setCurrentFolder('', -1);
-          Navigator.of(context).pop();
-        },
-      );
-    }),
-    actions: [
-  Obx(() {
-    final folderId = viewModel.currentFolderId;
-    
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.notifications),
-          onPressed: () {
-            _showNotificationDialog(context);
-            print('Notification pressed');
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.more_vert),
-          onPressed: () {
-            if (folderId == null) {
-              _showFolderListOptions(context);
-            } else {
-              _showFolderOptions(context);
-            }
-          },
-        )
-      ],
+      },
     );
-  }),
-],
-  );
-}
+  }
 
   void _showFolderListOptions(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    builder: (context) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const Icon(Icons.create_new_folder),
-          title: const Text('Create New Folder'),
-          onTap: () {
-            Navigator.pop(context); // Close bottom sheet
-            showDialog(
-              context: context,
-              builder: (context) => const CreateFolderDialog(),
-            );
-          },
-        ),
-         ListTile (
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.create_new_folder),
+            title: const Text('Create New Folder'),
+            onTap: () {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (context) => const CreateFolderDialog(),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.share),
             title: const Text('enter invitation code'),
             onTap: () {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) =>const EnterCodeDialog(),
+                builder: (context) => const EnterCodeDialog(),
               );
             },
           ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   void _showFolderOptions(BuildContext context) {
     showModalBottomSheet(
@@ -135,40 +140,40 @@ Widget build(BuildContext context) {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) =>const UpdateFolderDialog(),
+                builder: (context) => const UpdateFolderDialog(),
               );
             },
           ),
-          ListTile (
+          ListTile(
             leading: const Icon(Icons.people),
             title: const Text('manage member'),
-            onTap:() {
+            onTap: () {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) => const ManageMemberDialog()
+                builder: (context) => const ManageMemberDialog(),
               );
             },
           ),
-          ListTile (
+          ListTile(
             leading: const Icon(Icons.delete),
             title: const Text('delete folder'),
             onTap: () {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) =>const DeleteFolderDialog(),
+                builder: (context) => const DeleteFolderDialog(),
               );
             },
           ),
-          ListTile (
+          ListTile(
             leading: const Icon(Icons.share),
             title: const Text('share folder'),
             onTap: () {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) =>const ShareFolderDialog(),
+                builder: (context) => const ShareFolderDialog(),
               );
             },
           ),
@@ -196,8 +201,8 @@ Widget build(BuildContext context) {
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.folder_shared),
-                title: const Text('테스트 폴더 초대'),  // 실제 폴더 이름
-                subtitle: const Text('홍길동님이 초대하셨습니다'),  // 실제 초대한 사람 이름
+                title: const Text('테스트 폴더 초대'),
+                subtitle: const Text('홍길동님이 초대하셨습니다'),
               ),
               const SizedBox(height: 16),
               Row(
@@ -206,7 +211,6 @@ Widget build(BuildContext context) {
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      // 거절 로직
                     },
                     child: const Text('거절', style: TextStyle(color: Colors.red)),
                   ),
@@ -214,7 +218,6 @@ Widget build(BuildContext context) {
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      // 수락 로직
                     },
                     child: const Text('수락', style: TextStyle(color: Colors.green)),
                   ),
