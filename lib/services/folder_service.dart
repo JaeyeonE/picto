@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:picto/models/folder/invite_model.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
@@ -10,8 +11,9 @@ import 'package:picto/models/folder/folder_user.dart';
 class FolderService {
   final Dio _dio;
   final String baseUrl;
+  final int userId;
 
-  FolderService(Dio dio, {required int userId})
+  FolderService(Dio dio, {required this.userId})
       : _dio = dio..options = BaseOptions(
           connectTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 3),
@@ -118,20 +120,67 @@ class FolderService {
     }
   }
 
-  Future<void> shareFolder(int folderId, int senderId, int receiverId) async {
-    print('Sharing folder - FolderID: $folderId, SenderID: $senderId, ReceiverID: $receiverId');
+  Future<void> inviteToFolder(int senderId, int receiverId, int folderId) async {
+    print('Inviting user to folder - SenderId: $senderId, ReceiverId: $receiverId, FolderId: $folderId');
     try {
-      await _dio.post('$baseUrl/folders/shares', data: {
-        'senderId': senderId,
-        'receiverId': receiverId,
-        'folderId': folderId
-      });
-      print('Folder shared successfully');
+      await _dio.post(
+        '$baseUrl/folders/shares',
+        data: {
+          'senderId': senderId,
+          'receiverId': receiverId,
+          'folderId': folderId,
+        },
+      );
+      print('Successfully sent folder invitation');
     } on DioException catch (e) {
-      print('Error sharing folder: ${e.message}');
+      print('Error sending folder invitation: ${e.message}');
       throw _handleDioError(e);
     }
   }
+
+  Future<void> acceptInvitation(int noticeId, int receiverId, bool isAccepted) async {
+    try {
+      await _dio.post(
+        '$baseUrl/folders/shares/notices/$noticeId',
+        data: {
+          'receiverId': receiverId,
+          'accept': isAccepted,
+        },
+      );
+    } on DioException catch (e) {
+      print('Error accepting invitation: ${e.message}');
+      throw _handleDioError(e);
+    }
+  }
+
+  
+  Future<List<Invite>> getInvitations(int receiverId) async {
+  try {
+    final response = await _dio.get(
+      '$baseUrl/folders/shares/notices',
+      queryParameters: {
+        'receiverId': receiverId,
+      },
+    );
+    
+    if (response.data is! List) {
+      throw FormatException('Expected list response from server');
+    }
+
+    final List<dynamic> notices = response.data;
+    final invites = notices.map((notice) => Invite.fromJson(notice)).toList();
+    
+    print('Fetched ${invites.length} invitations');
+    return invites;
+    
+  } on DioException catch (e) {
+    print('Error getting invitations: ${e.message}');
+    throw _handleDioError(e);
+  } catch (e) {
+    print('Unexpected error getting invitations: $e');
+    throw Exception('Failed to fetch invitations');
+  }
+}
 
   Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
     print('Uploading photo to folder: $folderId');
