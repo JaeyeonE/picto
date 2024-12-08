@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 
-class ShareFolderDialog extends StatelessWidget {
-  const ShareFolderDialog({Key? key}) : super(key: key);
+class InviteUserDialog extends StatelessWidget {
+  const InviteUserDialog({Key? key}) : super(key: key);
 
   String _generateInviteCode(int? folderId) {
     if (folderId == null) return '';

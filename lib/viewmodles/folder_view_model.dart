@@ -193,7 +193,9 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  // 폴더 사용자 목록 로드
+  // 사용자 이메일 검색
+
+  // 폴더 사용자 목록 로색
   Future<void> loadFolderUsers(int? folderId) async {
     _isLoading = true;
     notifyListeners();
@@ -270,7 +272,7 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> respondToFolderInvitation(int noticeId, bool accept) async {
+  Future<void> acceptInvitation(int noticeId, bool accept) async {
     _isLoading = true;
     notifyListeners();
     
@@ -289,43 +291,22 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  String generateInviteCode(int? folderId) {
-    if (folderId == null) return '';
-    return (folderId * 7 + 11).toString();
-  }
 
-  int? getFolderIdFromCode(String code) {
-    try {
-      int numericCode = int.parse(code);
-      if ((numericCode - 11) % 7 == 0) {
-        return (numericCode - 11) ~/ 7;
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Future<void> joinFolderWithCode(String code) async {
+  Future<void> loadInvitation(int userId) async {
     _isLoading = true;
     notifyListeners();
     
     try {
-      final folderId = getFolderIdFromCode(code);
-      if (folderId == null) {
-        throw ArgumentError('Invalid invitation code');
-      }
-      
-      final noticeId = await _folderService.getNoticeIdForInvitation(user.userId, folderId);
+    
+      final noticeId = await _folderService.getNoticeIdForInvitation(userId, folderId);
       if (noticeId == null) {
         throw Exception('Could not find invitation notice');
       }
 
       await _folderService.acceptInvitation(noticeId, user.userId);
-      await loadFolders();
-      print('Successfully joined folder with code');
+      print('Successfully joined folder');
     } catch (e) {
-      print('Error joining folder with code: $e');
+      print('Error joining folder: $e');
       rethrow;
     } finally {
       _isLoading = false;

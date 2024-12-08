@@ -7,7 +7,7 @@ import 'package:picto/widgets/screen_custom/folder/create_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/delete_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/enter_code_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_user_dialog.dart';
-import 'package:picto/widgets/screen_custom/folder/share_folder_dialog.dart';
+import 'package:picto/widgets/screen_custom/folder/invite_user_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/update_folder_dialog.dart';
 import 'package:picto/widgets/screen_custom/folder/manage_member_dialog.dart';
 
@@ -111,17 +111,6 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.share),
-            title: const Text('enter invitation code'),
-            onTap: () {
-              Navigator.pop(context);
-              showDialog(
-                context: context,
-                builder: (context) => const EnterCodeDialog(),
-              );
-            },
-          ),
         ],
       ),
     );
@@ -173,7 +162,7 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) => const ShareFolderDialog(),
+                builder: (context) => const InviteUserDialog(),
               );
             },
           ),
