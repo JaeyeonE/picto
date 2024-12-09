@@ -65,9 +65,20 @@ class PhotoStoreService {
   }
 
   // 5. 사진 조회
-  Future<http.Response> downloadPhoto(String photoId) async {
+  Future<http.Response> downloadPhotoUri(String photoId) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/download/$photoId');
     return await http.get(uri);
+  }
+
+  Future<Uint8List> downloadPhoto(String photoId) async {
+    final uri = Uri.parse('$baseUrl/photo-store/photos/download/$photoId');
+    final response = await http.get(uri);
+    
+    if (response.statusCode == 200) {
+      return response.bodyBytes; // 바이너리 데이터로 반환
+    } else {
+      throw Exception('Failed to download photo');
+    }
   }
 
   // 6. 사진 삭제

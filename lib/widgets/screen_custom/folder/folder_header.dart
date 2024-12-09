@@ -34,7 +34,7 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
               if (currentFolderName == null || currentFolderName.isEmpty) {
                 return Image.asset(
                   logoPath,
-                  height: 32,
+                  height: 20,
                   fit: BoxFit.contain,
                 );
               }
@@ -122,6 +122,8 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
 
 
   void _showFolderOptions(BuildContext context) {
+    final viewModel = Provider.of<FolderViewModel>(context, listen: false);
+    
     showModalBottomSheet(
       context: context,
       builder: (context) => Column(
@@ -134,7 +136,10 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) => const UpdateFolderDialog(),
+                builder: (context) => ChangeNotifierProvider<FolderViewModel>.value(
+                  value: viewModel,
+                  child: const UpdateFolderDialog(),
+                ),
               );
             },
           ),
@@ -145,7 +150,10 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) => const ManageMemberDialog(),
+                builder: (context) => ChangeNotifierProvider<FolderViewModel>.value(
+                  value: viewModel,
+                  child: const ManageMemberDialog(),
+                ),
               );
             },
           ),
@@ -156,7 +164,10 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) => const DeleteFolderDialog(),
+                builder: (context) => ChangeNotifierProvider<FolderViewModel>.value(
+                  value: viewModel,
+                  child: const DeleteFolderDialog(),
+                ),
               );
             },
           ),
@@ -167,7 +178,10 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
               Navigator.pop(context);
               showDialog(
                 context: context,
-                builder: (context) => const InviteUserDialog(),
+                builder: (context) => ChangeNotifierProvider<FolderViewModel>.value(
+                  value: viewModel,
+                  child: const InviteUserDialog(),
+                ),
               );
             },
           ),

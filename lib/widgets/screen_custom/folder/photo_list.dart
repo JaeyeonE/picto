@@ -140,10 +140,14 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => Feed(
-              initialPhotoIndex: index,
-              folderId: widget.type == PhotoListType.folder ? widget.folderId : null,
-              photoId: photo.photoId,
+            builder: (context) => ChangeNotifierProvider.value(
+              value: viewModel,
+              child: Feed(
+                initialPhotoIndex: index,
+                folderId: widget.type == PhotoListType.folder ? widget.folderId : null,
+                userId: widget.userId,
+                photoId: photo.photoId,
+              ),
             ),
           ),
         );

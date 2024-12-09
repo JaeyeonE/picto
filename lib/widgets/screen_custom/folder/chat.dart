@@ -238,23 +238,25 @@ class _ChatState extends State<Chat> {
   }
 
   void _showMembersList(BuildContext context) {
+    final folderVM = context.read<FolderViewModel>();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('채팅방 멤버'),
-        content: Consumer<FolderViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.userProfiles.isEmpty) {
+        content: Builder(
+          builder: (builderContext) {
+            if (folderVM.userProfiles.isEmpty) {
               return const Text('멤버가 없습니다.');
             }
-
+            // folderVM을 직접 사용
             return SizedBox(
               width: double.maxFinite,
               child: ListView.builder(
                 shrinkWrap: true,
-                itemCount: viewModel.userProfiles.length,
+                itemCount: folderVM.userProfiles.length,
                 itemBuilder: (context, index) {
-                  final user = viewModel.userProfiles[index];
+                  final user = folderVM.userProfiles[index];
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.grey[300],
