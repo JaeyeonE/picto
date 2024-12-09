@@ -70,6 +70,7 @@ class _MapScreenState extends State<MapScreen> {
     super.initState();
     currentUser = widget.initialUser;
     _initializeUser();
+    _resetUserTags();
     _initializeLocationServices();
     _locationHandler = LocationWebSocketHandler(_sessionService);
 
@@ -700,4 +701,28 @@ class _MapScreenState extends State<MapScreen> {
       ),
     );
   }
-}
+  
+  Future<void> _resetUserTags() async {
+  try {
+    final userId = await _userService.getUserId();
+    if (userId != null) {
+      // 사용자의 태그를 ['전체']로 초기화
+      final defaultTags = [
+        '강아지', '고양이', '다람쥐', '햄스터', '새', '곤충', 
+        '파충류', '해양생물', '물고기', '산', '바다', 
+        '호수/강', '들판', '숲', '하늘'
+      ];
+      
+      // 서버에 태그 업데이트
+      await _userService.updateTags(
+        userId: userId,
+        tagNames: defaultTags,
+      );
+      setState(() {
+        selectedTags = ['전체'];
+      });
+    }
+  } catch (e) {
+    debugPrint('태그 초기화 실패: $e');
+  }
+}}
