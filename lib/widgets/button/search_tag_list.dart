@@ -22,7 +22,6 @@ class SearchTagList extends StatelessWidget {
     '새',
     '곤충',
     '파충류',
-    '해양생물',
     '물고기',
     '산',
     '바다',
