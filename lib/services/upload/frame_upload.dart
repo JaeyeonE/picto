@@ -44,7 +44,7 @@ class FrameUploadService {
         request.fields['request'] = json.encode(Frame);
         print('Request data: ${request.fields['request']}');
       } catch (e) {
-        print('Location fetch failed: $e');
+        print('Frame Upload - Location fetch failed: $e');
         Map<String, dynamic> FrameData = {
           'tag': '',
           'photo': 0,

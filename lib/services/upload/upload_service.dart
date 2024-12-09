@@ -12,7 +12,10 @@ class ImageUploadService {
   static const String validationUrl = 'http://10.0.2.2:8083/validate';
   static const String taggingUrl = 'http://10.0.2.2:8083/tag';
 
-  late final UserManagerService _userManagerService;
+  final UserManagerService _userManagerService;
+
+  ImageUploadService({UserManagerService? userManagerService}) 
+    : _userManagerService = userManagerService ?? UserManagerService();
 
   Future<String> uploadImage(File image,
       {bool sharedActive = true,
@@ -51,7 +54,7 @@ class ImageUploadService {
         request.fields['request'] = json.encode(imageData);
         print('Request data: ${request.fields['request']}');
       } catch (e) {
-        print('Location fetch failed: $e');
+        print('upload/Upload Service - Location fetch failed: $e');
         Map<String, dynamic> imageData = {
           'userId': 2,
           'lat': 35.858891,

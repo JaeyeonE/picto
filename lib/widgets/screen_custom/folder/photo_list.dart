@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:picto/views/upload/upload.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/photo_manager/photo.dart';
@@ -163,7 +164,17 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
   }
 
   void _uploadPhoto() async {
-    // 업로드 구현 필요
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UploadScreen(),
+      ),
+    );
+    
+    // 업로드 화면에서 돌아왔을 때 사진 목록 새로고침
+    if (result == true) {
+      _loadPhotos();
+    }
   }
 
   void _showPhotoOptions(Photo photo) {

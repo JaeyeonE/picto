@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:picto/widgets/screen_custom/folder/folder_header.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
 import 'package:picto/models/folder/folder_model.dart';
@@ -38,13 +39,7 @@ class _FolderListState extends State<FolderList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Folders'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      appBar: const FolderHeader(),
       body: Consumer<FolderViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
@@ -102,19 +97,28 @@ class _FolderListState extends State<FolderList> {
     return InkWell(
       onTap: () {
         if (folder.folderId != null) {
-          final viewModel = context.read<FolderViewModel>();
+          // Provider를 상위 context에서 미리 가져옵니다
+          final viewModel = Provider.of<FolderViewModel>(context, listen: false);
           final scaffoldMessenger = ScaffoldMessenger.of(context);
           final navigator = Navigator.of(context);
+
+          // Navigator로 이동하기 전에 Provider를 포함한 Folder 위젯을 준비합니다
+          void navigateToFolder() {
+            navigator.push(
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider.value(
+                  value: viewModel,
+                  child: Folder(folderId: folder.folderId!),
+                ),
+              ),
+            );
+          }
           
+          // 작업 순서 실행
           viewModel.loadPhotos(folder.folderId).then((_) {
             viewModel.setCurrentFolder(folder.name, folder.folderId);
             viewModel.toggleFirst();
-            
-            navigator.push(
-              MaterialPageRoute(
-                builder: (context) => Folder(folderId: folder.folderId!),
-              ),
-            );
+            navigateToFolder();
           }).catchError((e) {
             print('Error loading photos: $e');
             scaffoldMessenger.showSnackBar(
