@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:picto/widgets/screen_custom/profile/user_profile.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/map/map.dart';
@@ -35,7 +36,7 @@ class CustomNavigationBar extends StatelessWidget {
       Widget screen;
       switch (index) {
         case 0:
-          screen = const LoginScreen(); // 설정 화면 -> 수정할것
+          screen = const ProfileScreen(); // 로그아웃 버튼
           break;
         case 1:
           screen = const LoginScreen(); // 실시간 화면 -> 우선 로그인 화면으로 구현
@@ -62,7 +63,7 @@ class CustomNavigationBar extends StatelessWidget {
         );
           break;
         case 4:
-          screen = const ProfileScreen(); // 로그아웃 버튼
+          screen = UserProfile(user: currentUser,); // 로그아웃 버튼
           break;
         default:
           screen = const ProfileScreen(); // 로그아웃 버튼
