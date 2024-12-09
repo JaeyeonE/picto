@@ -54,6 +54,7 @@ class FolderViewModel extends ChangeNotifier {
   bool get isPhotoMode => _isPhotoMode;
   UserInfoResponse? get userInfo => _userInfo;
   List<Invite> get invitations => _invitations;
+
   
 
   // 폴더 목록 로드
