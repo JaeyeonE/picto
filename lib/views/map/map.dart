@@ -35,7 +35,7 @@ class _MapScreenState extends State<MapScreen> {
   // 상태 변수들 정의
   // UI 상태 관련
   int selectedIndex = 2; // 네비게이션 바 선택 인덱스
-  List<String> selectedTags = ['전체']; // 선택된 태그 목록
+  List<String> selectedFilter = ['전체']; // 선택된 태그 목록
   bool _isLoading = false; // 로딩 상태
   final _searchController = TextEditingController(); // 검색 컨트롤러
 
@@ -44,6 +44,25 @@ class _MapScreenState extends State<MapScreen> {
   Set<Marker> markers = {}; // 마커 세트
   Set<Circle> circles = {}; // 원 세트
   MarkerManager? _markerManager; // 마커 관리자
+
+  // 사용자의 태그를 ['전체']로 초기화
+  final defaultTags = [
+    '강아지',
+    '고양이',
+    '다람쥐',
+    '햄스터',
+    '새',
+    '곤충',
+    '파충류',
+    '물고기',
+    '산',
+    '바다',
+    '호수/강',
+    '들판',
+    '숲',
+    '하늘',
+    '기타',
+  ];
 
   // 위치 관련
   LatLng? currentLocation; // 현재 위치
@@ -63,6 +82,7 @@ class _MapScreenState extends State<MapScreen> {
 
 // 사용자 데이터
   User? currentUser;
+  
 
 // 현재 사용자 정보
   @override
@@ -132,15 +152,12 @@ class _MapScreenState extends State<MapScreen> {
   // 사용자 초기화 함수
   Future<void> _initializeUser() async {
     try {
-      final userId = await _userService.getUserId();
-      if (userId != null) {
-        final user = await _userService.getUserProfile(userId);
-        setState(() {
-          currentUser = user;
-          _markerManager = MarkerManager(currentUserId: user.userId);
-        });
-      }
-    } catch (e) {
+      final user = await _userService.getUserProfile(widget.initialUser.userId);
+      setState(() {
+        currentUser = user;
+        _markerManager = MarkerManager(currentUserId: widget.initialUser.userId);
+      });
+        } catch (e) {
       debugPrint('사용자 정보 로드 실패: $e');
     }
   }
@@ -189,16 +206,14 @@ class _MapScreenState extends State<MapScreen> {
     _updateMyLocationMarker(newLocation);
 
     try {
-      final userId = await _userService.getUserId();
-      if (userId != null) {
-        await _locationHandler.sendLocationWithRetry(
-          userId: userId,
-          latitude: newLocation.latitude,
-          longitude: newLocation.longitude,
-        );
-        debugPrint('위치 전송 완료');
-      }
-    } catch (e) {
+      
+      await _locationHandler.sendLocationWithRetry(
+        userId: widget.initialUser.userId,
+        latitude: newLocation.latitude,
+        longitude: newLocation.longitude,
+      );
+      debugPrint('위치 전송 완료');
+        } catch (e) {
       debugPrint('Location update failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -241,8 +256,8 @@ class _MapScreenState extends State<MapScreen> {
       // 태그 필터링된 사진만 선택
       final filteredPhotos = photos
           .where((photo) =>
-              selectedTags.contains('전체') ||
-              (photo.tag != null && selectedTags.contains(photo.tag!)))
+              selectedFilter.contains('전체') ||
+              (photo.tag != null && selectedFilter.contains(photo.tag!)))
           .toList();
 
       // MarkerManager를 통해 마커 생성
@@ -295,22 +310,14 @@ class _MapScreenState extends State<MapScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final userId = await _userService.getUserId();
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('로그인이 필요합니다')),
-        );
-        return;
-      }
-
       final photos = await _photoService.getNearbyPhotos();
       Text("Received photos: $photos");
 
       // 태그 필터링된 사진만 선택
       final filteredPhotos = photos
           .where((photo) =>
-              selectedTags.contains('전체') ||
-              (photo.tag != null && selectedTags.contains(photo.tag!)))
+              selectedFilter.contains('전체') ||
+              (photo.tag != null && selectedFilter.contains(photo.tag!)))
           .toList();
 
       // MarkerManager를 통해 마커 생성
@@ -344,7 +351,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // 현재 위치 마커를 업데이트하는 함수
   void _updateMyLocationMarker(LatLng location) {
-        setState(() {
+    setState(() {
       // 기존 현재 위치 마커 업데이트
       markers.removeWhere(
           (marker) => marker.markerId == const MarkerId("myLocation"));
@@ -462,7 +469,7 @@ class _MapScreenState extends State<MapScreen> {
   // 태그 선택 시 실행되는 함수
   void onTagsSelected(List<String> tags) {
     setState(() {
-      selectedTags = tags;
+      selectedFilter = tags;
     });
     _loadNearbyPhotos();
   }
@@ -495,18 +502,15 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _updateUserFilter(
       String sort, String period, int startDatetime, int endDatetime) async {
     try {
-      final userId = await _userService.getUserId();
-      if (userId != null) {
-        await _userService.updateFilter(
-          userId: userId,
-          sort: '좋아요순',
-          period: period,
-          startDatetime: startDatetime,
-          endDatetime: endDatetime,
-        );
-        _refreshMap(); // 필터 업데이트 후 지도 새로고침
-      }
-    } catch (e) {
+      await _userService.updateFilter(
+        userId: widget.initialUser.userId,
+        sort: '좋아요순',
+        period: period,
+        startDatetime: startDatetime,
+        endDatetime: endDatetime,
+      );
+      _refreshMap(); // 필터 업데이트 후 지도 새로고침
+        } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('필터 업데이트 실패: $e')),
@@ -599,10 +603,11 @@ class _MapScreenState extends State<MapScreen> {
                   // TagSelector도 RepaintBoundary로 감싸기
                   RepaintBoundary(
                     child: TagSelector(
-                      selectedTags: selectedTags,
+                      userId: widget.initialUser.userId,
+                      selectedTags: selectedFilter,
                       onTagsSelected: (tags) {
                         setState(() {
-                          selectedTags = tags;
+                          selectedFilter = tags;
                         });
                         _refreshMap(); // 태그 선택 시 _refreshMap 호출
                       },
@@ -696,28 +701,20 @@ class _MapScreenState extends State<MapScreen> {
       ),
     );
   }
-  
+
   Future<void> _resetUserTags() async {
-  try {
-    final userId = await _userService.getUserId();
-    if (userId != null) {
-      // 사용자의 태그를 ['전체']로 초기화
-      final defaultTags = [
-        '강아지', '고양이', '다람쥐', '햄스터', '새', '곤충', 
-        '파충류', '해양생물', '물고기', '산', '바다', 
-        '호수/강', '들판', '숲', '하늘'
-      ];
+    try {
       
       // 서버에 필터 업데이트
       await _userService.updateTags(
-        userId: userId,
+        userId: widget.initialUser.userId,
         tagNames: defaultTags,
       );
       setState(() {
-        selectedTags = ['전체'];
+        selectedFilter = ['전체'];
       });
+        } catch (e) {
+      debugPrint('태그 초기화 실패: $e');
     }
-  } catch (e) {
-    debugPrint('태그 초기화 실패: $e');
   }
-}}
+}
