@@ -23,7 +23,6 @@ dependencies:
   #권한 및 정보 관련
   permission_handler: ^11.3.1
   device_info_plus: ^11.1.1
-  intl: ^0.20.1
 
   #이미지 관련
   image_picker: ^1.1.2
