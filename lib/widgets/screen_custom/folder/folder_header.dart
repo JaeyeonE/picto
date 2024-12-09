@@ -76,7 +76,7 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
                     IconButton(
                       icon: const Icon(Icons.more_vert),
                       onPressed: () {
-                        if (folderId == null) {
+                        if (viewModel.currentFolderName == null || viewModel.currentFolderName!.isEmpty || folderId == null || folderId == -1){
                           _showFolderListOptions(context);
                         } else {
                           _showFolderOptions(context);
@@ -93,27 +93,33 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  void _showFolderListOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.create_new_folder),
-            title: const Text('Create New Folder'),
-            onTap: () {
-              Navigator.pop(context);
-              showDialog(
-                context: context,
-                builder: (context) => const CreateFolderDialog(),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+ void _showFolderListOptions(BuildContext context) {
+  final viewModel = Provider.of<FolderViewModel>(context, listen: false);
+  
+  showModalBottomSheet(
+    context: context,
+    builder: (context) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.create_new_folder),
+          title: const Text('Create New Folder'),
+          onTap: () {
+            Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (context) => ChangeNotifierProvider<FolderViewModel>.value(
+                value: viewModel,
+                child: const CreateFolderDialog(),
+              ),
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
 
   void _showFolderOptions(BuildContext context) {
     showModalBottomSheet(

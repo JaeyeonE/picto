@@ -49,7 +49,7 @@ class ImageUploadData {
         request.fields['request'] = json.encode(imageData);
         print('Request data: ${request.fields['request']}');
       } catch (e) {
-        print('Location fetch failed: $e');
+        print('upload folder/Upload Service - Location fetch failed: $e');
         Map<String, dynamic> imageData = {
           'userId': 2,
           'lat': 35.858891,

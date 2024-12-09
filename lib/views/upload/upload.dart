@@ -4,8 +4,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 import 'package:picto/models/photo_manager/photo.dart';
+import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/services/upload/frame_list.dart';
 import 'package:picto/services/upload/frame_upload.dart';
+import 'package:picto/services/user_manager_service.dart';
 import 'upload_manager.dart';
 import 'package:picto/views/upload/frame_widget.dart';
 import 'package:picto/services/upload/upload_service.dart';
@@ -19,16 +21,27 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   final UploadController _controller = UploadController();
-  final ImageUploadService _uploadService = ImageUploadService();
+  final UserManagerService _userManager = UserManagerService();
+  late final ImageUploadService _uploadService;
   final FrameUploadService _frameUploadService = FrameUploadService();
   final FrameListService _frameListService = FrameListService();
   Photo? _selectedFrame;
+  
+  int? user;
 
   @override
   void initState() {
     super.initState();
     _controller.loadPhotos().then((_) => setState(() {}));
+    _uploadService = ImageUploadService(userManagerService: _userManager);
+
+    _initializeUser();
   }
+
+  Future<void> _initializeUser() async {
+    user = await _userManager.getUserId();
+  }
+
 
   Future<void> _uploadImage(File file) async {
     if (_controller.image == null) return;
@@ -65,7 +78,7 @@ class _UploadScreenState extends State<UploadScreen> {
 
   Future<void> _refreshFrameList() async {
     try {
-      await _frameListService.getFrames(3); // userId는 실제 사용자 ID로 변경 필요
+      await _frameListService.getFrames(user); // userId는 실제 사용자 ID로 변경 필요
       if (mounted) {
         setState(() {
           _selectedFrame = null;

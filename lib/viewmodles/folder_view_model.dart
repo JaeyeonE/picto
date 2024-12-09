@@ -23,7 +23,8 @@ class FolderViewModel extends ChangeNotifier {
   List<User> _userProfiles = [];
   bool _isLoading = false;
   String? _currentFolderName;
-  int _currentFolderId = 0;
+  static const int INVALID_FOLDER_ID = -1;
+  int _currentFolderId = INVALID_FOLDER_ID;
   bool _isPhotoList = true;
   bool _isFirst = true;
   bool _isPhotoMode = true;
@@ -326,8 +327,14 @@ class FolderViewModel extends ChangeNotifier {
   }
 
   void setCurrentFolder(String? folderName, int folderId) {
-    _currentFolderName = folderName;
-    _currentFolderId = folderId;
+    // 폴더 리스트로 돌아갈 때의 케이스를 명확히 처리
+    if (folderName == null || folderName.isEmpty) {
+      _currentFolderName = null;
+      _currentFolderId = INVALID_FOLDER_ID; // 또는 null
+    } else {
+      _currentFolderName = folderName;
+      _currentFolderId = folderId;
+    }
     notifyListeners();
   }
 
@@ -335,4 +342,10 @@ class FolderViewModel extends ChangeNotifier {
     _isPhotoMode = !_isPhotoMode;
     notifyListeners();
   }
+
+  bool get isInFolder => 
+    _currentFolderName != null && 
+    _currentFolderName!.isNotEmpty && 
+    _currentFolderId != INVALID_FOLDER_ID;
+
 }

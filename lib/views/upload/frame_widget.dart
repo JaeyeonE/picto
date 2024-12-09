@@ -3,6 +3,7 @@ import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/services/upload/frame_add_service.dart';
 import 'package:picto/services/upload/frame_list.dart';
 import 'package:picto/services/upload/frame_upload.dart';
+import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/views/upload/frame_item.dart';
 
 class FrameSelectionWidget extends StatefulWidget {
@@ -22,18 +23,25 @@ class _FrameSelectionWidgetState extends State<FrameSelectionWidget> {
   final FrameListService _frameListService = FrameListService();
   final FrameAddService _frameAddService = FrameAddService();
   bool _isLoading = false;
+  final UserManagerService _userManager = UserManagerService();
+  int? userId;
 
   @override
   void initState() {
     super.initState();
     _loadFrames();
+    _initializeUser();
+  }
+
+  Future<void> _initializeUser() async {
+    userId = await _userManager.getUserId();
   }
 
   Future<void> _loadFrames() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final frames = await _frameListService.getFrames(2);
+      final frames = await _frameListService.getFrames(userId);
       if (!mounted) return;
       setState(() {
         _frames = frames;
