@@ -11,12 +11,16 @@ import 'package:picto/services/location_service.dart';
 
 class FrameUploadService {
   // 실제 서버 URL로 변경
-  static const String validationUrl = 'http://10.0.2.2:8083/validate';
-  static const String taggingUrl = 'http://10.0.2.2:8083/tag';
+  static const String validationUrl = 'http://172.20.10.7:8083/validate';
+  static const String taggingUrl = 'http://172.20.10.7:8083/tag';
 
   late final UserManagerService _userManagerService;
+  FrameUploadService({UserManagerService? userManagerService}) 
+    : _userManagerService = userManagerService ?? UserManagerService();
+  
 
   Future<String> uploadFrame(File image, Photo photo) async {
+  
     try {
       final targetUrl = photo.sharedActive ? validationUrl : taggingUrl;
 

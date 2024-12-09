@@ -48,7 +48,6 @@ class MarkerManager {
       }
       // 새로운 마커 생성
       final markerIcon = await MarkerImageProcessor.createMarkerIcon(
-        photo.photoPath,
         photo.userId == currentUserId,
       );
 

@@ -9,13 +9,10 @@ import 'package:picto/services/location_service.dart';
 
 class ImageUploadService {
   // 실제 서버 URL로 변경
-  static const String validationUrl = 'http://192.168.166.57:8083/validate';
-  static const String taggingUrl = 'http://10.0.2.2:8083/tag';
+  static const String validationUrl = 'http://172.20.10.7:8083/validate';
+  static const String taggingUrl = 'http://172.20.10.7:8083/tag';
 
-  final UserManagerService _userManagerService;
-
-  ImageUploadService({UserManagerService? userManagerService}) 
-    : _userManagerService = userManagerService ?? UserManagerService();
+  late final UserManagerService _userManagerService;
 
   Future<String> uploadImage(File image,
       {bool sharedActive = true,
@@ -54,7 +51,7 @@ class ImageUploadService {
         request.fields['request'] = json.encode(imageData);
         print('Request data: ${request.fields['request']}');
       } catch (e) {
-        print('upload/Upload Service - Location fetch failed: $e');
+        print('Location fetch failed: $e');
         Map<String, dynamic> imageData = {
           'userId': 2,
           'lat': 35.858891,

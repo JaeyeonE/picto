@@ -48,7 +48,7 @@ class CustomNavigationBar extends StatelessWidget {
           screen = ChangeNotifierProvider(
           create: (context) => FolderViewModel(
             user: currentUser,
-            folderService: FolderService(dio, userId: currentUser.userId),
+            folderService: FolderService(userId: currentUser.userId),
             photoStoreService: PhotoStoreService(baseUrl: 'http://52.78.237.242:8084'),
             userManagerService: UserManagerService(),
           ),
@@ -66,7 +66,7 @@ class CustomNavigationBar extends StatelessWidget {
           screen = ChangeNotifierProvider(
           create: (context) => FolderViewModel(
             user: currentUser,
-            folderService: FolderService(dio, userId: currentUser.userId),
+            folderService: FolderService(userId: currentUser.userId),
             photoStoreService: PhotoStoreService(baseUrl: 'http://52.78.237.242:8084'),
             userManagerService: UserManagerService(),
           ),

@@ -25,7 +25,7 @@ class FolderViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _currentFolderName;
   static const int INVALID_FOLDER_ID = -1;
-  int _currentFolderId = 2 /*INVALID_FOLDER_ID*/;
+  int _currentFolderId = INVALID_FOLDER_ID;
   bool _isPhotoList = true;
   bool _isFirst = true;
   bool _isPhotoMode = true;
@@ -63,7 +63,7 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final folders = await _folderService.getFolders(2);
+      final folders = await _folderService.getFolders(user.userId);
       print('Loaded folders: ${folders?.map((f) => f.toJson())}');
       _folders = folders ?? [];
     } catch (e) {
@@ -81,7 +81,7 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final newFolder = await _folderService.createFolder(2, name, content);
+      final newFolder = await _folderService.createFolder(user.userId, name, content);
       if (newFolder != null) {
         _folders.add(newFolder);
         print('created folder: ${newFolder.toJson()}'); 
@@ -123,7 +123,7 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await _folderService.deleteFolder(2, folderId);
+      await _folderService.deleteFolder(user.userId, folderId);
       _folders.removeWhere((folder) => folder.folderId == folderId);
     } catch (e) {
       print('Error deleting folder: $e');
@@ -139,13 +139,13 @@ class FolderViewModel extends ChangeNotifier {
   notifyListeners();
   
   try {
-    final photos = await _folderService.getPhotos(2, folderId);
+    final photos = await _folderService.getPhotos(user.userId, folderId);
     if (photos != null) {
       for (var photo in photos) {
         if (photo.photoId == null) continue;
         
         try {
-          final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
+          final response = await _photoStoreService.downloadPhoto(photo.photoId);
           print('----- loadPhotos ----');
           print('Response status: ${response.statusCode}');
           print('Response body: ${response.body}');
@@ -182,14 +182,14 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final userInfo = await _userManagerService.getUserAllInfo(2);
+      final userInfo = await _userManagerService.getUserAllInfo(1);
       _userInfo = userInfo;
       
       // 사진 경로 로드
       final List<Photo> photos = [];
       for (var photo in userInfo.photos) {
         try {
-          final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
+          final response = await _photoStoreService.downloadPhoto(photo.photoId);
           if (response.statusCode == 200) {
             photo.photoPath = response.body;
             photos.add(photo);
@@ -217,7 +217,7 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final users = await _folderService.getFolderUsers(2, folderId);
+      final users = await _folderService.getFolderUsers(user.userId, folderId);
       _folderUsers = users ?? [];
       
       _userProfiles = [];
@@ -239,21 +239,21 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  // 사진 업로드
-  Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
-    _isLoading = true;
-    notifyListeners();
+  // // 사진 업로드
+  // Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
+  //   _isLoading = true;
+  //   notifyListeners();
     
-    try {
-      await _folderService.uploadPhoto(folderId, photo, metadata);
-      await loadPhotos(folderId);
-    } catch (e) {
-      print('Error uploading photo: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
+  //   try {
+  //     await _folderService.uploadPhoto(folderId, photo, metadata);
+  //     await loadPhotos(folderId);
+  //   } catch (e) {
+  //     print('Error uploading photo: $e');
+  //   } finally {
+  //     _isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
 
   // 사진 삭제
   Future<void> deletePhoto(int? folderId, int photoId) async {
@@ -277,7 +277,7 @@ class FolderViewModel extends ChangeNotifier {
     
     try {
       if (folderId == null) throw ArgumentError('folderId cannot be null');
-      await _folderService.inviteToFolder(2, receiverId, folderId);
+      await _folderService.inviteToFolder(user.userId, receiverId, folderId);
       print('Successfully sent folder invitation');
     } catch (e) {
       print('Error sending folder invitation: $e');
@@ -293,7 +293,7 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await _folderService.acceptInvitation(noticeId, 2, accept);
+      await _folderService.acceptInvitation(noticeId, user.userId, accept);
       if (accept) {
         await loadFolders();
       }
@@ -312,7 +312,7 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final invites = await _folderService.getInvitations(2);
+      final invites = await _folderService.getInvitations(user.userId);
       _invitations = invites;
       print('Loaded ${invites.length} invitations');
     } catch (e) {

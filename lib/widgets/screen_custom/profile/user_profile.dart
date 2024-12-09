@@ -212,7 +212,7 @@ class _UserProfileState extends State<UserProfile> {
               Expanded(
                 child: PhotoListWidget(
                   type: PhotoListType.user,
-                  userId: widget.user.userId.toString(),
+                  userId: widget.user.userId,
                 ),
               ),
             ],

@@ -33,7 +33,7 @@ class _UploadScreenState extends State<UploadScreen> {
   void initState() {
     super.initState();
     _controller.loadPhotos().then((_) => setState(() {}));
-    _uploadService = ImageUploadService(userManagerService: _userManager);
+    _uploadService = ImageUploadService();
 
     _initializeUser();
   }

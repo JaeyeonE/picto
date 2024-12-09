@@ -144,20 +144,6 @@ class FolderHeader extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('manage member'),
-            onTap: () {
-              Navigator.pop(context);
-              showDialog(
-                context: context,
-                builder: (context) => ChangeNotifierProvider<FolderViewModel>.value(
-                  value: viewModel,
-                  child: const ManageMemberDialog(),
-                ),
-              );
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.delete),
             title: const Text('delete folder'),
             onTap: () {

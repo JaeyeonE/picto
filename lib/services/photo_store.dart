@@ -13,7 +13,7 @@ class PhotoStoreService {
 
   // 2. 액자 사진 업로드
   Future<Map<String, dynamic>> uploadFramePhoto({
-    required String photoId,
+    required int photoId,
     required File photoFile,
     required String tag,
     required int registerTime,
@@ -59,7 +59,7 @@ class PhotoStoreService {
   }
 
   // 4. 사진 공유 상테 업데이트
-  Future<void> updatePhotoShareStatus(String photoId, bool shared) async {
+  Future<void> updatePhotoShareStatus(int photoId, bool shared) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/$photoId/share')
         .replace(queryParameters: {'shared': shared.toString()});
 
@@ -67,7 +67,7 @@ class PhotoStoreService {
   }
 
   // 5. 사진 조회
-  Future<http.Response> downloadPhoto(String photoId) async {
+  Future<http.Response> downloadPhoto(int photoId) async {
   try {
     final uri = Uri.parse('http://52.78.237.242:8084/photo-store/photos/download/$photoId');
     final response = await http.get(uri);
@@ -85,7 +85,7 @@ class PhotoStoreService {
   }
 }
 
-  Future<Uint8List> downloadPhoto22(String photoId) async {
+  Future<Uint8List> downloadPhoto22(int photoId) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/download/$photoId');
     final response = await http.get(uri);
     
@@ -98,7 +98,7 @@ class PhotoStoreService {
   }
 
   // 6. 사진 삭제
-  Future<void> deletePhoto(String photoId, int userId) async {
+  Future<void> deletePhoto(int photoId, int userId) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/$photoId')
         .replace(queryParameters: {'userId': userId.toString()});
 

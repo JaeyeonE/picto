@@ -14,7 +14,7 @@ enum PhotoListType {
 class PhotoListWidget extends StatefulWidget {
   final PhotoListType type;
   final int? folderId;
-  final String? userId;
+  final int? userId;
 
   const PhotoListWidget({
     Key? key,
@@ -51,7 +51,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
         viewModel.loadFolderUsers(widget.folderId);
         break;
       case PhotoListType.user:
-        viewModel.loadUserPhotos(int.parse(widget.userId!));
+        viewModel.loadUserPhotos(widget.userId!);
         break;
     }
   }
