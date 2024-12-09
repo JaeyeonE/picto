@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'dart:typed_data';
 
 class PhotoStoreService {
   final String baseUrl;
@@ -66,8 +68,33 @@ class PhotoStoreService {
 
   // 5. 사진 조회
   Future<http.Response> downloadPhoto(String photoId) async {
+  try {
+    final uri = Uri.parse('http://52.78.237.242:8084/photo-store/photos/download/$photoId');
+    final response = await http.get(uri);
+    
+    if (response.statusCode == 500) {
+      print('Server error details: ${response.body}');
+      // 서버 로그 확인을 위한 추가 정보 출력
+      throw Exception('Failed to download photo: Server error');
+    }
+    
+    return response;
+  } catch (e) {
+    print('Download error: $e');
+    rethrow;
+  }
+}
+
+  Future<Uint8List> downloadPhoto22(String photoId) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/download/$photoId');
-    return await http.get(uri);
+    final response = await http.get(uri);
+    
+    if (response.statusCode == 200) {
+      print('${response.bodyBytes}');
+      return response.bodyBytes; // 바이너리 데이터로 반환
+    } else {
+      throw Exception('Failed to download photo');
+    }
   }
 
   // 6. 사진 삭제
