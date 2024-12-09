@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:picto/models/folder/invite_model.dart';
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/folder/folder_model.dart';
@@ -134,37 +135,46 @@ class FolderViewModel extends ChangeNotifier {
 
   // 폴더 내 사진 목록 로드
   Future<void> loadPhotos(int folderId) async {
-    _isLoading = true;
-    notifyListeners();
-    
-    try {
-      final photos = await _folderService.getPhotos(2, folderId);
-      if (photos != null) {
-        for (var photo in photos) {
-          if (photo.photoId == null) continue;
-          
-          try {
-            final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
-            if (response.statusCode == 200) {
-              photo.photoPath = response.body;
-            }
-          } catch (e) {
-            print('Error downloading photo ${photo.photoId}: $e');
+  _isLoading = true;
+  notifyListeners();
+  
+  try {
+    final photos = await _folderService.getPhotos(2, folderId);
+    if (photos != null) {
+      for (var photo in photos) {
+        if (photo.photoId == null) continue;
+        
+        try {
+          final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
+          print('----- loadPhotos ----');
+          print('Response status: ${response.statusCode}');
+          print('Response body: ${response.body}');
+          print('Parsed URL: ${photo.photoPath}');
+          if (response.statusCode == 200) {
+            // Base64 데이터가 이미 포함된 응답을 그대로 사용
+            photo.photoPath = response.body;
+          } else {
+            // 에러 응답의 경우 빈 이미지 데이터로 설정
+            photo.photoPath = ''; // PhotoListWidget에서 처리할 수 있도록
           }
+        } catch (e) {
+          print('Error downloading photo ${photo.photoId}: $e');
+          photo.photoPath = ''; // 에러 시 빈 이미지 데이터
         }
-        _photos = photos;
-      } else {
-        _photos = [];
       }
-      _currentFolderId = folderId;
-    } catch (e) {
-      print('Error loading photos: $e');
+      _photos = photos;
+    } else {
       _photos = [];
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
+    _currentFolderId = folderId;
+  } catch (e) {
+    print('Error loading photos: $e');
+    _photos = [];
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
 
   //유저가 업로드한 사진 가져오기
   Future<void> loadUserPhotos(int userId) async {

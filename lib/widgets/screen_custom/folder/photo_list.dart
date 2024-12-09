@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:picto/views/upload/upload.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
@@ -155,16 +156,65 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
       onLongPress: widget.type == PhotoListType.folder 
         ? () => _showPhotoOptions(photo)
         : null,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          image: DecorationImage(
-            image: NetworkImage(photo.photoPath),
-            fit: BoxFit.cover,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey[200], // 기본 배경색 설정
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: _buildImage(photo),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildImage(Photo photo) {
+    if (photo.photoPath.isEmpty) {
+      // 이미지가 없거나 로드 실패 시 회색 화면 표시
+      return Container(
+        color: Colors.grey[300],
+        child: Icon(
+          Icons.image_not_supported,
+          color: Colors.grey[400],
+          size: 32,
+        ),
+      );
+    }
+
+    try {
+      List<String> parts = photo.photoPath.split(',');
+      String base64Data = parts.length > 1 ? parts[1] : photo.photoPath;
+      
+      return Image.memory(
+        base64Decode(base64Data),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // 이미지 로드 실패 시 회색 화면 표시
+          return Container(
+            color: Colors.grey[300],
+            child: Icon(
+              Icons.broken_image,
+              color: Colors.grey[400],
+              size: 32,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      // Base64 디코딩 실패 시 회색 화면 표시
+      return Container(
+        color: Colors.grey[300],
+        child: Icon(
+          Icons.error_outline,
+          color: Colors.grey[400],
+          size: 32,
+        ),
+      );
+    }
   }
 
   void _uploadPhoto() async {

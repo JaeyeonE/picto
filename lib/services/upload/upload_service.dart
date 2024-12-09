@@ -9,7 +9,7 @@ import 'package:picto/services/location_service.dart';
 
 class ImageUploadService {
   // 실제 서버 URL로 변경
-  static const String validationUrl = 'http://10.0.2.2:8083/validate';
+  static const String validationUrl = 'http://192.168.166.57:8083/validate';
   static const String taggingUrl = 'http://10.0.2.2:8083/tag';
 
   final UserManagerService _userManagerService;
