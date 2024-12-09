@@ -12,6 +12,7 @@ import 'package:picto/services/session/session_service.dart';
 import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/map/zoom_position.dart';
+import 'package:picto/views/upload/upload.dart';
 import 'package:picto/widgets/common/actual_tag_list.dart';
 import '../map/search_screen.dart';
 import '../../widgets/common/map_header.dart';
@@ -629,21 +630,13 @@ class _MapScreenState extends State<MapScreen> {
               bottom: 90,
               child: FloatingActionButton(
                 heroTag: 'sendLocation',
-                onPressed: () async {
-                  if (currentLocation != null) {
-                    await _handleLocationUpdate(currentLocation!);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('map.dart 현재 위치 재전송 완료')),
-                      );
-                    }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('현재 위치를 가져올 수 없습니다')),
-                    );
-                  }
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const UploadScreen()),
+                  );
                 },
-                child: const Icon(Icons.send),
+                child: const Icon(Icons.add),
               ),
             ),
 

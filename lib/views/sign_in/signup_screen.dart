@@ -201,6 +201,7 @@ Future<void> _getCurrentLocation() async {
         title: const Text('회원가입'),
         leading: IconButton(
           icon: Image.asset('lib/assets/common/picto_letter_logo.png'),
+          iconSize: 16,
           onPressed: () => Navigator.pop(context),
         ),
       ),
