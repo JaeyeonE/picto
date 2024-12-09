@@ -344,11 +344,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // 현재 위치 마커를 업데이트하는 함수
   void _updateMyLocationMarker(LatLng location) {
-    // ARGB 색상을 HSV로 변환
-    final markerColor = const Color.fromARGB(255, 112, 56, 255);
-    final hsvColor = HSVColor.fromColor(markerColor);
-
-    setState(() {
+        setState(() {
       // 기존 현재 위치 마커 업데이트
       markers.removeWhere(
           (marker) => marker.markerId == const MarkerId("myLocation"));
@@ -356,7 +352,7 @@ class _MapScreenState extends State<MapScreen> {
         Marker(
           markerId: const MarkerId("myLocation"),
           position: location,
-          icon: BitmapDescriptor.defaultMarkerWithHue(hsvColor.hue),
+          icon: BitmapDescriptor.defaultMarker,
           infoWindow: const InfoWindow(title: "현재 위치"),
         ),
       );
@@ -368,7 +364,6 @@ class _MapScreenState extends State<MapScreen> {
           circleId: const CircleId('currentLocationRadius'),
           center: location,
           radius: 3000, // 3km를 미터 단위로
-          fillColor: Colors.purple.withOpacity(0.0), // 투명 채우기
           strokeColor: Color.fromARGB(255, 111, 0, 255)
               .withOpacity(0.2), // 80% 투명도의 보라색 테두리
           strokeWidth: 2,
@@ -713,7 +708,7 @@ class _MapScreenState extends State<MapScreen> {
         '호수/강', '들판', '숲', '하늘'
       ];
       
-      // 서버에 태그 업데이트
+      // 서버에 필터 업데이트
       await _userService.updateTags(
         userId: userId,
         tagNames: defaultTags,
