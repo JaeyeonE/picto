@@ -29,9 +29,9 @@ class MarkerImageProcessor {
    }
    return photoPath;
  }
-
+  // 만약 새로 뜬 이미지의 유저 아이디가 내 것과 같다면
  // 마커 이미지 생성
- static Future<BitmapDescriptor> createMarkerIcon(String photoPath, bool isCurrentUser) async {
+ static Future<BitmapDescriptor> createMarkerIcon(int userId, String photoPath, bool isCurrentUser) async {
    await loadFrameImages();
 
    final validatedPhotoPath = _validatePhotoPath(photoPath);
@@ -90,7 +90,7 @@ class MarkerImageProcessor {
      final bytes = img.encodePng(composite);
      return BitmapDescriptor.fromBytes(bytes);
    } catch (e) {
-     return await createMarkerIcon(FALLBACK_IMAGE, isCurrentUser);
+     return await createMarkerIcon(userId, FALLBACK_IMAGE, isCurrentUser);
    }
  }
 }

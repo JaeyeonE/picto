@@ -2,7 +2,6 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:picto/services/user_manager_service.dart'; // 폴더 리스트 뽑으려고..
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/services/folder_service.dart';
 
@@ -29,7 +28,7 @@ class TagSelector extends StatefulWidget {
 
 class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStateMixin {
   late final FolderService _folderService;
-  final List<String> baseTags = const ['전체', '순서', '폴더', '시간', '태그', '#강아지_사진대회'];
+  final List<String> baseTags = const ['전체', '순서', '시간', '태그', '#강아지_사진대회']; // 폴더 지움
   late Map<String, List<FilterOption>> filterOptions;
   List<String> folderNames = [];
 
@@ -40,6 +39,7 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
     _folderService = FolderService(Dio(), userId: widget.userId);
     _initializeFilterOptions();
   }
+
 
   void _initializeFilterOptions() {
     filterOptions = {
@@ -205,7 +205,7 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: option.isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+                              color: option.isSelected ? AppColors.primary.withOpacity(0.4) : Colors.white,
                               border: Border(
                                 bottom: BorderSide(
                                   color: Colors.grey[200]!,

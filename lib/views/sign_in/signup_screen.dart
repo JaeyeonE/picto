@@ -86,7 +86,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       builder: (context) => AlertDialog(
         title: const Text('이용약관'),
         content: const SingleChildScrollView(
-          child: Text('// TODO: 실제 이용약관 내용 추가'),
+          child: Text("이용 약관을 추가하세요 "),
         ),
         actions: [
           TextButton(

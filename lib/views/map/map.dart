@@ -124,7 +124,7 @@ class _MapScreenState extends State<MapScreen> {
             if (newPhoto != null && mounted) {
               // MarkerManager로 마커 생성
               final newMarkers = await _markerManager
-                  ?.createMarkersFromPhotos([newPhoto], 'small');
+                  ?.createMarkersFromPhotos([newPhoto], 'small', widget.initialUser.userId);
 
               if (newMarkers != null) {
                 setState(() {
@@ -155,7 +155,7 @@ class _MapScreenState extends State<MapScreen> {
       final user = await _userService.getUserProfile(widget.initialUser.userId);
       setState(() {
         currentUser = user;
-        _markerManager = MarkerManager(currentUserId: widget.initialUser.userId);
+        _markerManager = MarkerManager(userId: widget.initialUser.userId);
       });
         } catch (e) {
       debugPrint('사용자 정보 로드 실패: $e');
@@ -262,7 +262,7 @@ class _MapScreenState extends State<MapScreen> {
 
       // MarkerManager를 통해 마커 생성
       final newMarkers = await _markerManager!
-          .createMarkersFromPhotos(filteredPhotos, _currentLocationType);
+          .createMarkersFromPhotos(filteredPhotos, _currentLocationType, widget.initialUser.userId);
 
       if (mounted) {
         setState(() {
@@ -322,7 +322,7 @@ class _MapScreenState extends State<MapScreen> {
 
       // MarkerManager를 통해 마커 생성
       final newMarkers = await _markerManager!
-          .createMarkersFromPhotos(filteredPhotos, 'small');
+          .createMarkersFromPhotos(filteredPhotos, 'small', widget.initialUser.userId);
 
       if (mounted) {
         setState(() {
