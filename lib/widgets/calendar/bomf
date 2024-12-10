@@ -1,0 +1,424 @@
+// 게임 캐릭터 모델
+class GameCharacter {
+  final String id;
+  final String name;
+  final String characterClass;
+  final int level;
+  final Stats stats;
+  final Equipment equipment;
+  final List<Skill> skills;
+  final Inventory inventory;
+  final List<Buff> activeBuffs;
+  final List<Quest> activeQuests;
+  final CharacterProgress progress;
+  final List<Achievement> achievements;
+  final GuildInfo? guildInfo;
+  final PvpStats pvpStats;
+  final CharacterCustomization customization;
+  final Map<String, double> elementalResistance;
+  final List<String> titles;
+  final DateTime createdAt;
+  final DateTime lastLogin;
+
+  GameCharacter({
+    required this.id,
+    required this.name,
+    required this.characterClass,
+    required this.level,
+    required this.stats,
+    required this.equipment,
+    required this.skills,
+    required this.inventory,
+    required this.activeBuffs,
+    required this.activeQuests,
+    required this.progress,
+    required this.achievements,
+    this.guildInfo,
+    required this.pvpStats,
+    required this.customization,
+    required this.elementalResistance,
+    required this.titles,
+    required this.createdAt,
+    required this.lastLogin,
+  });
+
+  factory GameCharacter.fromJson(Map<String, dynamic> json) {
+    return GameCharacter(
+      id: json['id'],
+      name: json['name'],
+      characterClass: json['characterClass'],
+      level: json['level'],
+      stats: Stats.fromJson(json['stats']),
+      equipment: Equipment.fromJson(json['equipment']),
+      skills: (json['skills'] as List).map((s) => Skill.fromJson(s)).toList(),
+      inventory: Inventory.fromJson(json['inventory']),
+      activeBuffs: (json['activeBuffs'] as List)
+          .map((b) => Buff.fromJson(b))
+          .toList(),
+      activeQuests: (json['activeQuests'] as List)
+          .map((q) => Quest.fromJson(q))
+          .toList(),
+      progress: CharacterProgress.fromJson(json['progress']),
+      achievements: (json['achievements'] as List)
+          .map((a) => Achievement.fromJson(a))
+          .toList(),
+      guildInfo: json['guildInfo'] != null
+          ? GuildInfo.fromJson(json['guildInfo'])
+          : null,
+      pvpStats: PvpStats.fromJson(json['pvpStats']),
+      customization: CharacterCustomization.fromJson(json['customization']),
+      elementalResistance: Map<String, double>.from(json['elementalResistance']),
+      titles: List<String>.from(json['titles']),
+      createdAt: DateTime.parse(json['createdAt']),
+      lastLogin: DateTime.parse(json['lastLogin']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'characterClass': characterClass,
+      'level': level,
+      'stats': stats.toJson(),
+      'equipment': equipment.toJson(),
+      'skills': skills.map((s) => s.toJson()).toList(),
+      'inventory': inventory.toJson(),
+      'activeBuffs': activeBuffs.map((b) => b.toJson()).toList(),
+      'activeQuests': activeQuests.map((q) => q.toJson()).toList(),
+      'progress': progress.toJson(),
+      'achievements': achievements.map((a) => a.toJson()).toList(),
+      'guildInfo': guildInfo?.toJson(),
+      'pvpStats': pvpStats.toJson(),
+      'customization': customization.toJson(),
+      'elementalResistance': elementalResistance,
+      'titles': titles,
+      'createdAt': createdAt.toIso8601String(),
+      'lastLogin': lastLogin.toIso8601String(),
+    };
+  }
+}
+
+// 캐릭터 스탯 모델
+class Stats {
+  final int strength;
+  final int agility;
+  final int intelligence;
+  final int vitality;
+  final int luck;
+  final int stamina;
+  final double criticalChance;
+  final double criticalDamage;
+  final int attackPower;
+  final int magicPower;
+  final int defense;
+  final int magicResistance;
+  final double attackSpeed;
+  final double moveSpeed;
+  final int maxHealth;
+  final int maxMana;
+  final double healthRegen;
+  final double manaRegen;
+  final Map<String, int> bonusStats;
+
+  Stats({
+    required this.strength,
+    required this.agility,
+    required this.intelligence,
+    required this.vitality,
+    required this.luck,
+    required this.stamina,
+    required this.criticalChance,
+    required this.criticalDamage,
+    required this.attackPower,
+    required this.magicPower,
+    required this.defense,
+    required this.magicResistance,
+    required this.attackSpeed,
+    required this.moveSpeed,
+    required this.maxHealth,
+    required this.maxMana,
+    required this.healthRegen,
+    required this.manaRegen,
+    required this.bonusStats,
+  });
+
+  factory Stats.fromJson(Map<String, dynamic> json) {
+    return Stats(
+      strength: json['strength'],
+      agility: json['agility'],
+      intelligence: json['intelligence'],
+      vitality: json['vitality'],
+      luck: json['luck'],
+      stamina: json['stamina'],
+      criticalChance: json['criticalChance'],
+      criticalDamage: json['criticalDamage'],
+      attackPower: json['attackPower'],
+      magicPower: json['magicPower'],
+      defense: json['defense'],
+      magicResistance: json['magicResistance'],
+      attackSpeed: json['attackSpeed'],
+      moveSpeed: json['moveSpeed'],
+      maxHealth: json['maxHealth'],
+      maxMana: json['maxMana'],
+      healthRegen: json['healthRegen'],
+      manaRegen: json['manaRegen'],
+      bonusStats: Map<String, int>.from(json['bonusStats']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'strength': strength,
+      'agility': agility,
+      'intelligence': intelligence,
+      'vitality': vitality,
+      'luck': luck,
+      'stamina': stamina,
+      'criticalChance': criticalChance,
+      'criticalDamage': criticalDamage,
+      'attackPower': attackPower,
+      'magicPower': magicPower,
+      'defense': defense,
+      'magicResistance': magicResistance,
+      'attackSpeed': attackSpeed,
+      'moveSpeed': moveSpeed,
+      'maxHealth': maxHealth,
+      'maxMana': maxMana,
+      'healthRegen': healthRegen,
+      'manaRegen': manaRegen,
+      'bonusStats': bonusStats,
+    };
+  }
+}
+
+// 스킬 모델
+class Skill {
+  final String id;
+  final String name;
+  final String description;
+  final int level;
+  final String type;
+  final double damage;
+  final double manaCost;
+  final double cooldown;
+  final List<String> effects;
+  final String element;
+  final Map<String, double> scaling;
+  final List<String> requiredWeapons;
+  final Map<String, int> requiredStats;
+  final List<String> upgrades;
+  final String targetType;
+  final double range;
+  final double castTime;
+  final List<Buff> buffs;
+
+  Skill({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.level,
+    required this.type,
+    required this.damage,
+    required this.manaCost,
+    required this.cooldown,
+    required this.effects,
+    required this.element,
+    required this.scaling,
+    required this.requiredWeapons,
+    required this.requiredStats,
+    required this.upgrades,
+    required this.targetType,
+    required this.range,
+    required this.castTime,
+    required this.buffs,
+  });
+
+  factory Skill.fromJson(Map<String, dynamic> json) {
+    return Skill(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      level: json['level'],
+      type: json['type'],
+      damage: json['damage'],
+      manaCost: json['manaCost'],
+      cooldown: json['cooldown'],
+      effects: List<String>.from(json['effects']),
+      element: json['element'],
+      scaling: Map<String, double>.from(json['scaling']),
+      requiredWeapons: List<String>.from(json['requiredWeapons']),
+      requiredStats: Map<String, int>.from(json['requiredStats']),
+      upgrades: List<String>.from(json['upgrades']),
+      targetType: json['targetType'],
+      range: json['range'],
+      castTime: json['castTime'],
+      buffs: (json['buffs'] as List).map((b) => Buff.fromJson(b)).toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'level': level,
+      'type': type,
+      'damage': damage,
+      'manaCost': manaCost,
+      'cooldown': cooldown,
+      'effects': effects,
+      'element': element,
+      'scaling': scaling,
+      'requiredWeapons': requiredWeapons,
+      'requiredStats': requiredStats,
+      'upgrades': upgrades,
+      'targetType': targetType,
+      'range': range,
+      'castTime': castTime,
+      'buffs': buffs.map((b) => b.toJson()).toList(),
+    };
+  }
+}
+
+// 버프 모델
+class Buff {
+  final String id;
+  final String name;
+  final String description;
+  final String type;
+  final Duration duration;
+  final Map<String, double> statModifiers;
+  final bool isDebuff;
+  final String source;
+  final bool isStackable;
+  final int maxStacks;
+  final int currentStacks;
+  final List<String> effects;
+  final Map<String, dynamic> specialEffects;
+
+  Buff({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.type,
+    required this.duration,
+    required this.statModifiers,
+    required this.isDebuff,
+    required this.source,
+    required this.isStackable,
+    required this.maxStacks,
+    required this.currentStacks,
+    required this.effects,
+    required this.specialEffects,
+  });
+
+  factory Buff.fromJson(Map<String, dynamic> json) {
+    return Buff(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      type: json['type'],
+      duration: Duration(milliseconds: json['duration']),
+      statModifiers: Map<String, double>.from(json['statModifiers']),
+      isDebuff: json['isDebuff'],
+      source: json['source'],
+      isStackable: json['isStackable'],
+      maxStacks: json['maxStacks'],
+      currentStacks: json['currentStacks'],
+      effects: List<String>.from(json['effects']),
+      specialEffects: json['specialEffects'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'type': type,
+      'duration': duration.inMilliseconds,
+      'statModifiers': statModifiers,
+      'isDebuff': isDebuff,
+      'source': source,
+      'isStackable': isStackable,
+      'maxStacks': maxStacks,
+      'currentStacks': currentStacks,
+      'effects': effects,
+      'specialEffects': specialEffects,
+    };
+  }
+}
+
+// 장비 모델
+class Equipment {
+  final Item? weapon;
+  final Item? offhand;
+  final Item? helmet;
+  final Item? armor;
+  final Item? gloves;
+  final Item? boots;
+  final Item? necklace;
+  final Item? ring1;
+  final Item? ring2;
+  final Item? earring1;
+  final Item? earring2;
+  final Item? belt;
+  final Item? cape;
+  final Set<String> setEffects;
+
+  Equipment({
+    this.weapon,
+    this.offhand,
+    this.helmet,
+    this.armor,
+    this.gloves,
+    this.boots,
+    this.necklace,
+    this.ring1,
+    this.ring2,
+    this.earring1,
+    this.earring2,
+    this.belt,
+    this.cape,
+    required this.setEffects,
+  });
+
+  factory Equipment.fromJson(Map<String, dynamic> json) {
+    return Equipment(
+      weapon: json['weapon'] != null ? Item.fromJson(json['weapon']) : null,
+      offhand: json['offhand'] != null ? Item.fromJson(json['offhand']) : null,
+      helmet: json['helmet'] != null ? Item.fromJson(json['helmet']) : null,
+      armor: json['armor'] != null ? Item.fromJson(json['armor']) : null,
+      gloves: json['gloves'] != null ? Item.fromJson(json['gloves']) : null,
+      boots: json['boots'] != null ? Item.fromJson(json['boots']) : null,
+      necklace: json['necklace'] != null ? Item.fromJson(json['necklace']) : null,
+      ring1: json['ring1'] != null ? Item.fromJson(json['ring1']) : null,
+      ring2: json['ring2'] != null ? Item.fromJson(json['ring2']) : null,
+      earring1: json['earring1'] != null ? Item.fromJson(json['earring1']) : null,
+      earring2: json['earring2'] != null ? Item.fromJson(json['earring2']) : null,
+      belt: json['belt'] != null ? Item.fromJson(json['belt']) : null,
+      cape: json['cape'] != null ? Item.fromJson(json['cape']) : null,
+      setEffects: Set<String>.from(json['setEffects']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'weapon': weapon?.toJson(),
+      'offhand': offhand?.toJson(),
+      'helmet': helmet?.toJson(),
+      'armor': armor?.toJson(),
+      'gloves': gloves?.toJson(),
+      'boots': boots?.toJson(),
+      'necklace': necklace?.toJson(),
+      'ring1': ring1?.toJson(),
+      'ring2': ring2?.toJson(),
+      'earring1': earring1?.toJson(),
+      'earring2': earring2?.toJson(),
+      'belt': belt?.toJson(),
+      'cape': cape?.toJson(),
+      'setEffects': List<String>.from(setEffects),
+    };
+  }
+}

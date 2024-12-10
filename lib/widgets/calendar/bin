@@ -1,0 +1,454 @@
+// 사용자 프로필 상세 모델
+class UserProfile {
+  final String userId;
+  final String username;
+  final String email;
+  final String? phoneNumber;
+  final DateTime birthDate;
+  final String? profileImageUrl;
+  final Address address;
+  final UserPreferences preferences;
+  final List<SocialLink> socialLinks;
+  final SecuritySettings securitySettings;
+  final NotificationSettings notificationSettings;
+  final DateTime createdAt;
+  final DateTime lastUpdated;
+  final bool isVerified;
+  final String? verificationStatus;
+  final Map<String, dynamic> customAttributes;
+
+  UserProfile({
+    required this.userId,
+    required this.username,
+    required this.email,
+    this.phoneNumber,
+    required this.birthDate,
+    this.profileImageUrl,
+    required this.address,
+    required this.preferences,
+    required this.socialLinks,
+    required this.securitySettings,
+    required this.notificationSettings,
+    required this.createdAt,
+    required this.lastUpdated,
+    required this.isVerified,
+    this.verificationStatus,
+    required this.customAttributes,
+  });
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      userId: json['userId'],
+      username: json['username'],
+      email: json['email'],
+      phoneNumber: json['phoneNumber'],
+      birthDate: DateTime.parse(json['birthDate']),
+      profileImageUrl: json['profileImageUrl'],
+      address: Address.fromJson(json['address']),
+      preferences: UserPreferences.fromJson(json['preferences']),
+      socialLinks: (json['socialLinks'] as List)
+          .map((link) => SocialLink.fromJson(link))
+          .toList(),
+      securitySettings: SecuritySettings.fromJson(json['securitySettings']),
+      notificationSettings:
+          NotificationSettings.fromJson(json['notificationSettings']),
+      createdAt: DateTime.parse(json['createdAt']),
+      lastUpdated: DateTime.parse(json['lastUpdated']),
+      isVerified: json['isVerified'],
+      verificationStatus: json['verificationStatus'],
+      customAttributes: json['customAttributes'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'username': username,
+      'email': email,
+      'phoneNumber': phoneNumber,
+      'birthDate': birthDate.toIso8601String(),
+      'profileImageUrl': profileImageUrl,
+      'address': address.toJson(),
+      'preferences': preferences.toJson(),
+      'socialLinks': socialLinks.map((link) => link.toJson()).toList(),
+      'securitySettings': securitySettings.toJson(),
+      'notificationSettings': notificationSettings.toJson(),
+      'createdAt': createdAt.toIso8601String(),
+      'lastUpdated': lastUpdated.toIso8601String(),
+      'isVerified': isVerified,
+      'verificationStatus': verificationStatus,
+      'customAttributes': customAttributes,
+    };
+  }
+}
+
+// 주소 모델
+class Address {
+  final String street;
+  final String city;
+  final String state;
+  final String country;
+  final String postalCode;
+  final String? apartment;
+  final double? latitude;
+  final double? longitude;
+  final bool isDefault;
+  final String? label;
+  final bool isVerified;
+  final DateTime? lastVerifiedAt;
+
+  Address({
+    required this.street,
+    required this.city,
+    required this.state,
+    required this.country,
+    required this.postalCode,
+    this.apartment,
+    this.latitude,
+    this.longitude,
+    required this.isDefault,
+    this.label,
+    required this.isVerified,
+    this.lastVerifiedAt,
+  });
+
+  factory Address.fromJson(Map<String, dynamic> json) {
+    return Address(
+      street: json['street'],
+      city: json['city'],
+      state: json['state'],
+      country: json['country'],
+      postalCode: json['postalCode'],
+      apartment: json['apartment'],
+      latitude: json['latitude'],
+      longitude: json['longitude'],
+      isDefault: json['isDefault'],
+      label: json['label'],
+      isVerified: json['isVerified'],
+      lastVerifiedAt: json['lastVerifiedAt'] != null
+          ? DateTime.parse(json['lastVerifiedAt'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'street': street,
+      'city': city,
+      'state': state,
+      'country': country,
+      'postalCode': postalCode,
+      'apartment': apartment,
+      'latitude': latitude,
+      'longitude': longitude,
+      'isDefault': isDefault,
+      'label': label,
+      'isVerified': isVerified,
+      'lastVerifiedAt': lastVerifiedAt?.toIso8601String(),
+    };
+  }
+}
+
+// 사용자 설정 모델
+class UserPreferences {
+  final String language;
+  final String theme;
+  final bool emailNotifications;
+  final bool pushNotifications;
+  final bool smsNotifications;
+  final Map<String, bool> featureFlags;
+  final List<String> interests;
+  final Map<String, String> accessibility;
+  final String timezone;
+  final String dateFormat;
+  final String timeFormat;
+  final String currency;
+  final Map<String, dynamic> customPreferences;
+
+  UserPreferences({
+    required this.language,
+    required this.theme,
+    required this.emailNotifications,
+    required this.pushNotifications,
+    required this.smsNotifications,
+    required this.featureFlags,
+    required this.interests,
+    required this.accessibility,
+    required this.timezone,
+    required this.dateFormat,
+    required this.timeFormat,
+    required this.currency,
+    required this.customPreferences,
+  });
+
+  factory UserPreferences.fromJson(Map<String, dynamic> json) {
+    return UserPreferences(
+      language: json['language'],
+      theme: json['theme'],
+      emailNotifications: json['emailNotifications'],
+      pushNotifications: json['pushNotifications'],
+      smsNotifications: json['smsNotifications'],
+      featureFlags: Map<String, bool>.from(json['featureFlags']),
+      interests: List<String>.from(json['interests']),
+      accessibility: Map<String, String>.from(json['accessibility']),
+      timezone: json['timezone'],
+      dateFormat: json['dateFormat'],
+      timeFormat: json['timeFormat'],
+      currency: json['currency'],
+      customPreferences: json['customPreferences'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'language': language,
+      'theme': theme,
+      'emailNotifications': emailNotifications,
+      'pushNotifications': pushNotifications,
+      'smsNotifications': smsNotifications,
+      'featureFlags': featureFlags,
+      'interests': interests,
+      'accessibility': accessibility,
+      'timezone': timezone,
+      'dateFormat': dateFormat,
+      'timeFormat': timeFormat,
+      'currency': currency,
+      'customPreferences': customPreferences,
+    };
+  }
+}
+
+// 소셜 미디어 링크 모델
+class SocialLink {
+  final String platform;
+  final String username;
+  final String url;
+  final bool isVerified;
+  final DateTime? verifiedAt;
+  final int followerCount;
+  final bool isPublic;
+  final DateTime lastSynced;
+
+  SocialLink({
+    required this.platform,
+    required this.username,
+    required this.url,
+    required this.isVerified,
+    this.verifiedAt,
+    required this.followerCount,
+    required this.isPublic,
+    required this.lastSynced,
+  });
+
+  factory SocialLink.fromJson(Map<String, dynamic> json) {
+    return SocialLink(
+      platform: json['platform'],
+      username: json['username'],
+      url: json['url'],
+      isVerified: json['isVerified'],
+      verifiedAt: json['verifiedAt'] != null
+          ? DateTime.parse(json['verifiedAt'])
+          : null,
+      followerCount: json['followerCount'],
+      isPublic: json['isPublic'],
+      lastSynced: DateTime.parse(json['lastSynced']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'platform': platform,
+      'username': username,
+      'url': url,
+      'isVerified': isVerified,
+      'verifiedAt': verifiedAt?.toIso8601String(),
+      'followerCount': followerCount,
+      'isPublic': isPublic,
+      'lastSynced': lastSynced.toIso8601String(),
+    };
+  }
+}
+
+// 보안 설정 모델
+class SecuritySettings {
+  final bool twoFactorEnabled;
+  final List<String> twoFactorMethods;
+  final List<String> trustedDevices;
+  final List<LoginHistory> loginHistory;
+  final PasswordPolicy passwordPolicy;
+  final List<String> allowedIPs;
+  final bool biometricEnabled;
+  final Map<String, bool> permissions;
+  final DateTime lastPasswordChange;
+  final bool requiresPasswordChange;
+  final int failedLoginAttempts;
+  final DateTime? lockoutUntil;
+
+  SecuritySettings({
+    required this.twoFactorEnabled,
+    required this.twoFactorMethods,
+    required this.trustedDevices,
+    required this.loginHistory,
+    required this.passwordPolicy,
+    required this.allowedIPs,
+    required this.biometricEnabled,
+    required this.permissions,
+    required this.lastPasswordChange,
+    required this.requiresPasswordChange,
+    required this.failedLoginAttempts,
+    this.lockoutUntil,
+  });
+
+  factory SecuritySettings.fromJson(Map<String, dynamic> json) {
+    return SecuritySettings(
+      twoFactorEnabled: json['twoFactorEnabled'],
+      twoFactorMethods: List<String>.from(json['twoFactorMethods']),
+      trustedDevices: List<String>.from(json['trustedDevices']),
+      loginHistory: (json['loginHistory'] as List)
+          .map((history) => LoginHistory.fromJson(history))
+          .toList(),
+      passwordPolicy: PasswordPolicy.fromJson(json['passwordPolicy']),
+      allowedIPs: List<String>.from(json['allowedIPs']),
+      biometricEnabled: json['biometricEnabled'],
+      permissions: Map<String, bool>.from(json['permissions']),
+      lastPasswordChange: DateTime.parse(json['lastPasswordChange']),
+      requiresPasswordChange: json['requiresPasswordChange'],
+      failedLoginAttempts: json['failedLoginAttempts'],
+      lockoutUntil: json['lockoutUntil'] != null
+          ? DateTime.parse(json['lockoutUntil'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'twoFactorEnabled': twoFactorEnabled,
+      'twoFactorMethods': twoFactorMethods,
+      'trustedDevices': trustedDevices,
+      'loginHistory': loginHistory.map((history) => history.toJson()).toList(),
+      'passwordPolicy': passwordPolicy.toJson(),
+      'allowedIPs': allowedIPs,
+      'biometricEnabled': biometricEnabled,
+      'permissions': permissions,
+      'lastPasswordChange': lastPasswordChange.toIso8601String(),
+      'requiresPasswordChange': requiresPasswordChange,
+      'failedLoginAttempts': failedLoginAttempts,
+      'lockoutUntil': lockoutUntil?.toIso8601String(),
+    };
+  }
+}
+
+// 로그인 기록 모델
+class LoginHistory {
+  final DateTime timestamp;
+  final String deviceInfo;
+  final String ipAddress;
+  final String location;
+  final bool successful;
+  final String? failureReason;
+  final String authMethod;
+  final String sessionId;
+  final Duration sessionDuration;
+  final Map<String, dynamic> browserInfo;
+  final bool suspicious;
+  final List<String> flags;
+
+  LoginHistory({
+    required this.timestamp,
+    required this.deviceInfo,
+    required this.ipAddress,
+    required this.location,
+    required this.successful,
+    this.failureReason,
+    required this.authMethod,
+    required this.sessionId,
+    required this.sessionDuration,
+    required this.browserInfo,
+    required this.suspicious,
+    required this.flags,
+  });
+
+  factory LoginHistory.fromJson(Map<String, dynamic> json) {
+    return LoginHistory(
+      timestamp: DateTime.parse(json['timestamp']),
+      deviceInfo: json['deviceInfo'],
+      ipAddress: json['ipAddress'],
+      location: json['location'],
+      successful: json['successful'],
+      failureReason: json['failureReason'],
+      authMethod: json['authMethod'],
+      sessionId: json['sessionId'],
+      sessionDuration: Duration(milliseconds: json['sessionDuration']),
+      browserInfo: json['browserInfo'],
+      suspicious: json['suspicious'],
+      flags: List<String>.from(json['flags']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'timestamp': timestamp.toIso8601String(),
+      'deviceInfo': deviceInfo,
+      'ipAddress': ipAddress,
+      'location': location,
+      'successful': successful,
+      'failureReason': failureReason,
+      'authMethod': authMethod,
+      'sessionId': sessionId,
+      'sessionDuration': sessionDuration.inMilliseconds,
+      'browserInfo': browserInfo,
+      'suspicious': suspicious,
+      'flags': flags,
+    };
+  }
+}
+
+// 비밀번호 정책 모델
+class PasswordPolicy {
+  final int minLength;
+  final bool requireUppercase;
+  final bool requireLowercase;
+  final bool requireNumbers;
+  final bool requireSpecialChars;
+  final int maxRepeatingChars;
+  final int passwordHistory;
+  final int expiryDays;
+  final List<String> forbiddenPasswords;
+  final bool preventReuse;
+  final int changeWarningDays;
+
+  PasswordPolicy({
+    required this.minLength,
+    required this.requireUppercase,
+    required this.requireLowercase,
+    required this.requireNumbers,
+    required this.requireSpecialChars,
+    required this.maxRepeatingChars,
+    required this.passwordHistory,
+    required this.expiryDays,
+    required this.forbiddenPasswords,
+    required this.preventReuse,
+    required this.changeWarningDays,
+  });
+
+  factory PasswordPolicy.fromJson(Map<String, dynamic> json) {
+    return PasswordPolicy(
+      minLength: json['minLength'],
+      requireUppercase: json['requireUppercase'],
+      requireLowercase: json['requireLowercase'],
+      requireNumbers: json['requireNumbers'],
+      requireSpecialChars: json['requireSpecialChars'],
+      maxRepeatingChars: json['maxRepeatingChars'],
+      passwordHistory: json['passwordHistory'],
+      expiryDays: json['expiryDays'],
+      forbiddenPasswords: List<String>.from(json['forbiddenPasswords']),
+      preventReuse: json['preventReuse'],
+      changeWarningDays: json['changeWarningDays'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'minLength': minLength,
+      'requireUppercase': requireUppercase,
+      'requireLowercase

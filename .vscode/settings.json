@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Users/82107/capstonefront/picto/linux"
+    "cmake.sourceDirectory": "C:/Users/82107/capstonefront/picto/linux",
+    "C_Cpp.errorSquiggles": "disabled"
 }
