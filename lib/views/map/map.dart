@@ -56,6 +56,24 @@ class _MapScreenState extends State<MapScreen> {
   final SessionService _sessionService = SessionService();
   late final LocationWebSocketHandler _locationHandler;
 
+  final defaultTags = [
+    '강아지',
+    '고양이',
+    '다람쥐',
+    '햄스터',
+    '새',
+    '곤충',
+    '파충류',
+    '해양생물',
+    '물고기',
+    '산',
+    '바다',
+    '호수/강',
+    '들판',
+    '숲',
+    '하늘'
+  ];
+
   // 사용자 데이터
   User? currentUser;
 
@@ -85,17 +103,24 @@ class _MapScreenState extends State<MapScreen> {
 
         if (distanceInMeters <= 3000) {
           try {
-            final photos = await _photoService.getNearbyPhotos();
-            final newPhoto = photos
-                .where((photo) => photo.photoId == message.photoId)
-                .firstOrNull;
+            // getPhotos를 named parameters로 호출
+            final photos = await _photoService.getPhotos(
+              message.senderId, 
+              'Photo', 
+              message.photoId!, 
+              senderId: message.senderId, 
+              eventType: 'Photo', 
+              eventTypeId: message.photoId!,
+            );
 
-            if (newPhoto != null && mounted) {
-              final newMarkers = await _markerManager
-                  ?.createMarkersFromPhotos([newPhoto], 'small');
+            // 현재 줌 레벨이 small(상세)일 때만 마커 추가
+            if (_currentLocationType == 'small' && photos.isNotEmpty) {
+              final newMarkers = await _markerManager?.createMarkersFromPhotos(
+                  photos, 'small');
 
-              if (newMarkers != null) {
+              if (newMarkers != null && mounted) {
                 setState(() {
+                  // 새 마커 추가
                   markers.addAll(newMarkers);
                 });
               }
@@ -149,12 +174,15 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _currentLocationType = newLocationType;
       });
-      
+
       // 새로운 위치 타입에 해당하는 데이터가 없을 경우에만 로드
-      if (newLocationType == 'small' && _markerManager!.isMarkersEmpty('small')) {
+      if (newLocationType == 'small' &&
+          _markerManager!.isMarkersEmpty('small')) {
         _loadNearbyPhotos();
-      } else if ((newLocationType == 'middle' && _markerManager!.isMarkersEmpty('middle')) ||
-                 (newLocationType == 'large' && _markerManager!.isMarkersEmpty('large'))) {
+      } else if ((newLocationType == 'middle' &&
+              _markerManager!.isMarkersEmpty('middle')) ||
+          (newLocationType == 'large' &&
+              _markerManager!.isMarkersEmpty('large'))) {
         _loadRepresentativePhotos();
       }
 
@@ -443,7 +471,7 @@ class _MapScreenState extends State<MapScreen> {
             CameraPosition(
               target: location,
               zoom: 15,
-              ),
+            ),
           ),
         );
         await _loadNearbyPhotos();
@@ -482,12 +510,6 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final userId = await _userService.getUserId();
       if (userId != null) {
-        final defaultTags = [
-          '강아지', '고양이', '다람쥐', '햄스터', '새', '곤충', 
-          '파충류', '해양생물', '물고기', '산', '바다', 
-          '호수/강', '들판', '숲', '하늘'
-        ];
-        
         await _userService.updateTags(
           userId: userId,
           tagNames: defaultTags,
@@ -528,7 +550,6 @@ class _MapScreenState extends State<MapScreen> {
                 mapToolbarEnabled: false,
               ),
             ),
-
             RepaintBoundary(
               child: Column(
                 children: [
@@ -577,7 +598,6 @@ class _MapScreenState extends State<MapScreen> {
                       },
                     ),
                   ),
-
                   RepaintBoundary(
                     child: TagSelector(
                       userId: widget.initialUser.userId,
@@ -598,12 +618,10 @@ class _MapScreenState extends State<MapScreen> {
                 ],
               ),
             ),
-
             if (_isLoading)
               const Center(
                 child: CircularProgressIndicator(),
               ),
-
             Positioned(
               right: 16,
               bottom: 90,
@@ -612,13 +630,13 @@ class _MapScreenState extends State<MapScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const UploadScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const UploadScreen()),
                   );
                 },
                 child: const Icon(Icons.add),
               ),
             ),
-
             Positioned(
               right: 16,
               bottom: 20,
@@ -635,7 +653,6 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
-
             Positioned(
               bottom: 18,
               left: 0,
@@ -647,7 +664,6 @@ class _MapScreenState extends State<MapScreen> {
             )
           ],
         ),
-
         bottomNavigationBar: RepaintBoundary(
           child: CustomNavigationBar(
             selectedIndex: selectedIndex,
