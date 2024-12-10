@@ -83,7 +83,7 @@ class PhotoManagerService {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'senderId': senderId.toString(),
+            'senderId': senderId,
           },
         ),
       );
