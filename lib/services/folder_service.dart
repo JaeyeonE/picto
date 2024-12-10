@@ -7,21 +7,20 @@ import 'dart:async';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/folder/folder_model.dart';
 import 'package:picto/models/folder/folder_user.dart';
+import 'package:picto/services/folder_upload_model.dart';
 
 class FolderService {
   final Dio _dio;
   final String baseUrl;
   final int userId;
 
-  FolderService(Dio dio, {required this.userId})
-      : _dio = dio..options = BaseOptions(
+  FolderService({required this.userId})
+      : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 3),
           validateStatus: (status) => status! < 500,
-        ),
-        baseUrl = 'http://52.78.237.242:8081/folder-manager' {
-    print('FolderService initialized with baseUrl: $baseUrl');
-  }
+        )),
+        baseUrl = 'http://52.78.237.242:8081/folder-manager';
 
   Future<FolderModel> createFolder(int userId, String name, String content) async {
     print('Creating folder - Name: $name, Content: $content');
@@ -182,25 +181,23 @@ class FolderService {
   }
 }
 
-  Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
-    print('Uploading photo to folder: $folderId');
-    print('Photo metadata: $metadata');
-    try {
-      String fileName = photo.path.split('/').last;
-      FormData formData = FormData.fromMap({
-        'photo': await MultipartFile.fromFile(photo.path, filename: fileName),
-        'metadata': jsonEncode(metadata),
-      });
-
-      await _dio.post(
-        '$baseUrl/folders/$folderId/photos/upload',
-        data: formData,
-      );
-      print('Photo uploaded successfully');
-    } on DioException catch (e) {
-      print('Error uploading photo: ${e.message}');
-      throw _handleDioError(e);
-    }
+  Future<FolderUploadModel> uploadPhoto(
+    int? folderId, 
+    int? userId, 
+    int? photoId
+  ) async {
+      print('Uploading photo - FolderID: $folderId, UserID: $userId, PhotoID: $photoId');
+      try {
+        final response = await _dio.post(
+          '$baseUrl/folders/$folderId/photos/upload',
+          queryParameters: {'photoId': photoId, 'userId': userId},
+        );
+        print('Photo uploaded successfully: ${response.data}');
+        return response.data;
+      } on DioException catch (e) {
+        print('Error uploading photo: ${e.message}');
+        throw _handleDioError(e);
+      }
   }
 
   Future<void> deletePhoto(int? folderId, int photoId) async {

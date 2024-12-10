@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:picto/utils/app_color.dart';
 import 'package:picto/widgets/screen_custom/folder/folder_header.dart';
 import 'package:provider/provider.dart';
 import 'package:picto/viewmodles/folder_view_model.dart';
@@ -136,7 +137,7 @@ class _FolderListState extends State<FolderList> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.folder, size: 40, color: Colors.blue),
+            const Icon(Icons.folder, size: 50, color: AppColors.primary),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:picto/services/photo_manager_service.dart';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -10,7 +11,7 @@ import 'package:picto/widgets/screen_custom/profile/user_profile.dart';
 class Feed extends StatefulWidget {
   final int initialPhotoIndex;
   final int? folderId;
-  final String? userId;
+  final int? userId;
   final int photoId;
 
   const Feed({
@@ -28,7 +29,7 @@ class Feed extends StatefulWidget {
 class _FeedState extends State<Feed> {
   late PageController _pageController;
   int currentIndex = 0;
-  
+  final Map<int, bool> _likedStatus = {};
 
   @override
   void initState() {
@@ -235,125 +236,163 @@ class _FeedState extends State<Feed> {
     );
   }
 
+  Future<void> _toggleLike(BuildContext context, Photo photo) async {
+    final photoManagerService = Provider.of<PhotoManagerService>(context, listen: false);
+    final viewModel = Provider.of<FolderViewModel>(context, listen: false);
+    
+    try {
+      setState(() {
+        _likedStatus[photo.photoId] = !(_likedStatus[photo.photoId] ?? false);
+      });
+
+      if (_likedStatus[photo.photoId] ?? false) {
+        // 좋아요 추가
+        await photoManagerService.likePhoto(viewModel.user.userId, photo.photoId);
+      } else {
+        // 좋아요 취소
+        await photoManagerService.unlikePhoto(viewModel.user.userId, photo.photoId);
+      }
+    } catch (e) {
+      // 에러 발생 시 상태 되돌리기
+      setState(() {
+        _likedStatus[photo.photoId] = !(_likedStatus[photo.photoId] ?? false);
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('좋아요 처리 중 오류가 발생했습니다: ${e.toString()}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Widget _buildBottomInfo(BuildContext context, Photo photo, FolderViewModel viewModel) {
-  final user = viewModel.user;
-  
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-        colors: [
-          Colors.black.withOpacity(0.7),
-          Colors.transparent,
-        ],
+    final user = viewModel.user;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Colors.black.withOpacity(0.7),
+            Colors.transparent,
+          ],
+        ),
       ),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min, 
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Profile and stats row
-        Row(
-          children: [
-            // 프로필 이미지와 이름
-            InkWell(
-              onTap: () {
-                if (user != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UserProfile(user: user),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  if (user != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserProfile(user: user),
+                      ),
+                    );
+                  }
+                },
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage: user?.profilePath != null 
+                        ? NetworkImage(user!.profilePath!)
+                        : null,
+                      child: user?.profilePath == null 
+                        ? const Icon(Icons.person, color: Colors.white)
+                        : null,
                     ),
-                  );
-                }
-              },
-              child: Row(
+                    const SizedBox(width: 8),
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: 200),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '@${user?.accountName ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            user?.name ?? '',
+                            style: TextStyle(
+                              color: Colors.grey[300],
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // 좋아요 버튼과 카운트
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundImage: user?.profilePath != null 
-                      ? NetworkImage(user!.profilePath!)
-                      : null,
-                    child: user?.profilePath == null 
-                      ? const Icon(Icons.person, color: Colors.white)
-                      : null,
+                  InkWell(
+                    onTap: () => _toggleLike(context, photo),
+                    child: Icon(
+                      _likedStatus[photo.photoId] ?? false
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: _likedStatus[photo.photoId] ?? false
+                          ? Colors.red
+                          : Colors.white,
+                      size: 24,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  // 사용자 정보를 Container로 감싸서 고정된 너비 제공
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 200),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '@${user?.accountName ?? ''}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          user?.name ?? '',
-                          style: TextStyle(
-                            color: Colors.grey[300],
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  const SizedBox(width: 4),
+                  Text(
+                    '${photo.likes}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
                     ),
                   ),
                 ],
               ),
-            ),
-            const Spacer(),
-            // 좋아요 카운트
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (photo.location != null && photo.location!.isNotEmpty)
             Row(
-              mainAxisSize: MainAxisSize.min, // 이 부분도 중요합니다
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.favorite, color: Colors.red, size: 20),
+                const Icon(
+                  Icons.location_on,
+                  color: Colors.white,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
-                Text(
-                  '${photo.likes}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
+                Flexible(
+                  child: Text(
+                    photo.location ?? '위치정보 없음',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // 위치 정보가 있는 경우에만 표시
-        if (photo.location != null && photo.location!.isNotEmpty)
-          Row(
-            mainAxisSize: MainAxisSize.min, // 이 부분도 중요합니다
-            children: [
-              const Icon(
-                Icons.location_on,
-                color: Colors.white,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Flexible( // Expanded 대신 Flexible 사용
-                child: Text(
-                  photo.location ?? '위치정보 없음',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 }
