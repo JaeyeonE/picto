@@ -230,9 +230,9 @@ class _MapScreenState extends State<MapScreen> {
       );
 
       final filteredPhotos = photos
-          .where((photo) =>
-               selectedTags.any((selectedTag) => defaultTags.contains(selectedTag)) ||
-              (photo.tag != null && selectedTags.contains(photo.tag!)))
+          .where((photo) => 
+              (selectedTags.any((tag) => defaultTags.contains(tag)) && // 선택된 태그 중 하나가 기본 태그에 있고
+              (photo.tag != null && selectedTags.contains(photo.tag!)))) // 해당 사진의 태그가 선택된 태그에 포함됨
           .toList();
 
       final newMarkers = await _markerManager!
@@ -291,15 +291,24 @@ class _MapScreenState extends State<MapScreen> {
       }
 
       final photos = await _photoService.getNearbyPhotos();
+      
+      // 디버깅을 위한 로그 추가
+      print('Retrieved photos: ${photos.length}');
+      print('Selected tags: $selectedTags');
+      print('Default tags: $defaultTags');
 
       final filteredPhotos = photos
-          .where((photo) =>
-              selectedTags.any((selectedTag) => defaultTags.contains(selectedTag)) ||
-              (photo.tag != null && selectedTags.contains(photo.tag!)))
+          .where((photo) => 
+              (selectedTags.any((tag) => defaultTags.contains(tag)) && // 선택된 태그 중 하나가 기본 태그에 있고
+              (photo.tag != null && selectedTags.contains(photo.tag!)))) // 해당 사진의 태그가 선택된 태그에 포함됨
           .toList();
+
+      print('Filtered photos: ${filteredPhotos.length}');
 
       final newMarkers = await _markerManager!
           .createMarkersFromPhotos(filteredPhotos, 'small');
+
+      print('Created markers: ${newMarkers.length}');
 
       if (mounted) {
         setState(() {
@@ -307,6 +316,7 @@ class _MapScreenState extends State<MapScreen> {
         });
       }
     } catch (e) {
+      print('Error loading photos: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
