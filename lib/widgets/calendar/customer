@@ -1,0 +1,397 @@
+// 기본 응답 상태 모델
+class Status {
+  final bool isSuccess;
+  final int code;
+  final String message;
+
+  Status({
+    required this.isSuccess,
+    required this.code,
+    required this.message,
+  });
+
+  factory Status.fromJson(Map<String, dynamic> json) {
+    return Status(
+      isSuccess: json['isSuccess'],
+      code: json['code'],
+      message: json['message'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'isSuccess': isSuccess,
+      'code': code,
+      'message': message,
+    };
+  }
+}
+
+// 사용자 활동 통계 모델
+class UserActivityStats {
+  final int totalLogins;
+  final int activeMinutes;
+  final int completedTasks;
+  final double averageSessionTime;
+  final DateTime lastActive;
+
+  UserActivityStats({
+    required this.totalLogins,
+    required this.activeMinutes,
+    required this.completedTasks,
+    required this.averageSessionTime,
+    required this.lastActive,
+  });
+
+  factory UserActivityStats.fromJson(Map<String, dynamic> json) {
+    return UserActivityStats(
+      totalLogins: json['totalLogins'],
+      activeMinutes: json['activeMinutes'],
+      completedTasks: json['completedTasks'],
+      averageSessionTime: json['averageSessionTime'],
+      lastActive: DateTime.parse(json['lastActive']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalLogins': totalLogins,
+      'activeMinutes': activeMinutes,
+      'completedTasks': completedTasks,
+      'averageSessionTime': averageSessionTime,
+      'lastActive': lastActive.toIso8601String(),
+    };
+  }
+}
+
+// 성과 메트릭 모델
+class PerformanceMetrics {
+  final double cpuUsage;
+  final double memoryUsage;
+  final int requestCount;
+  final double averageResponseTime;
+  final int errorCount;
+  final double uptimePercentage;
+
+  PerformanceMetrics({
+    required this.cpuUsage,
+    required this.memoryUsage,
+    required this.requestCount,
+    required this.averageResponseTime,
+    required this.errorCount,
+    required this.uptimePercentage,
+  });
+
+  factory PerformanceMetrics.fromJson(Map<String, dynamic> json) {
+    return PerformanceMetrics(
+      cpuUsage: json['cpuUsage'],
+      memoryUsage: json['memoryUsage'],
+      requestCount: json['requestCount'],
+      averageResponseTime: json['averageResponseTime'],
+      errorCount: json['errorCount'],
+      uptimePercentage: json['uptimePercentage'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'cpuUsage': cpuUsage,
+      'memoryUsage': memoryUsage,
+      'requestCount': requestCount,
+      'averageResponseTime': averageResponseTime,
+      'errorCount': errorCount,
+      'uptimePercentage': uptimePercentage,
+    };
+  }
+}
+
+// 재무 통계 모델
+class FinancialStats {
+  final double totalRevenue;
+  final double totalExpenses;
+  final double netProfit;
+  final double averageOrderValue;
+  final int orderCount;
+  final double revenueGrowth;
+
+  FinancialStats({
+    required this.totalRevenue,
+    required this.totalExpenses,
+    required this.netProfit,
+    required this.averageOrderValue,
+    required this.orderCount,
+    required this.revenueGrowth,
+  });
+
+  factory FinancialStats.fromJson(Map<String, dynamic> json) {
+    return FinancialStats(
+      totalRevenue: json['totalRevenue'],
+      totalExpenses: json['totalExpenses'],
+      netProfit: json['netProfit'],
+      averageOrderValue: json['averageOrderValue'],
+      orderCount: json['orderCount'],
+      revenueGrowth: json['revenueGrowth'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalRevenue': totalRevenue,
+      'totalExpenses': totalExpenses,
+      'netProfit': netProfit,
+      'averageOrderValue': averageOrderValue,
+      'orderCount': orderCount,
+      'revenueGrowth': revenueGrowth,
+    };
+  }
+}
+
+// 고객 분석 모델
+class CustomerAnalytics {
+  final int totalCustomers;
+  final int newCustomers;
+  final int returningCustomers;
+  final double customerRetentionRate;
+  final double averageLifetimeValue;
+  final Map<String, int> customersByRegion;
+
+  CustomerAnalytics({
+    required this.totalCustomers,
+    required this.newCustomers,
+    required this.returningCustomers,
+    required this.customerRetentionRate,
+    required this.averageLifetimeValue,
+    required this.customersByRegion,
+  });
+
+  factory CustomerAnalytics.fromJson(Map<String, dynamic> json) {
+    return CustomerAnalytics(
+      totalCustomers: json['totalCustomers'],
+      newCustomers: json['newCustomers'],
+      returningCustomers: json['returningCustomers'],
+      customerRetentionRate: json['customerRetentionRate'],
+      averageLifetimeValue: json['averageLifetimeValue'],
+      customersByRegion: Map<String, int>.from(json['customersByRegion']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalCustomers': totalCustomers,
+      'newCustomers': newCustomers,
+      'returningCustomers': returningCustomers,
+      'customerRetentionRate': customerRetentionRate,
+      'averageLifetimeValue': averageLifetimeValue,
+      'customersByRegion': customersByRegion,
+    };
+  }
+}
+
+// 마케팅 성과 모델
+class MarketingPerformance {
+  final int impressions;
+  final int clicks;
+  final double clickThroughRate;
+  final double conversionRate;
+  final double costPerClick;
+  final double returnOnAdSpend;
+  final Map<String, double> channelPerformance;
+
+  MarketingPerformance({
+    required this.impressions,
+    required this.clicks,
+    required this.clickThroughRate,
+    required this.conversionRate,
+    required this.costPerClick,
+    required this.returnOnAdSpend,
+    required this.channelPerformance,
+  });
+
+  factory MarketingPerformance.fromJson(Map<String, dynamic> json) {
+    return MarketingPerformance(
+      impressions: json['impressions'],
+      clicks: json['clicks'],
+      clickThroughRate: json['clickThroughRate'],
+      conversionRate: json['conversionRate'],
+      costPerClick: json['costPerClick'],
+      returnOnAdSpend: json['returnOnAdSpend'],
+      channelPerformance: Map<String, double>.from(json['channelPerformance']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'impressions': impressions,
+      'clicks': clicks,
+      'clickThroughRate': clickThroughRate,
+      'conversionRate': conversionRate,
+      'costPerClick': costPerClick,
+      'returnOnAdSpend': returnOnAdSpend,
+      'channelPerformance': channelPerformance,
+    };
+  }
+}
+
+// 인벤토리 통계 모델
+class InventoryStats {
+  final int totalItems;
+  final int lowStockItems;
+  final int outOfStockItems;
+  final double averageTurnoverRate;
+  final Map<String, int> stockByCategory;
+  final List<String> criticalItems;
+
+  InventoryStats({
+    required this.totalItems,
+    required this.lowStockItems,
+    required this.outOfStockItems,
+    required this.averageTurnoverRate,
+    required this.stockByCategory,
+    required this.criticalItems,
+  });
+
+  factory InventoryStats.fromJson(Map<String, dynamic> json) {
+    return InventoryStats(
+      totalItems: json['totalItems'],
+      lowStockItems: json['lowStockItems'],
+      outOfStockItems: json['outOfStockItems'],
+      averageTurnoverRate: json['averageTurnoverRate'],
+      stockByCategory: Map<String, int>.from(json['stockByCategory']),
+      criticalItems: List<String>.from(json['criticalItems']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalItems': totalItems,
+      'lowStockItems': lowStockItems,
+      'outOfStockItems': outOfStockItems,
+      'averageTurnoverRate': averageTurnoverRate,
+      'stockByCategory': stockByCategory,
+      'criticalItems': criticalItems,
+    };
+  }
+}
+
+// 시스템 상태 모델
+class SystemHealth {
+  final bool isOnline;
+  final double systemLoad;
+  final int activeConnections;
+  final Map<String, String> serviceStatus;
+  final List<String> activeProcesses;
+  final DateTime lastCheckTime;
+
+  SystemHealth({
+    required this.isOnline,
+    required this.systemLoad,
+    required this.activeConnections,
+    required this.serviceStatus,
+    required this.activeProcesses,
+    required this.lastCheckTime,
+  });
+
+  factory SystemHealth.fromJson(Map<String, dynamic> json) {
+    return SystemHealth(
+      isOnline: json['isOnline'],
+      systemLoad: json['systemLoad'],
+      activeConnections: json['activeConnections'],
+      serviceStatus: Map<String, String>.from(json['serviceStatus']),
+      activeProcesses: List<String>.from(json['activeProcesses']),
+      lastCheckTime: DateTime.parse(json['lastCheckTime']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'isOnline': isOnline,
+      'systemLoad': systemLoad,
+      'activeConnections': activeConnections,
+      'serviceStatus': serviceStatus,
+      'activeProcesses': activeProcesses,
+      'lastCheckTime': lastCheckTime.toIso8601String(),
+    };
+  }
+}
+
+// 사용자 참여도 모델
+class EngagementMetrics {
+  final double dailyActiveUsers;
+  final double monthlyActiveUsers;
+  final double retentionRate;
+  final double churnRate;
+  final Map<String, double> featureUsage;
+  final List<String> popularFeatures;
+
+  EngagementMetrics({
+    required this.dailyActiveUsers,
+    required this.monthlyActiveUsers,
+    required this.retentionRate,
+    required this.churnRate,
+    required this.featureUsage,
+    required this.popularFeatures,
+  });
+
+  factory EngagementMetrics.fromJson(Map<String, dynamic> json) {
+    return EngagementMetrics(
+      dailyActiveUsers: json['dailyActiveUsers'],
+      monthlyActiveUsers: json['monthlyActiveUsers'],
+      retentionRate: json['retentionRate'],
+      churnRate: json['churnRate'],
+      featureUsage: Map<String, double>.from(json['featureUsage']),
+      popularFeatures: List<String>.from(json['popularFeatures']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'dailyActiveUsers': dailyActiveUsers,
+      'monthlyActiveUsers': monthlyActiveUsers,
+      'retentionRate': retentionRate,
+      'churnRate': churnRate,
+      'featureUsage': featureUsage,
+      'popularFeatures': popularFeatures,
+    };
+  }
+}
+
+// 품질 메트릭 모델
+class QualityMetrics {
+  final int bugCount;
+  final double testCoverage;
+  final int failedTests;
+  final double codeQualityScore;
+  final List<String> criticalIssues;
+  final Map<String, int> issuesByPriority;
+
+  QualityMetrics({
+    required this.bugCount,
+    required this.testCoverage,
+    required this.failedTests,
+    required this.codeQualityScore,
+    required this.criticalIssues,
+    required this.issuesByPriority,
+  });
+
+  factory QualityMetrics.fromJson(Map<String, dynamic> json) {
+    return QualityMetrics(
+      bugCount: json['bugCount'],
+      testCoverage: json['testCoverage'],
+      failedTests: json['failedTests'],
+      codeQualityScore: json['codeQualityScore'],
+      criticalIssues: List<String>.from(json['criticalIssues']),
+      issuesByPriority: Map<String, int>.from(json['issuesByPriority']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'bugCount': bugCount,
+      'testCoverage': testCoverage,
+      'failedTests': failedTests,
+      'codeQualityScore': codeQualityScore,
+      'criticalIssues': criticalIssues,
+      'issuesByPriority': issuesByPriority,
+    };
+  }
+}
