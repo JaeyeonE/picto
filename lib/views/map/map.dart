@@ -56,6 +56,12 @@ class _MapScreenState extends State<MapScreen> {
   final SessionService _sessionService = SessionService();
   late final LocationWebSocketHandler _locationHandler;
 
+  final defaultTags = [
+          '강아지', '고양이', '다람쥐', '햄스터', '새', '곤충', 
+          '파충류', '해양생물', '물고기', '산', '바다', 
+          '호수/강', '들판', '숲', '하늘'
+        ];
+
   // 사용자 데이터
   User? currentUser;
 
@@ -212,6 +218,7 @@ class _MapScreenState extends State<MapScreen> {
     return distanceInMeters >= _minimumRefreshDistance;
   }
 
+  // 대표사진 가져오기
   Future<void> _loadRepresentativePhotos() async {
     if (_isLoading || currentUser == null || _markerManager == null) return;
     setState(() => _isLoading = true);
@@ -224,7 +231,7 @@ class _MapScreenState extends State<MapScreen> {
 
       final filteredPhotos = photos
           .where((photo) =>
-              selectedTags.contains('전체') ||
+               selectedTags.any((selectedTag) => defaultTags.contains(selectedTag)) ||
               (photo.tag != null && selectedTags.contains(photo.tag!)))
           .toList();
 
@@ -269,6 +276,7 @@ class _MapScreenState extends State<MapScreen> {
     return true;
   }
 
+  // 근처 사진 가져오기
   Future<void> _loadNearbyPhotos() async {
     if (_isLoading || currentUser == null || _markerManager == null) return;
     setState(() => _isLoading = true);
@@ -286,7 +294,7 @@ class _MapScreenState extends State<MapScreen> {
 
       final filteredPhotos = photos
           .where((photo) =>
-              selectedTags.contains('전체') ||
+              selectedTags.any((selectedTag) => defaultTags.contains(selectedTag)) ||
               (photo.tag != null && selectedTags.contains(photo.tag!)))
           .toList();
 
@@ -482,11 +490,7 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final userId = await _userService.getUserId();
       if (userId != null) {
-        final defaultTags = [
-          '강아지', '고양이', '다람쥐', '햄스터', '새', '곤충', 
-          '파충류', '해양생물', '물고기', '산', '바다', 
-          '호수/강', '들판', '숲', '하늘'
-        ];
+        
         
         await _userService.updateTags(
           userId: userId,
