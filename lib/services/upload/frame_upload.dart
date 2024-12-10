@@ -22,7 +22,7 @@ class FrameUploadService {
   Future<String> uploadFrame(File image, Photo photo) async {
   
     try {
-      final targetUrl = photo.sharedActive ? validationUrl : taggingUrl;
+      final targetUrl = photo.sharedActive! ? validationUrl : taggingUrl;
 
       var request = http.MultipartRequest('POST', Uri.parse(targetUrl));
       String? mimeType = lookupMimeType(image.path);

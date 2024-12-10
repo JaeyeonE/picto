@@ -28,7 +28,7 @@ class TagSelector extends StatefulWidget {
 
 class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStateMixin {
   late final FolderService _folderService;
-  final List<String> baseTags = const ['전체', '순서', '시간', '태그', '#강아지_사진대회']; // 폴더 지움
+  final List<String> baseTags = const ['전체', '순서', '시간', '#강아지_사진대회']; // 폴더 지움
   late Map<String, List<FilterOption>> filterOptions;
   List<String> folderNames = [];
 

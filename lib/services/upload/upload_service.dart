@@ -14,6 +14,10 @@ class ImageUploadService {
 
   late final UserManagerService _userManagerService;
 
+  ImageUploadService({UserManagerService? userManagerService}) 
+    : _userManagerService = userManagerService ?? UserManagerService();
+
+
   Future<String> uploadImage(File image,
       {bool sharedActive = true,
       bool frameActive = false,

@@ -7,8 +7,8 @@ class Photo {
   final String? location;
   final int registerDatetime;
   final int updateDatetime;
-  final bool frameActive;
-  final bool sharedActive;
+  final bool? frameActive;
+  final bool? sharedActive;
   final int likes;
   final int views;
   final String? tag;
@@ -22,8 +22,8 @@ class Photo {
     this.location,
     required this.registerDatetime,
     required this.updateDatetime,
-    required this.frameActive,
-    required this.sharedActive,
+    this.frameActive,
+    this.sharedActive,
     required this.likes,
     required this.views,
     this.tag,
