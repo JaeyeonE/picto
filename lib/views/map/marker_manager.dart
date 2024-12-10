@@ -9,9 +9,9 @@ class MarkerManager {
   Set<Marker> _largeMarkers = {};
   Set<Marker> _middleMarkers = {};
   Set<Marker> _smallMarkers = {};
-  final int currentUserId;
-
-  MarkerManager({required this.currentUserId});
+  final int userId;
+  
+  MarkerManager({required this.userId});
 
   // 현재 줌 레벨에 따른 마커 반환
   Set<Marker> getMarkersForZoomLevel(double zoom) {
@@ -26,7 +26,7 @@ class MarkerManager {
 
   // 마커 생성 및 저장
   Future<Set<Marker>> createMarkersFromPhotos(
-      List<Photo> photos, String locationType) async {
+      List<Photo> photos, String locationType, int userId) async {
     final newMarkers = <Marker>{};
     final existingMarkerIds = _getExistingMarkerIds(locationType);
 
@@ -93,6 +93,7 @@ class MarkerManager {
         return {};
     }
   }
+
 // 기존 마커 가져오기
   Marker? _getExistingMarker(String locationType, String markerId) {
     Set<Marker> markers;
@@ -127,9 +128,9 @@ class MarkerManager {
 //   Set<Marker> _largeMarkers = {};
 //   Set<Marker> _middleMarkers = {};
 //   Set<Marker> _smallMarkers = {};
-//   final int currentUserId;
+//   final int userId;
 
-//   MarkerManager({required this.currentUserId});
+//   MarkerManager({required this.userId});
 
 //   // 현재 줌 레벨에 따른 마커 반환
 //   Set<Marker> getMarkersForZoomLevel(double zoom) {
@@ -155,7 +156,7 @@ class MarkerManager {
 
 //       final markerIcon = await MarkerImageProcessor.createMarkerIcon(
 //         photo.photoPath,
-//         photo.userId == currentUserId,
+//         photo.userId == userId,
 //       );
 
 //       print("Marker icon created for photo ${photo.photoId}");
@@ -247,7 +248,7 @@ class MarkerManager {
 //       // 새로운 마커 생성
 //       final markerIcon = await MarkerImageProcessor.createMarkerIcon(
 //         photo.photoPath,
-//         photo.userId == currentUserId,
+//         photo.userId == userId,
 //       );
 
 //       final marker = Marker(

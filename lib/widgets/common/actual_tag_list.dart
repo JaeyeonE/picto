@@ -1,15 +1,17 @@
 //lib/widgets/common/actual_tag_list.dart
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:picto/services/user_manager_service.dart'; // 폴더 리스트 뽑으려고..
 import 'package:picto/utils/app_color.dart';
+import 'package:picto/services/folder_service.dart';
 
 class TagSelector extends StatefulWidget {
   final List<String> selectedTags;
   final Function(List<String>) onTagsSelected;
   final Function(String, String, int, int)? onFilterUpdate;
   final VoidCallback? onRefresh;
-  final List<String> folderNames;
+  final int userId;
+
 
   const TagSelector({
     super.key,
@@ -17,7 +19,7 @@ class TagSelector extends StatefulWidget {
     required this.onTagsSelected,
     this.onFilterUpdate,
     this.onRefresh,
-    this.folderNames = const [],
+    required this.userId,
   });
 
   @override
@@ -25,24 +27,19 @@ class TagSelector extends StatefulWidget {
 }
 
 class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStateMixin {
-  final List<String> baseTags = const ['전체', '순서', '폴더', '시간', '#강아지_사진대회'];
-  String? expandedTag;
-
+  late final FolderService _folderService;
+  final List<String> baseTags = const ['전체', '순서', '시간', '태그', '#강아지_사진대회']; // 폴더 지움
   late Map<String, List<FilterOption>> filterOptions;
+  List<String> folderNames = [];
 
   @override
   void initState() {
     super.initState();
+    _loadFolders();
+    _folderService = FolderService(Dio(), userId: widget.userId);
     _initializeFilterOptions();
   }
 
-  @override
-  void didUpdateWidget(TagSelector oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.folderNames != widget.folderNames) {
-      _initializeFilterOptions();
-    }
-  }
 
   void _initializeFilterOptions() {
     filterOptions = {
@@ -57,8 +54,16 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
         FilterOption('일년', false),
         FilterOption('전체', false),
       ],
-      '폴더': widget.folderNames.map((name) => FilterOption(name, false)).toList(),
+      '폴더': folderNames.map((name) => FilterOption(name, false)).toList(),
     };
+  }
+
+  Future<void> _loadFolders() async {
+    final folders = await _folderService.getFolders(widget.userId); 
+    setState(() {
+      folderNames = folders.map((folder) => folder.name ?? '').where((name) => name.isNotEmpty).toList(); // 포토 리스트 로드
+      _initializeFilterOptions();
+    });
   }
 
   int _getStartDatetime(String period) {
@@ -81,7 +86,6 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
 
   void _resetToDefault() {
     setState(() {
-      expandedTag = null;
       for (var options in filterOptions.values) {
         for (var option in options) {
           option.isSelected = false;
@@ -201,7 +205,7 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: option.isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+                              color: option.isSelected ? AppColors.primary.withOpacity(0.4) : Colors.white,
                               border: Border(
                                 bottom: BorderSide(
                                   color: Colors.grey[200]!,

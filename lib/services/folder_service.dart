@@ -12,9 +12,9 @@ import 'package:picto/services/folder_upload_model.dart';
 class FolderService {
   final Dio _dio;
   final String baseUrl;
-  final int? userId;
+  final int userId;
 
-  FolderService( {this.userId})
+  FolderService(Dio dio,  {required this.userId})
       : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 3),
