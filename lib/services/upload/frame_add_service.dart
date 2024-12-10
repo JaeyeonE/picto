@@ -8,6 +8,10 @@ class FrameAddService {
   static const String AddUrl = 'http://52.78.237.242:8084/photo-store/photos';
   late final UserManagerService _userManagerService;
 
+  FrameAddService({UserManagerService? userManagerService}) 
+    : _userManagerService = userManagerService ?? UserManagerService();
+
+
   Future<Map<String, dynamic>> addFrame() async {
     final Dio dio = Dio();
     final position = await LocationService().getCurrentLocation();

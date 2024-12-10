@@ -1,5 +1,3 @@
-// lib/views/map/map.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
@@ -12,13 +10,13 @@ import 'package:picto/services/session/session_service.dart';
 import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/map/zoom_position.dart';
+import 'package:picto/views/upload/upload.dart';
 import 'package:picto/widgets/common/actual_tag_list.dart';
 import '../map/search_screen.dart';
 import '../../widgets/common/map_header.dart';
 import '../../widgets/common/navigation.dart';
 import 'marker_manager.dart';
 
-// StatefulWidget으로 MapScreen 클래스 정의
 class MapScreen extends StatefulWidget {
   final User initialUser;
 
@@ -33,58 +31,34 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   // 상태 변수들 정의
-  // UI 상태 관련
-  int selectedIndex = 2; // 네비게이션 바 선택 인덱스
-  List<String> selectedFilter = ['전체']; // 선택된 태그 목록
-  bool _isLoading = false; // 로딩 상태
-  final _searchController = TextEditingController(); // 검색 컨트롤러
+  int selectedIndex = 2;
+  List<String> selectedTags = ['전체'];
+  bool _isLoading = false;
+  final _searchController = TextEditingController();
 
   // 구글맵 관련
-  GoogleMapController? mapController; // 맵 컨트롤러
-  Set<Marker> markers = {}; // 마커 세트
-  Set<Circle> circles = {}; // 원 세트
-  MarkerManager? _markerManager; // 마커 관리자
-
-  // 사용자의 태그를 ['전체']로 초기화
-  final defaultTags = [
-    '강아지',
-    '고양이',
-    '다람쥐',
-    '햄스터',
-    '새',
-    '곤충',
-    '파충류',
-    '물고기',
-    '산',
-    '바다',
-    '호수/강',
-    '들판',
-    '숲',
-    '하늘',
-    '기타',
-  ];
+  GoogleMapController? mapController;
+  Set<Marker> markers = {};
+  Set<Circle> circles = {};
+  MarkerManager? _markerManager;
 
   // 위치 관련
-  LatLng? currentLocation; // 현재 위치
-  StreamSubscription<Position>? _positionStreamSubscription; // 위치 스트림
-  LatLng? _lastRefreshLocation; // 마지막 새로고침 위치
-  String _currentLocationType = 'large'; // 현재 위치 타입
-  String? _previousLocationType; // 이전 위치 타입
-  static const double _minimumRefreshDistance = 10.0; // 최소 새로고침 거리(미터)
+  LatLng? currentLocation;
+  StreamSubscription<Position>? _positionStreamSubscription;
+  LatLng? _lastRefreshLocation;
+  String _currentLocationType = 'large';
+  String? _previousLocationType;
+  static const double _minimumRefreshDistance = 10.0;
 
   // 서비스 인스턴스
-  final _userService = UserManagerService(); // 사용자 관리 서비스
-  final _photoService = PhotoManagerService(
-      // 사진 관리 서비스
-      host: 'http://3.35.153.213:8082');
-  final SessionService _sessionService = SessionService(); // 세션 서비스
+  final _userService = UserManagerService();
+  final _photoService = PhotoManagerService(host: 'http://3.35.153.213:8082');
+  final SessionService _sessionService = SessionService();
   late final LocationWebSocketHandler _locationHandler;
 
-// 사용자 데이터
+  // 사용자 데이터
   User? currentUser;
-  
 
-// 현재 사용자 정보
   @override
   void initState() {
     super.initState();
@@ -94,7 +68,6 @@ class _MapScreenState extends State<MapScreen> {
     _initializeLocationServices();
     _locationHandler = LocationWebSocketHandler(_sessionService);
 
-    // 세션 메시지 리스너 추가
     _sessionService.getSessionStream().listen((message) async {
       if (message.messagetype == 'LOCATION' &&
           message.lat != null &&
@@ -110,21 +83,16 @@ class _MapScreenState extends State<MapScreen> {
           photoLocation.longitude,
         );
 
-        // 3km 반경 내의 사진일 경우만 처리
         if (distanceInMeters <= 3000) {
           try {
-            // getNearbyPhotos 호출하여 최신 사진 목록 가져오기
             final photos = await _photoService.getNearbyPhotos();
-
-            // 새로 업로드된 사진 찾기 (photoId로 매칭)
             final newPhoto = photos
                 .where((photo) => photo.photoId == message.photoId)
                 .firstOrNull;
 
             if (newPhoto != null && mounted) {
-              // MarkerManager로 마커 생성
               final newMarkers = await _markerManager
-                  ?.createMarkersFromPhotos([newPhoto], 'small', widget.initialUser.userId);
+                  ?.createMarkersFromPhotos([newPhoto], 'small');
 
               if (newMarkers != null) {
                 setState(() {
@@ -142,27 +110,28 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
-    mapController?.dispose(); // 맵 컨트롤러 해제
-    _positionStreamSubscription?.cancel(); // 위치 구독 취소
-    _searchController.dispose(); // 검색 컨트롤러 해제
+    mapController?.dispose();
+    _positionStreamSubscription?.cancel();
+    _searchController.dispose();
     _locationHandler.dispose();
     super.dispose();
   }
 
-  // 사용자 초기화 함수
   Future<void> _initializeUser() async {
     try {
-      final user = await _userService.getUserProfile(widget.initialUser.userId);
-      setState(() {
-        currentUser = user;
-        _markerManager = MarkerManager(userId: widget.initialUser.userId);
-      });
-        } catch (e) {
+      final userId = await _userService.getUserId();
+      if (userId != null) {
+        final user = await _userService.getUserProfile(userId);
+        setState(() {
+          currentUser = user;
+          _markerManager = MarkerManager(currentUserId: user.userId);
+        });
+      }
+    } catch (e) {
       debugPrint('사용자 정보 로드 실패: $e');
     }
   }
 
-  // 카메라 이동 시 실행되는 함수 - 줌 레벨에 따라 위치 타입 변경
   void _onCameraMove(CameraPosition position) {
     if (currentUser == null || _markerManager == null) return;
 
@@ -175,30 +144,30 @@ class _MapScreenState extends State<MapScreen> {
       newLocationType = 'large';
     }
 
-    // 위치 타입이 변경되었을 때만 새로고침
+    // 위치 타입이 변경되었을 때만 새로운 데이터 로드
     if (_currentLocationType != newLocationType) {
       setState(() {
         _currentLocationType = newLocationType;
-        _previousLocationType = _currentLocationType;
       });
-
-      // 위치 타입이 변경됐을 때만 새로고침
-      if (_previousLocationType != newLocationType) {
-        if (newLocationType == 'small') {
-          _loadNearbyPhotos();
-        } else {
-          _loadRepresentativePhotos();
-        }
+      
+      // 새로운 위치 타입에 해당하는 데이터가 없을 경우에만 로드
+      if (newLocationType == 'small' && _markerManager!.isMarkersEmpty('small')) {
+        _loadNearbyPhotos();
+      } else if ((newLocationType == 'middle' && _markerManager!.isMarkersEmpty('middle')) ||
+                 (newLocationType == 'large' && _markerManager!.isMarkersEmpty('large'))) {
+        _loadRepresentativePhotos();
       }
+
+      // 사용하지 않는 마커 정리
+      _markerManager!.clearUnusedMarkers(newLocationType);
     }
 
-    // 현재 줌 레벨에 맞는 마커만 표시
+    // 현재 줌 레벨에 맞는 마커 표시
     setState(() {
       markers = _markerManager!.getMarkersForZoomLevel(position.zoom);
     });
   }
 
-  // 현재 위치 업데이트 및 필요시 새로고침
   Future<void> _handleLocationUpdate(LatLng newLocation) async {
     setState(() {
       currentLocation = newLocation;
@@ -206,14 +175,16 @@ class _MapScreenState extends State<MapScreen> {
     _updateMyLocationMarker(newLocation);
 
     try {
-      
-      await _locationHandler.sendLocationWithRetry(
-        userId: widget.initialUser.userId,
-        latitude: newLocation.latitude,
-        longitude: newLocation.longitude,
-      );
-      debugPrint('위치 전송 완료');
-        } catch (e) {
+      final userId = await _userService.getUserId();
+      if (userId != null) {
+        await _locationHandler.sendLocationWithRetry(
+          userId: userId,
+          latitude: newLocation.latitude,
+          longitude: newLocation.longitude,
+        );
+        debugPrint('위치 전송 완료');
+      }
+    } catch (e) {
       debugPrint('Location update failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -228,7 +199,6 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // 새로고침이 필요한지 확인하는 함수
   bool _shouldRefresh(LatLng newLocation) {
     if (_lastRefreshLocation == null) return true;
 
@@ -242,7 +212,6 @@ class _MapScreenState extends State<MapScreen> {
     return distanceInMeters >= _minimumRefreshDistance;
   }
 
-  // 대표 사진들을 로드하는 함수
   Future<void> _loadRepresentativePhotos() async {
     if (_isLoading || currentUser == null || _markerManager == null) return;
     setState(() => _isLoading = true);
@@ -253,21 +222,18 @@ class _MapScreenState extends State<MapScreen> {
         count: 10,
       );
 
-      // 태그 필터링된 사진만 선택
       final filteredPhotos = photos
           .where((photo) =>
-              selectedFilter.contains('전체') ||
-              (photo.tag != null && selectedFilter.contains(photo.tag!)))
+              selectedTags.contains('전체') ||
+              (photo.tag != null && selectedTags.contains(photo.tag!)))
           .toList();
 
-      // MarkerManager를 통해 마커 생성
       final newMarkers = await _markerManager!
-          .createMarkersFromPhotos(filteredPhotos, _currentLocationType, widget.initialUser.userId);
+          .createMarkersFromPhotos(filteredPhotos, _currentLocationType);
 
       if (mounted) {
         setState(() {
           markers = newMarkers;
-          print("Updated markers set, size: ${markers.length} line 139");
         });
       }
     } catch (e) {
@@ -283,7 +249,6 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // 위치 권한을 확인하고 요청하는 함수
   Future<bool> _handleLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -304,30 +269,33 @@ class _MapScreenState extends State<MapScreen> {
     return true;
   }
 
-  // 주변 사진 로드 함수
   Future<void> _loadNearbyPhotos() async {
     if (_isLoading || currentUser == null || _markerManager == null) return;
     setState(() => _isLoading = true);
 
     try {
-      final photos = await _photoService.getNearbyPhotos();
-      Text("Received photos: $photos");
+      final userId = await _userService.getUserId();
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 필요합니다')),
+        );
+        return;
+      }
 
-      // 태그 필터링된 사진만 선택
+      final photos = await _photoService.getNearbyPhotos();
+
       final filteredPhotos = photos
           .where((photo) =>
-              selectedFilter.contains('전체') ||
-              (photo.tag != null && selectedFilter.contains(photo.tag!)))
+              selectedTags.contains('전체') ||
+              (photo.tag != null && selectedTags.contains(photo.tag!)))
           .toList();
 
-      // MarkerManager를 통해 마커 생성
       final newMarkers = await _markerManager!
-          .createMarkersFromPhotos(filteredPhotos, 'small', widget.initialUser.userId);
+          .createMarkersFromPhotos(filteredPhotos, 'small');
 
       if (mounted) {
         setState(() {
           markers = newMarkers;
-          print("Updated markers set, size: ${markers.length} line 206");
         });
       }
     } catch (e) {
@@ -349,10 +317,8 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // 현재 위치 마커를 업데이트하는 함수
   void _updateMyLocationMarker(LatLng location) {
     setState(() {
-      // 기존 현재 위치 마커 업데이트
       markers.removeWhere(
           (marker) => marker.markerId == const MarkerId("myLocation"));
       markers.add(
@@ -364,22 +330,19 @@ class _MapScreenState extends State<MapScreen> {
         ),
       );
 
-      // 3km 반경 원 업데이트
       circles.clear();
       circles.add(
         Circle(
           circleId: const CircleId('currentLocationRadius'),
           center: location,
-          radius: 3000, // 3km를 미터 단위로
-          strokeColor: Color.fromARGB(255, 111, 0, 255)
-              .withOpacity(0.2), // 80% 투명도의 보라색 테두리
+          radius: 3000,
+          strokeColor: Color.fromARGB(255, 111, 0, 255).withOpacity(0.2),
           strokeWidth: 2,
         ),
       );
     });
   }
 
-  // 현재 위치를 가져오고 지도를 이동시키는 함수
   Future<void> _getCurrentLocation() async {
     final hasPermission = await _handleLocationPermission();
     if (!hasPermission) return;
@@ -388,7 +351,7 @@ class _MapScreenState extends State<MapScreen> {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          distanceFilter: 50, // 50미터마다 위치 업데이트
+          distanceFilter: 50,
         ),
       );
 
@@ -416,7 +379,6 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // 실시간 위치 업데이트를 시작하는 함수
   Future<void> _startLocationUpdates() async {
     final hasPermission = await _handleLocationPermission();
     if (!hasPermission) return;
@@ -438,7 +400,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // 지도를 새로고침하는 함수
   Future<void> _refreshMap() async {
     if (_isLoading) return;
 
@@ -448,13 +409,11 @@ class _MapScreenState extends State<MapScreen> {
       await _loadRepresentativePhotos();
     }
 
-    // 새로고침 후 현재 위치를 마지막 새로고침 위치로 저장
     if (currentLocation != null) {
       _lastRefreshLocation = currentLocation;
     }
   }
 
-  // 위치 서비스를 초기화하는 함수
   Future<void> _initializeLocationServices() async {
     final hasPermission = await _handleLocationPermission();
     if (!hasPermission) return;
@@ -466,15 +425,13 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // 태그 선택 시 실행되는 함수
   void onTagsSelected(List<String> tags) {
     setState(() {
-      selectedFilter = tags;
+      selectedTags = tags;
     });
     _loadNearbyPhotos();
   }
 
-  // 위치 검색 함수
   Future<void> _searchLocation(String query) async {
     try {
       List<Location> locations = await locationFromAddress(query);
@@ -486,7 +443,7 @@ class _MapScreenState extends State<MapScreen> {
             CameraPosition(
               target: location,
               zoom: 15,
-            ),
+              ),
           ),
         );
         await _loadNearbyPhotos();
@@ -498,19 +455,21 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // 필터 업데이트 메서드 추가
   Future<void> _updateUserFilter(
       String sort, String period, int startDatetime, int endDatetime) async {
     try {
-      await _userService.updateFilter(
-        userId: widget.initialUser.userId,
-        sort: '좋아요순',
-        period: period,
-        startDatetime: startDatetime,
-        endDatetime: endDatetime,
-      );
-      _refreshMap(); // 필터 업데이트 후 지도 새로고침
-        } catch (e) {
+      final userId = await _userService.getUserId();
+      if (userId != null) {
+        await _userService.updateFilter(
+          userId: userId,
+          sort: '좋아요순',
+          period: period,
+          startDatetime: startDatetime,
+          endDatetime: endDatetime,
+        );
+        _refreshMap();
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('필터 업데이트 실패: $e')),
@@ -519,15 +478,36 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  Future<void> _resetUserTags() async {
+    try {
+      final userId = await _userService.getUserId();
+      if (userId != null) {
+        final defaultTags = [
+          '강아지', '고양이', '다람쥐', '햄스터', '새', '곤충', 
+          '파충류', '해양생물', '물고기', '산', '바다', 
+          '호수/강', '들판', '숲', '하늘'
+        ];
+        
+        await _userService.updateTags(
+          userId: userId,
+          tagNames: defaultTags,
+        );
+        setState(() {
+          selectedTags = ['전체'];
+        });
+      }
+    } catch (e) {
+      debugPrint('태그 초기화 실패: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
-      // 로그 많이 안 찍히도록..
       child: Scaffold(
         body: Stack(
           children: [
             RepaintBoundary(
-              // GoogleMap에 대한 전용 RepaintBoundary
               child: GoogleMap(
                 onMapCreated: (GoogleMapController controller) {
                   mapController = controller;
@@ -549,11 +529,9 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
-            // 상단 Column에 RepaintBoundary 추가
             RepaintBoundary(
               child: Column(
                 children: [
-                  // 맵 헤더는 자주 변경되지 않으므로 RepaintBoundary로 감싸기
                   RepaintBoundary(
                     child: MapHeader(
                       onSearchPressed: () {
@@ -600,16 +578,15 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ),
 
-                  // TagSelector도 RepaintBoundary로 감싸기
                   RepaintBoundary(
                     child: TagSelector(
                       userId: widget.initialUser.userId,
-                      selectedTags: selectedFilter,
+                      selectedTags: selectedTags,
                       onTagsSelected: (tags) {
                         setState(() {
-                          selectedFilter = tags;
+                          selectedTags = tags;
                         });
-                        _refreshMap(); // 태그 선택 시 _refreshMap 호출
+                        _refreshMap();
                       },
                       onFilterUpdate:
                           (sort, period, startDatetime, endDatetime) {
@@ -622,42 +599,30 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
-            // 로딩 인디케이터
             if (_isLoading)
               const Center(
                 child: CircularProgressIndicator(),
               ),
 
-            // Map Screen의 build 메서드에서 Positioned 위젯 추가
             Positioned(
               right: 16,
               bottom: 90,
               child: FloatingActionButton(
                 heroTag: 'sendLocation',
-                onPressed: () async {
-                  if (currentLocation != null) {
-                    await _handleLocationUpdate(currentLocation!);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('map.dart 현재 위치 재전송 완료')),
-                      );
-                    }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('현재 위치를 가져올 수 없습니다')),
-                    );
-                  }
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const UploadScreen()),
+                  );
                 },
-                child: const Icon(Icons.send),
+                child: const Icon(Icons.add),
               ),
             ),
 
-            // 오른쪽 하단 새로고침 버튼
             Positioned(
               right: 16,
               bottom: 20,
               child: RepaintBoundary(
-                // 새로고침 버튼도 RepaintBoundary로 감싸기
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -683,7 +648,6 @@ class _MapScreenState extends State<MapScreen> {
           ],
         ),
 
-        // 하단 네비게이션 바에도 RepaintBoundary 적용
         bottomNavigationBar: RepaintBoundary(
           child: CustomNavigationBar(
             selectedIndex: selectedIndex,
@@ -700,21 +664,5 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _resetUserTags() async {
-    try {
-      
-      // 서버에 필터 업데이트
-      await _userService.updateTags(
-        userId: widget.initialUser.userId,
-        tagNames: defaultTags,
-      );
-      setState(() {
-        selectedFilter = ['전체'];
-      });
-        } catch (e) {
-      debugPrint('태그 초기화 실패: $e');
-    }
   }
 }

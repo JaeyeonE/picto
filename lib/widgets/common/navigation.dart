@@ -49,7 +49,7 @@ class CustomNavigationBar extends StatelessWidget {
           screen = ChangeNotifierProvider(
           create: (context) => FolderViewModel(
             user: currentUser,
-            folderService: FolderService(dio, userId: currentUser.userId),
+            folderService: FolderService(userId: currentUser.userId),
             photoStoreService: PhotoStoreService(baseUrl: 'http://52.78.237.242:8084'),
             userManagerService: UserManagerService(),
           ),
@@ -64,7 +64,22 @@ class CustomNavigationBar extends StatelessWidget {
         );
           break;
         case 4:
-          screen = UserProfile(user: currentUser,); // 로그아웃 버튼
+          screen = ChangeNotifierProvider(
+          create: (context) => FolderViewModel(
+            user: currentUser,
+            folderService: FolderService(userId: currentUser.userId),
+            photoStoreService: PhotoStoreService(baseUrl: 'http://52.78.237.242:8084'),
+            userManagerService: UserManagerService(),
+          ),
+          child: Scaffold(
+            body: UserProfile(user: currentUser, isMyProfile: true,),
+            bottomNavigationBar: CustomNavigationBar(
+              selectedIndex: selectedIndex,
+              onItemSelected: onItemSelected,
+              currentUser: currentUser,
+            ),
+          ),
+        );
           break;
         default:
           screen = const ProfileScreen(); // 로그아웃 버튼

@@ -33,7 +33,7 @@ class _UploadScreenState extends State<UploadScreen> {
   void initState() {
     super.initState();
     _controller.loadPhotos().then((_) => setState(() {}));
-    _uploadService = ImageUploadService(userManagerService: _userManager);
+    _uploadService = ImageUploadService();
 
     _initializeUser();
   }
@@ -180,8 +180,8 @@ class _UploadScreenState extends State<UploadScreen> {
             child: IconButton(
               icon: const ImageIcon(
                 AssetImage('lib/assets/common/camera.png'),
-                size: 24.0,
-                color: Colors.white,
+                size: 20.0,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onPressed: () async {
                 try {

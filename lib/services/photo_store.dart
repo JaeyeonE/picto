@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'dart:typed_data';
 
 class PhotoStoreService {
   final String baseUrl;
@@ -11,7 +13,7 @@ class PhotoStoreService {
 
   // 2. 액자 사진 업로드
   Future<Map<String, dynamic>> uploadFramePhoto({
-    required String photoId,
+    required int photoId,
     required File photoFile,
     required String tag,
     required int registerTime,
@@ -57,7 +59,7 @@ class PhotoStoreService {
   }
 
   // 4. 사진 공유 상테 업데이트
-  Future<void> updatePhotoShareStatus(String photoId, bool shared) async {
+  Future<void> updatePhotoShareStatus(int photoId, bool shared) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/$photoId/share')
         .replace(queryParameters: {'shared': shared.toString()});
 
@@ -65,13 +67,38 @@ class PhotoStoreService {
   }
 
   // 5. 사진 조회
-  Future<http.Response> downloadPhoto(String photoId) async {
+  Future<http.Response> downloadPhoto(int photoId) async {
+  try {
+    final uri = Uri.parse('http://52.78.237.242:8084/photo-store/photos/download/$photoId');
+    final response = await http.get(uri);
+    
+    if (response.statusCode == 500) {
+      print('Server error details: ${response.body}');
+      // 서버 로그 확인을 위한 추가 정보 출력
+      throw Exception('Failed to download photo: Server error');
+    }
+    
+    return response;
+  } catch (e) {
+    print('Download error: $e');
+    rethrow;
+  }
+}
+
+  Future<Uint8List> downloadPhoto22(int photoId) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/download/$photoId');
-    return await http.get(uri);
+    final response = await http.get(uri);
+    
+    if (response.statusCode == 200) {
+      print('${response.bodyBytes}');
+      return response.bodyBytes; // 바이너리 데이터로 반환
+    } else {
+      throw Exception('Failed to download photo');
+    }
   }
 
   // 6. 사진 삭제
-  Future<void> deletePhoto(String photoId, int userId) async {
+  Future<void> deletePhoto(int photoId, int userId) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/$photoId')
         .replace(queryParameters: {'userId': userId.toString()});
 

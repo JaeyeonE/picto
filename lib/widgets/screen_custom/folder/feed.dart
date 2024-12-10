@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:picto/services/photo_manager_service.dart';
+import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:picto/models/photo_manager/photo.dart';
@@ -9,7 +11,7 @@ import 'package:picto/widgets/screen_custom/profile/user_profile.dart';
 class Feed extends StatefulWidget {
   final int initialPhotoIndex;
   final int? folderId;
-  final String? userId;
+  final int? userId;
   final int photoId;
 
   const Feed({
@@ -27,6 +29,7 @@ class Feed extends StatefulWidget {
 class _FeedState extends State<Feed> {
   late PageController _pageController;
   int currentIndex = 0;
+  final Map<int, bool> _likedStatus = {};
 
   @override
   void initState() {
@@ -41,10 +44,59 @@ class _FeedState extends State<Feed> {
     super.dispose();
   }
 
+  Widget _buildImageView(Photo photo) {
+    if (photo.photoPath.isEmpty) {
+      return Container(
+        color: Colors.grey[900],
+        child: Center(
+          child: Icon(
+            Icons.image_not_supported,
+            color: Colors.grey[400],
+            size: 48,
+          ),
+        ),
+      );
+    }
+
+    try {
+      // Base64 디코딩 시도
+      List<String> parts = photo.photoPath.split(',');
+      String base64Data = parts.length > 1 ? parts[1] : photo.photoPath;
+      
+      return Image.memory(
+        base64Decode(base64Data),
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey[900],
+            child: Center(
+              child: Icon(
+                Icons.broken_image,
+                color: Colors.grey[400],
+                size: 48,
+              ),
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      return Container(
+        color: Colors.grey[900],
+        child: Center(
+          child: Icon(
+            Icons.error_outline,
+            color: Colors.grey[400],
+            size: 48,
+          ),
+        ),
+      );
+    }
+  }
+
   void _showOptionsMenu(BuildContext context) {
     final viewModel = context.read<FolderViewModel>();
     final bool isFolderView = widget.folderId != null;
-    final bool isCurrentUser = widget.userId == viewModel.user.userId;
+    final bool isCurrentUser = widget.userId == viewModel.user.userId.toString();
 
     showModalBottomSheet(
       context: context,
@@ -64,11 +116,11 @@ class _FeedState extends State<Feed> {
               onTap: () {
                 Navigator.pop(context);
                 if (isFolderView) {
-                  viewModel.deletePhoto(widget.folderId, widget.photoId);
-                } else {
-                  // 사용자 사진 삭제 로직 추가 필요
+                  viewModel.deletePhoto(widget.folderId, widget.photoId).then((_) {
+                    Navigator.pop(context); // Feed 화면 닫기
+                  });
                 }
-              }
+              },
             ),
           ListTile(
             leading: const Icon(Icons.visibility_off),
@@ -139,12 +191,21 @@ class _FeedState extends State<Feed> {
                   itemBuilder: (context, index) {
                     final photo = photos[index];
                     return Center(
-                      child: Image.network(
-                        photo.photoPath,
-                        fit: BoxFit.contain,
-                      ),
+                      child: _buildImageView(photo),
                     );
                   },
+                ),
+              ),
+
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: 16,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
               
@@ -175,8 +236,39 @@ class _FeedState extends State<Feed> {
     );
   }
 
+  Future<void> _toggleLike(BuildContext context, Photo photo) async {
+    final photoManagerService = Provider.of<PhotoManagerService>(context, listen: false);
+    final viewModel = Provider.of<FolderViewModel>(context, listen: false);
+    
+    try {
+      setState(() {
+        _likedStatus[photo.photoId] = !(_likedStatus[photo.photoId] ?? false);
+      });
+
+      if (_likedStatus[photo.photoId] ?? false) {
+        // 좋아요 추가
+        await photoManagerService.likePhoto(viewModel.user.userId, photo.photoId);
+      } else {
+        // 좋아요 취소
+        await photoManagerService.unlikePhoto(viewModel.user.userId, photo.photoId);
+      }
+    } catch (e) {
+      // 에러 발생 시 상태 되돌리기
+      setState(() {
+        _likedStatus[photo.photoId] = !(_likedStatus[photo.photoId] ?? false);
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('좋아요 처리 중 오류가 발생했습니다: ${e.toString()}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Widget _buildBottomInfo(BuildContext context, Photo photo, FolderViewModel viewModel) {
-    final user = viewModel.userInfo?.user;
+    final user = viewModel.user;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -191,12 +283,12 @@ class _FeedState extends State<Feed> {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile and stats row
           Row(
             children: [
-              GestureDetector(
+              InkWell(
                 onTap: () {
                   if (user != null) {
                     Navigator.push(
@@ -219,7 +311,8 @@ class _FeedState extends State<Feed> {
                         : null,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: 200),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -229,6 +322,7 @@ class _FeedState extends State<Feed> {
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             user?.name ?? '',
@@ -236,6 +330,7 @@ class _FeedState extends State<Feed> {
                               color: Colors.grey[300],
                               fontSize: 12,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -244,9 +339,22 @@ class _FeedState extends State<Feed> {
                 ),
               ),
               const Spacer(),
+              // 좋아요 버튼과 카운트
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.favorite, color: Colors.red, size: 20),
+                  InkWell(
+                    onTap: () => _toggleLike(context, photo),
+                    child: Icon(
+                      _likedStatus[photo.photoId] ?? false
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: _likedStatus[photo.photoId] ?? false
+                          ? Colors.red
+                          : Colors.white,
+                      size: 24,
+                    ),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${photo.likes}',
@@ -260,8 +368,9 @@ class _FeedState extends State<Feed> {
             ],
           ),
           const SizedBox(height: 8),
-          if (photo.location!.isNotEmpty)
+          if (photo.location != null && photo.location!.isNotEmpty)
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.location_on,
@@ -269,7 +378,7 @@ class _FeedState extends State<Feed> {
                   size: 16,
                 ),
                 const SizedBox(width: 4),
-                Expanded(
+                Flexible(
                   child: Text(
                     photo.location ?? '위치정보 없음',
                     style: const TextStyle(
@@ -286,5 +395,4 @@ class _FeedState extends State<Feed> {
       ),
     );
   }
-
 }

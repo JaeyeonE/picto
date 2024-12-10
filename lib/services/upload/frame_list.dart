@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/services/location_service.dart';
 import 'package:dio/dio.dart';
+import 'package:picto/services/user_manager_service.dart';
 
 class FrameListService {
   static const String ListUrl =
       'http://52.78.237.242:8084/photo-store/photos/frames';
   final Dio _dio = Dio();
+  
   Future<List<Photo>> getFrames(int? userId) async {
+
     try {
       print('\n====== 프레임 목록 조회 시작 ======');
       print('요청 URL: $ListUrl');

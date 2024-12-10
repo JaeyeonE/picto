@@ -6,7 +6,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await MarkerImageProcessor.loadFrameImages();
+    await MarkerImageProcessor.createMarkerIcon(true);
     debugPrint('마커 이미지 초기화 성공');
   } catch (e) {
     debugPrint('마커 이미지 초기화 실패: $e');

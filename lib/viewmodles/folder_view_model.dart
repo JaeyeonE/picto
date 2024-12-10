@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:picto/models/folder/invite_model.dart';
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/folder/folder_model.dart';
@@ -54,6 +55,7 @@ class FolderViewModel extends ChangeNotifier {
   bool get isPhotoMode => _isPhotoMode;
   UserInfoResponse? get userInfo => _userInfo;
   List<Invite> get invitations => _invitations;
+
   
 
   // 폴더 목록 로드
@@ -134,37 +136,46 @@ class FolderViewModel extends ChangeNotifier {
 
   // 폴더 내 사진 목록 로드
   Future<void> loadPhotos(int folderId) async {
-    _isLoading = true;
-    notifyListeners();
-    
-    try {
-      final photos = await _folderService.getPhotos(user.userId, folderId);
-      if (photos != null) {
-        for (var photo in photos) {
-          if (photo.photoId == null) continue;
-          
-          try {
-            final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
-            if (response.statusCode == 200) {
-              photo.photoPath = response.body;
-            }
-          } catch (e) {
-            print('Error downloading photo ${photo.photoId}: $e');
+  _isLoading = true;
+  notifyListeners();
+  
+  try {
+    final photos = await _folderService.getPhotos(user.userId, folderId);
+    if (photos != null) {
+      for (var photo in photos) {
+        if (photo.photoId == null) continue;
+        
+        try {
+          final response = await _photoStoreService.downloadPhoto(photo.photoId);
+          print('----- loadPhotos ----');
+          print('Response status: ${response.statusCode}');
+          print('Response body: ${response.body}');
+          print('Parsed URL: ${photo.photoPath}');
+          if (response.statusCode == 200) {
+            // Base64 데이터가 이미 포함된 응답을 그대로 사용
+            photo.photoPath = response.body;
+          } else {
+            // 에러 응답의 경우 빈 이미지 데이터로 설정
+            photo.photoPath = ''; // PhotoListWidget에서 처리할 수 있도록
           }
+        } catch (e) {
+          print('Error downloading photo ${photo.photoId}: $e');
+          photo.photoPath = ''; // 에러 시 빈 이미지 데이터
         }
-        _photos = photos;
-      } else {
-        _photos = [];
       }
-      _currentFolderId = folderId;
-    } catch (e) {
-      print('Error loading photos: $e');
+      _photos = photos;
+    } else {
       _photos = [];
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
+    _currentFolderId = folderId;
+  } catch (e) {
+    print('Error loading photos: $e');
+    _photos = [];
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
 
   //유저가 업로드한 사진 가져오기
   Future<void> loadUserPhotos(int userId) async {
@@ -172,14 +183,14 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final userInfo = await _userManagerService.getUserAllInfo(userId);
+      final userInfo = await _userManagerService.getUserAllInfo(1);
       _userInfo = userInfo;
       
       // 사진 경로 로드
       final List<Photo> photos = [];
       for (var photo in userInfo.photos) {
         try {
-          final response = await _photoStoreService.downloadPhoto(photo.photoId.toString());
+          final response = await _photoStoreService.downloadPhoto(photo.photoId);
           if (response.statusCode == 200) {
             photo.photoPath = response.body;
             photos.add(photo);
@@ -200,6 +211,16 @@ class FolderViewModel extends ChangeNotifier {
   }
 
   // 사용자 이메일 검색
+  Future<User?> searchUserByEmail(String email) async {
+  try {
+    final user = await _userManagerService.getUserProfileByEmail(email);
+    return user;
+  } catch (e) {
+    print('Error searching user by email: $e');
+    return null;
+  }
+}
+
 
   // 폴더 사용자 목록 로색
   Future<void> loadFolderUsers(int? folderId) async {
@@ -229,21 +250,21 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  // 사진 업로드
-  Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
-    _isLoading = true;
-    notifyListeners();
+  // // 사진 업로드
+  // Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
+  //   _isLoading = true;
+  //   notifyListeners();
     
-    try {
-      await _folderService.uploadPhoto(folderId, photo, metadata);
-      await loadPhotos(folderId);
-    } catch (e) {
-      print('Error uploading photo: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
+  //   try {
+  //     await _folderService.uploadPhoto(folderId, photo, metadata);
+  //     await loadPhotos(folderId);
+  //   } catch (e) {
+  //     print('Error uploading photo: $e');
+  //   } finally {
+  //     _isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
 
   // 사진 삭제
   Future<void> deletePhoto(int? folderId, int photoId) async {
@@ -302,7 +323,7 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final invites = await _folderService.getInvitations(userId);
+      final invites = await _folderService.getInvitations(user.userId);
       _invitations = invites;
       print('Loaded ${invites.length} invitations');
     } catch (e) {
