@@ -211,6 +211,16 @@ class FolderViewModel extends ChangeNotifier {
   }
 
   // 사용자 이메일 검색
+  Future<User?> searchUserByEmail(String email) async {
+  try {
+    final user = await _userManagerService.getUserProfileByEmail(email);
+    return user;
+  } catch (e) {
+    print('Error searching user by email: $e');
+    return null;
+  }
+}
+
 
   // 폴더 사용자 목록 로색
   Future<void> loadFolderUsers(int? folderId) async {
