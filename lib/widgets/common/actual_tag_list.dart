@@ -36,10 +36,9 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _loadFolders();
-    _folderService = FolderService(Dio(), userId: widget.userId);
+    _folderService = FolderService(userId: widget.userId);
     _initializeFilterOptions();
   }
-
 
   void _initializeFilterOptions() {
     filterOptions = {
