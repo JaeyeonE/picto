@@ -83,8 +83,8 @@ class MarkerImageProcessor {
       );
 
       final paddingColor = isCurrentUser 
-          ? img.ColorRgba8(112, 56, 255, 255)
-          : img.ColorRgba8(255, 255, 255, 255);
+          ? img.ColorRgba8(112, 56, 255, 255) // 보라
+          : img.ColorRgba8(255, 255, 255, 255); // 하양
       
       img.fill(composite, color: paddingColor);
 
