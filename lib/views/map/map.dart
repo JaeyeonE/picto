@@ -8,7 +8,6 @@ import 'package:picto/services/photo_manager_service.dart';
 import 'package:picto/services/session/location_webSocket_handler.dart';
 import 'package:picto/services/session/session_service.dart';
 import 'package:picto/services/user_manager_service.dart';
-import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/map/zoom_position.dart';
 import 'package:picto/views/upload/upload.dart';
 import 'package:picto/widgets/common/actual_tag_list.dart';
@@ -32,7 +31,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   // 상태 변수들 정의
   int selectedIndex = 2;
-  List<String> selectedTags = ['전체'];
+  List<String> selectedFilter = ['전체']; //지도맵 위의 필터
   bool _isLoading = false;
   final _searchController = TextEditingController();
 
@@ -47,7 +46,6 @@ class _MapScreenState extends State<MapScreen> {
   StreamSubscription<Position>? _positionStreamSubscription;
   LatLng? _lastRefreshLocation;
   String _currentLocationType = 'large';
-  String? _previousLocationType;
   static const double _minimumRefreshDistance = 10.0;
 
   // 서비스 인스턴스
@@ -91,17 +89,24 @@ class _MapScreenState extends State<MapScreen> {
 
         if (distanceInMeters <= 3000) {
           try {
-            final photos = await _photoService.getNearbyPhotos();
-            final newPhoto = photos
-                .where((photo) => photo.photoId == message.photoId)
-                .firstOrNull;
+            // getPhotos를 named parameters로 호출
+            final photos = await _photoService.getPhotos(
+              message.senderId, 
+              'Photo', 
+              message.photoId!, 
+              senderId: message.senderId, 
+              eventType: 'Photo', 
+              eventTypeId: message.photoId!,
+            );
 
-            if (newPhoto != null && mounted) {
-              final newMarkers = await _markerManager
-                  ?.createMarkersFromPhotos([newPhoto], 'small');
+            // 현재 줌 레벨이 small(상세)일 때만 마커 추가
+            if (_currentLocationType == 'small' && photos.isNotEmpty) {
+              final newMarkers = await _markerManager?.createMarkersFromPhotos(
+                  photos, 'small');
 
-              if (newMarkers != null) {
+              if (newMarkers != null && mounted) {
                 setState(() {
+                  // 새 마커 추가
                   markers.addAll(newMarkers);
                 });
               }
@@ -155,12 +160,15 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _currentLocationType = newLocationType;
       });
-      
+
       // 새로운 위치 타입에 해당하는 데이터가 없을 경우에만 로드
-      if (newLocationType == 'small' && _markerManager!.isMarkersEmpty('small')) {
+      if (newLocationType == 'small' &&
+          _markerManager!.isMarkersEmpty('small')) {
         _loadNearbyPhotos();
-      } else if ((newLocationType == 'middle' && _markerManager!.isMarkersEmpty('middle')) ||
-                 (newLocationType == 'large' && _markerManager!.isMarkersEmpty('large'))) {
+      } else if ((newLocationType == 'middle' &&
+              _markerManager!.isMarkersEmpty('middle')) ||
+          (newLocationType == 'large' &&
+              _markerManager!.isMarkersEmpty('large'))) {
         _loadRepresentativePhotos();
       }
 
@@ -220,7 +228,11 @@ class _MapScreenState extends State<MapScreen> {
 
   // 대표사진 가져오기
   Future<void> _loadRepresentativePhotos() async {
-    if (_isLoading || currentUser == null || _markerManager == null) return;
+    if (_isLoading || currentUser == null || _markerManager == null) {
+      print("로드될 마커가 없습니다. ");
+      return;
+    }
+    
     setState(() => _isLoading = true);
 
     try {
@@ -231,8 +243,7 @@ class _MapScreenState extends State<MapScreen> {
 
       final filteredPhotos = photos
           .where((photo) => 
-              (selectedTags.any((tag) => defaultTags.contains(tag)) && // 선택된 태그 중 하나가 기본 태그에 있고
-              (photo.tag != null && selectedTags.contains(photo.tag!)))) // 해당 사진의 태그가 선택된 태그에 포함됨
+              (photo.tag != null && defaultTags.contains((photo.tag))))
           .toList();
 
       final newMarkers = await _markerManager!
@@ -294,13 +305,12 @@ class _MapScreenState extends State<MapScreen> {
       
       // 디버깅을 위한 로그 추가
       print('Retrieved photos: ${photos.length}');
-      print('Selected tags: $selectedTags');
+      print('Selected tags: $selectedFilter');
       print('Default tags: $defaultTags');
 
       final filteredPhotos = photos
           .where((photo) => 
-              (selectedTags.any((tag) => defaultTags.contains(tag)) && // 선택된 태그 중 하나가 기본 태그에 있고
-              (photo.tag != null && selectedTags.contains(photo.tag!)))) // 해당 사진의 태그가 선택된 태그에 포함됨
+              (photo.tag != null && defaultTags.contains((photo.tag))))
           .toList();
 
       print('Filtered photos: ${filteredPhotos.length}');
@@ -445,7 +455,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void onTagsSelected(List<String> tags) {
     setState(() {
-      selectedTags = tags;
+      selectedFilter = tags;
     });
     _loadNearbyPhotos();
   }
@@ -461,7 +471,7 @@ class _MapScreenState extends State<MapScreen> {
             CameraPosition(
               target: location,
               zoom: 15,
-              ),
+            ),
           ),
         );
         await _loadNearbyPhotos();
@@ -507,7 +517,7 @@ class _MapScreenState extends State<MapScreen> {
           tagNames: defaultTags,
         );
         setState(() {
-          selectedTags = ['전체'];
+          selectedFilter = ['전체'];
         });
       }
     } catch (e) {
@@ -542,7 +552,6 @@ class _MapScreenState extends State<MapScreen> {
                 mapToolbarEnabled: false,
               ),
             ),
-
             RepaintBoundary(
               child: Column(
                 children: [
@@ -591,14 +600,13 @@ class _MapScreenState extends State<MapScreen> {
                       },
                     ),
                   ),
-
                   RepaintBoundary(
                     child: TagSelector(
                       userId: widget.initialUser.userId,
-                      selectedTags: selectedTags,
+                      selectedTags: selectedFilter,
                       onTagsSelected: (tags) {
                         setState(() {
-                          selectedTags = tags;
+                          selectedFilter = tags;
                         });
                         _refreshMap();
                       },
@@ -612,12 +620,10 @@ class _MapScreenState extends State<MapScreen> {
                 ],
               ),
             ),
-
             if (_isLoading)
               const Center(
                 child: CircularProgressIndicator(),
               ),
-
             Positioned(
               right: 16,
               bottom: 90,
@@ -626,13 +632,13 @@ class _MapScreenState extends State<MapScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const UploadScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const UploadScreen()),
                   );
                 },
                 child: const Icon(Icons.add),
               ),
             ),
-
             Positioned(
               right: 16,
               bottom: 20,
@@ -649,7 +655,6 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
-
             Positioned(
               bottom: 18,
               left: 0,
@@ -661,7 +666,6 @@ class _MapScreenState extends State<MapScreen> {
             )
           ],
         ),
-
         bottomNavigationBar: RepaintBoundary(
           child: CustomNavigationBar(
             selectedIndex: selectedIndex,

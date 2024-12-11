@@ -1,3 +1,4 @@
+//app.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -37,8 +38,8 @@ class _PhotoSharingAppState extends State<PhotoSharingApp> {
     }, onError: (error) {
       debugPrint('WebSocket Message Error: $error');
     });
-
   }
+
 
   Future<User?> checkAuthState() async {
     try {
