@@ -181,7 +181,7 @@ class SessionService {
 
   Future<void> sendLocation(int senderId, double lat, double lng) async {
     print('위치 전송 중 - 사용자: $senderId, 위도: $lat, 경도: $lng');
-    _validateConnection();
+    _handleConnectionError();
 
     try {
       final message = SessionMessage(
@@ -209,14 +209,14 @@ class SessionService {
 
   Future<void> sharePhoto(
       int senderId, int photoId, double lat, double lng) async {
-    print('사진 공유 중 - 사용자: $senderId, 사진ID: $photoId, 위도: $lat, 경도: $lng');
-    _validateConnection();
+    print('사진 공유 중 - 사용자: $senderId, 위도: $lat, 경도: $lng');
+    _handleConnectionError();
 
     try {
       final message = SessionMessage(
         messagetype: 'SHARE',
         senderId: senderId,
-        photoId: photoId,
+
         lat: lat,
         lng: lng,
         sendDateTime: DateTime.now().toUtc().toIso8601String(),
@@ -247,7 +247,7 @@ class SessionService {
       await _connectionCompleter!.future;
     }
     
-    _validateConnection();
+    _handleConnectionError();
 
     try {
       final message = SessionMessage(
@@ -273,7 +273,7 @@ class SessionService {
 
   Future<void> exitSession(int senderId) async {
     print('사용자 세션 퇴장: $senderId');
-    _validateConnection();
+    _handleConnectionError();
 
     try {
       final message = SessionMessage(
@@ -294,12 +294,6 @@ class SessionService {
     } catch (e) {
       _logger.onError('세션 퇴장 실패: $e');
       throw SessionServiceException('세션 퇴장 실패: ${e.toString()}');
-    }
-  }
-
-  void _validateConnection() {
-    if (!_isConnected) {
-      throw SessionServiceException('웹소켓이 연결되지 않았습니다', code: 'NOT_CONNECTED');
     }
   }
 
