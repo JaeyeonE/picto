@@ -116,6 +116,55 @@ class _MapScreenState extends State<MapScreen> {
           }
         }
       }
+
+      // messagetype이 share인 경우 그 위치에 마커 띄우기
+      if (message.messagetype == 'SHARE' &&
+          message.lat != null &&
+          message.lng != null &&
+          message.photoId != null &&
+          message.senderId != null &&
+          currentLocation != null) {
+          print("===PHOTO SHARE SESSION===");
+        final photoLocation = LatLng(message.lat!, message.lng!);
+        final distanceInMeters = Geolocator.distanceBetween(
+          currentLocation!.latitude,
+          currentLocation!.longitude,
+          photoLocation.latitude,
+          photoLocation.longitude,
+        );
+
+        if (distanceInMeters <= 3000) {
+          try {
+            // getPhotos를 named parameters로 호출
+            final photos = await _photoService.getPhotos(
+              message.senderId, 
+              'SHARE', 
+              message.photoId!, 
+              senderId: message.senderId, 
+              eventType: 'SHARE', 
+              eventTypeId: message.photoId!,
+            );
+            print("PHOTO SHARE SUCEED");
+
+            // 현재 줌 레벨이 small(상세)일 때만 마커 추가
+            if (_currentLocationType == 'small' && photos.isNotEmpty) {
+              final newMarkers = await _markerManager?.createMarkersFromPhotos(
+                  photos, 'small');
+                  print("개별 마커 로딩 성공 SUCEED");
+
+              if (newMarkers != null && mounted) {
+                setState(() {
+                  // 새 마커 추가
+                  markers.addAll(newMarkers);
+                  
+                });
+              }
+            }
+          } catch (e) {
+            debugPrint('실시간 사진 마커 생성 실패: $e');
+          }
+        }
+      }
     });
   }
 
