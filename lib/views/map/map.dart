@@ -483,6 +483,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // 유저 필터 update !!!! startDatetime 최신화 필요
   Future<void> _updateUserFilter(
       String sort, String period, int startDatetime, int endDatetime) async {
     try {
@@ -510,8 +511,6 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final userId = await _userService.getUserId();
       if (userId != null) {
-        
-        
         await _userService.updateTags(
           userId: userId,
           tagNames: defaultTags,
@@ -525,6 +524,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // 지도 스택 이 부분을 이애해야 제대로 된 설정가능
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
@@ -600,6 +600,7 @@ class _MapScreenState extends State<MapScreen> {
                       },
                     ),
                   ),
+                  //
                   RepaintBoundary(
                     child: TagSelector(
                       userId: widget.initialUser.userId,
@@ -610,8 +611,10 @@ class _MapScreenState extends State<MapScreen> {
                         });
                         _refreshMap();
                       },
+                      // 실제 필터 업데이트 함수 정의 startDatetime은?
                       onFilterUpdate:
                           (sort, period, startDatetime, endDatetime) {
+                        startDatetime = DateTime.now().millisecondsSinceEpoch;
                         _updateUserFilter(
                             sort, period, startDatetime, endDatetime);
                       },

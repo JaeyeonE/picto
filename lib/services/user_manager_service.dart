@@ -8,6 +8,7 @@ import 'package:picto/models/user_manager/user.dart';
 import 'package:picto/models/user_manager/user_requests.dart';
 import 'package:picto/utils/logging_interceptor.dart';
 
+// User Manager -> 모든 유저 정보를 불러온다.
 class UserManagerService {
   final Dio _dio;
   final FlutterSecureStorage _storage;
@@ -335,7 +336,10 @@ class UserManagerService {
     }
   }
 
-  // 필터 수정
+  // 사용자가 선택한 필터를 서버에 보내기
+  // ex) 12/08 = endDatetime ~ 12/15 = startDatetime
+  // 그래서 startDatetime의 값이 더 크다. 이 두 값은 사용자가 설정한 시간을 검색시 사용
+  // 기단 단위 검색할 때 현재 시간 값을 넣어줘야함
   Future<void> updateFilter({
     required int userId,
     required String sort,

@@ -90,7 +90,7 @@ class MarkerManager {
         icon: markerIcon,
         infoWindow: InfoWindow(
           title: photo.location ?? '위치 정보 없음',
-          snippet: photo.tag ?? '',
+          snippet: "[tag:${photo.tag}/likes:${photo.likes}]",
         ),
       );
 

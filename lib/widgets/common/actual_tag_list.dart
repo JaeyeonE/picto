@@ -8,11 +8,13 @@ import 'package:picto/services/folder_service.dart';
 class TagSelector extends StatefulWidget {
   final List<String> selectedTags;
   final Function(List<String>) onTagsSelected;
+  //
   final Function(String, String, int, int)? onFilterUpdate;
   final VoidCallback? onRefresh;
   final int userId;
 
 
+  //태그 선택자?
   const TagSelector({
     super.key,
     required this.selectedTags,
@@ -26,6 +28,7 @@ class TagSelector extends StatefulWidget {
   State<TagSelector> createState() => _TagSelectorState();
 }
 
+// 이 태그는 뭐자?
 class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStateMixin {
   late final FolderService _folderService;
   final List<String> baseTags = const ['전체', '순서', '시간', '#강아지_사진대회']; // 폴더 지움
@@ -40,6 +43,7 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
     _initializeFilterOptions();
   }
 
+  // 필터도.. user info를 바탕으로 초기화되야함...
   void _initializeFilterOptions() {
     filterOptions = {
       '순서': [
@@ -65,6 +69,7 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
     });
   }
 
+  // 현재 시간을 불러와야됨
   int _getStartDatetime(String period) {
     final now = DateTime.now();
     switch (period) {
@@ -252,6 +257,7 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
     _showDropdownDialog(context, tag);
   }
 
+  // 여기서 선택된 필터 값에 대해 처리
   void _handleOptionSelect(FilterOption option, String category) {
     setState(() {
       List<String> newSelectedTags = List.from(widget.selectedTags);
@@ -287,8 +293,8 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
             widget.onFilterUpdate!(
               option.title,
               currentPeriod,
-              _getStartDatetime(currentPeriod),
-              now
+              now,
+              _getStartDatetime(currentPeriod)
             );
           } else if (category == '시간') {
             String currentSort = '좋아요순';
@@ -301,8 +307,8 @@ class _TagSelectorState extends State<TagSelector> with SingleTickerProviderStat
             widget.onFilterUpdate!(
               currentSort,
               option.title,
-              _getStartDatetime(option.title),
-              now
+                now,
+              _getStartDatetime(option.title)
             );
           }
         }

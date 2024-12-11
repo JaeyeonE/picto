@@ -17,6 +17,7 @@ class FolderViewModel extends ChangeNotifier {
   final FolderService _folderService;
   final PhotoStoreService _photoStoreService;
   final UserManagerService _userManagerService;
+  static const int INVALID_FOLDER_ID = -1;
   
   List<FolderModel> _folders = [];
   List<Photo> _photos = [];
@@ -24,7 +25,6 @@ class FolderViewModel extends ChangeNotifier {
   List<User> _userProfiles = [];
   bool _isLoading = false;
   String? _currentFolderName;
-  static const int INVALID_FOLDER_ID = -1;
   int _currentFolderId = INVALID_FOLDER_ID;
   bool _isPhotoList = true;
   bool _isFirst = true;
