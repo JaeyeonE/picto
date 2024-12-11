@@ -1,5 +1,6 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:picto/models/photo_manager/photo.dart';
+import 'package:picto/services/photo_store.dart';
 import 'marker_image_processor.dart';
 
 class MarkerManager {
@@ -8,6 +9,7 @@ class MarkerManager {
   Set<Marker> _middleMarkers = {};
   Set<Marker> _smallMarkers = {};
   final int currentUserId;
+  final PhotoStoreService _photoStoreService = PhotoStoreService(baseUrl:  'http://52.78.237.242:8084');
 
   MarkerManager({required this.currentUserId});
 
@@ -55,6 +57,22 @@ class MarkerManager {
     _updateAllMarkers();
   }
 
+  // 포토 스토어를 통해 이미지 실제값 로딩
+  Future<void> _loadPhotoImage(Photo photo) async {
+    if (photo.imageData != null) return; // 이미 로드된 경우 스킵
+
+    try {
+      final response = await _photoStoreService.downloadPhoto(photo.photoId);
+      photo.imageData = response.imageData;
+      photo.contentType = response.contentType;
+      photo.errorMessage = null;
+    } catch (e) {
+      photo.errorMessage = '이미지를 불러올 수 없습니다';
+      photo.imageData = null;
+      throw e; // 상위에서 처리하도록 에러 전파
+    }
+  }
+
   // 마커 생성 및 저장
   Future<Set<Marker>> createMarkersFromPhotos(
       List<Photo> photos, String locationType) async {
@@ -67,8 +85,16 @@ class MarkerManager {
         continue;
       }
 
+      // 이미지 데이터 로드
+      try {
+        await _loadPhotoImage(photo);
+      } catch (e) {
+        print("이미지 로드 실패 - photoId: ${photo.photoId}, error: $e");
+        continue; // 이미지 로드 실패시 다음 사진으로
+      }
+
       final markerId = MarkerId('${locationType}_${photo.photoId}');
-      
+
       // 이미 존재하는 마커인지 확인
       if (existingMarkerIds.contains(markerId.value)) {
         // 기존 마커 재사용

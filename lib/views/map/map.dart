@@ -31,7 +31,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   // 상태 변수들 정의
   int selectedIndex = 2;
-  List<String> selectedFilter = ['전체']; //지도맵 위의 필터
+  List<String> selectedTags = [];
   bool _isLoading = false;
   final _searchController = TextEditingController();
 
@@ -192,6 +192,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // 구글지도에서 화면 이동할 때마다
   void _onCameraMove(CameraPosition position) {
     if (currentUser == null || _markerManager == null) return;
 
@@ -275,7 +276,7 @@ class _MapScreenState extends State<MapScreen> {
     return distanceInMeters >= _minimumRefreshDistance;
   }
 
-  // 대표사진 가져오기
+  // 지역대표 사진 조회
   Future<void> _loadRepresentativePhotos() async {
     if (_isLoading || currentUser == null || _markerManager == null) {
       print("로드될 마커가 없습니다. ");
@@ -286,17 +287,18 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final photos = await _photoService.getRepresentativePhotos(
+        eventType : "top",
         locationType: _currentLocationType,
         count: 10,
       );
-
+      photos.sort((a, b) => b.likes.compareTo(a.likes));
       final filteredPhotos = photos
           .where((photo) => 
               (photo.tag != null && defaultTags.contains((photo.tag))))
           .toList();
 
       final newMarkers = await _markerManager!
-          .createMarkersFromPhotos(filteredPhotos, _currentLocationType);
+          .createMarkersFromPhotos(photos, _currentLocationType);
 
       if (mounted) {
         setState(() {

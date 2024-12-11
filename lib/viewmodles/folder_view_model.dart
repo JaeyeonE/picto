@@ -1,7 +1,6 @@
+
 import 'package:flutter/material.dart';
 import 'package:picto/models/folder/invite_model.dart';
-import 'dart:io';
-import 'dart:convert';
 
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/models/folder/folder_model.dart';
@@ -65,7 +64,7 @@ class FolderViewModel extends ChangeNotifier {
     
     try {
       final folders = await _folderService.getFolders(user.userId);
-      print('Loaded folders: ${folders?.map((f) => f.toJson())}');
+      print('Loaded folders: ${folders.map((f) => f.toJson())}');
       _folders = folders ?? [];
     } catch (e) {
       print('Error loading folders: $e');
@@ -83,11 +82,9 @@ class FolderViewModel extends ChangeNotifier {
     
     try {
       final newFolder = await _folderService.createFolder(user.userId, name, content);
-      if (newFolder != null) {
-        _folders.add(newFolder);
-        print('created folder: ${newFolder.toJson()}'); 
-      }
-    } catch (e) {
+      _folders.add(newFolder);
+      print('created folder: ${newFolder.toJson()}');
+        } catch (e) {
       print('Error creating folder: $e');
     } finally {
       _isLoading = false;
@@ -103,14 +100,12 @@ class FolderViewModel extends ChangeNotifier {
     print('current folder ID: ${folderId}');
     try {
       final updatedFolder = await _folderService.updateFolder(user.userId, folderId, name, content);
-      if (updatedFolder != null) {
-        final index = _folders.indexWhere((folder) => folder.folderId == folderId);
-        if (index != -1) {
-          _folders[index] = updatedFolder;
-        }
-        print('updated folder: ${updatedFolder.toJson()}');
+      final index = _folders.indexWhere((folder) => folder.folderId == folderId);
+      if (index != -1) {
+        _folders[index] = updatedFolder;
       }
-    } catch (e) {
+      print('updated folder: ${updatedFolder.toJson()}');
+        } catch (e) {
       print('Error updating folder: $e');
     } finally {
       _isLoading = false;
@@ -134,74 +129,82 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  // 폴더 내 사진 목록 로드
+  // 특정 폴더 목록 안에 사진 데이터 로딩
   Future<void> loadPhotos(int folderId) async {
-  _isLoading = true;
-  notifyListeners();
-  
-  try {
-    final photos = await _folderService.getPhotos(user.userId, folderId);
-    if (photos != null) {
-      for (var photo in photos) {
-        if (photo.photoId == null) continue;
-        
-        try {
-          final response = await _photoStoreService.downloadPhoto(photo.photoId);
-          print('----- loadPhotos ----');
-          print('Response status: ${response.statusCode}');
-          print('Response body: ${response.body}');
-          print('Parsed URL: ${photo.photoPath}');
-          if (response.statusCode == 200) {
-            // Base64 데이터가 이미 포함된 응답을 그대로 사용
-            photo.photoPath = response.body;
-          } else {
-            // 에러 응답의 경우 빈 이미지 데이터로 설정
-            photo.photoPath = ''; // PhotoListWidget에서 처리할 수 있도록
-          }
-        } catch (e) {
-          print('Error downloading photo ${photo.photoId}: $e');
-          photo.photoPath = ''; // 에러 시 빈 이미지 데이터
-        }
-      }
-      _photos = photos;
-    } else {
-      _photos = [];
-    }
-    _currentFolderId = folderId;
-  } catch (e) {
-    print('Error loading photos: $e');
-    _photos = [];
-  } finally {
-    _isLoading = false;
-    notifyListeners();
-  }
-}
-
-  //유저가 업로드한 사진 가져오기
-  Future<void> loadUserPhotos(int userId) async {
-    _isLoading = true;
-    notifyListeners();
-    
     try {
-      final userInfo = await _userManagerService.getUserAllInfo(1);
-      _userInfo = userInfo;
-      
-      // 사진 경로 로드
-      final List<Photo> photos = [];
-      for (var photo in userInfo.photos) {
-        try {
-          final response = await _photoStoreService.downloadPhoto(photo.photoId);
-          if (response.statusCode == 200) {
-            photo.photoPath = response.body;
-            photos.add(photo);
-          }
-        } catch (e) {
-          print('Error downloading photo ${photo.photoId}: $e');
-        }
-      }
+      _isLoading = true;
+      notifyListeners();
+
+      // 폴더에 있는 사진 정보를 가져옵니다
+      final photos = await _folderService.getPhotos(user.userId, folderId);
+
+      // 모든 사진의 이미지 데이터를 병렬로 로드합니다
+      await Future.wait(
+          photos.map((photo) => _loadPhotoImage(photo))
+      );
+
+      // 상태 업데이트
       _photos = photos;
+      _currentFolderId = folderId;
+
     } catch (e) {
-      print('Error loading user photos: $e');
+      print('폴더 사진 목록 로드 실패: $e');
+      _photos = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 개별 사진의 이미지 데이터를 로드하는 메서드
+  Future<void> _loadPhotoImage(Photo photo) async {
+    try {
+      photo.isLoading = true;
+
+      // 이전에 개선한 PhotoService의 downloadPhoto를 사용합니다
+      // 이 메소드는 이미 PhotoResponse 형태로 이미지 데이터와 컨텐츠 타입을 반환합니다
+      final response = await _photoStoreService.downloadPhoto(photo.photoId);
+
+      // PhotoResponse의 데이터를 Photo 객체에 설정
+      photo.imageData = response.imageData;  // 이미 Uint8List 타입으로 변환되어 있음
+      photo.contentType = response.contentType;
+      photo.errorMessage = null;
+
+    } catch (e) {
+      print('사진 ${photo.photoId} 다운로드 실패: $e');
+      photo.errorMessage = '이미지를 불러올 수 없습니다';
+      photo.imageData = null;
+    } finally {
+      photo.isLoading = false;
+    }
+  }
+
+
+  // 유저의 모든 사진 로드
+  Future<void> loadUserPhotos(int userId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // 사용자 정보와 사진 목록을 가져옵니다
+      final userInfo = await _userManagerService.getUserAllInfo(userId);
+      _userInfo = userInfo;
+
+      if (userInfo.photos.isEmpty) {
+        _photos = [];
+        return;
+      }
+
+      // 모든 사진의 이미지 데이터를 병렬로 로드합니다
+      await Future.wait(
+          userInfo.photos.map((photo) => _loadPhotoImage(photo))
+      );
+
+      // 성공적으로 로드된 사진만 필터링하여 저장
+      _photos = userInfo.photos.where((photo) => photo.imageData != null).toList();
+
+    } catch (e) {
+      print('사용자 사진 로드 실패: $e');
       _photos = [];
       _userInfo = null;
     } finally {

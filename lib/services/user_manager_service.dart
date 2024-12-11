@@ -21,6 +21,9 @@ class UserManagerService {
           headers: {'Content-Type': 'application/json'},
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
+          validateStatus: (status) {
+            return status != null && status < 500;  // 좀 더 유연한 상태 코드 처리
+          },
         ))
           ..interceptors.add(LoggingInterceptor()),
         _storage = const FlutterSecureStorage();
@@ -55,11 +58,12 @@ class UserManagerService {
     return value != null ? int.parse(value) : null;
   }
 
-  // 로그인
+  // 로그인 -> >> 이게 왜 안될까
   Future<LoginResponse> signIn({
     required String email,
     required String password,
   }) async {
+    print("로그인");
     try {
       final response = await _dio.post(
         '/signin',

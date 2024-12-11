@@ -19,6 +19,7 @@ class LoggingInterceptor extends Interceptor {
     print('=== HTTP Response ===');
     print('Status Code: ${response.statusCode}');
     print('Headers: ${response.headers}');
+    print('Bodylength: ${response.data.length}');
     print('Body: ${response.data}');
     print('===================');
     return super.onResponse(response, handler);
