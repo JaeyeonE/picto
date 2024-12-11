@@ -4,6 +4,15 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:typed_data';
 
+class PhotoResponse {
+  final Uint8List imageData;
+  final String contentType;
+
+  PhotoResponse({required this.imageData, required this.contentType});
+}
+
+
+
 class PhotoStoreService {
   final String baseUrl;
 
@@ -67,24 +76,61 @@ class PhotoStoreService {
   }
 
   // 5. 사진 조회
-  Future<http.Response> downloadPhoto(int photoId) async {
-  try {
-    final uri = Uri.parse('http://52.78.237.242:8084/photo-store/photos/download/$photoId');
-    final response = await http.get(uri);
-    
-    if (response.statusCode == 500) {
-      print('Server error details: ${response.body}');
-      // 서버 로그 확인을 위한 추가 정보 출력
-      throw Exception('Failed to download photo: Server error');
-    }
-    
-    return response;
-  } catch (e) {
-    print('Download error: $e');
-    rethrow;
-  }
-}
+  // Primary photo download function that returns both image data and content type
+  // 5. 사진 조회
+  Future<PhotoResponse> downloadPhoto(int photoId) async {
+    try {
+      final uri = Uri.parse('http://52.78.237.242:8084/photo-store/photos/download/$photoId');
+      final response = await http.get(uri, headers: {
+        'Accept': 'image/*',  // Accepting any image type
+      });
 
+      if (response.statusCode == 200) {
+        // Get content type from headers to handle different image formats
+        String contentType = response.headers['content-type'] ?? 'image/jpeg';
+
+        // 바이트 단위 변환
+        return PhotoResponse(
+            imageData: response.bodyBytes,
+            contentType: contentType
+        );
+      } else {
+        print('Server response: ${response.statusCode} - ${response.body}');
+        throw Exception('Server returned status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      _handleError('download', e);
+      rethrow;
+    }
+  }
+
+  // photo response 순수 이미지 데이터만 반환
+  Future<Uint8List> getPhotoBytes(int photoId) async {
+    try {
+      // 바이트 단위 변환
+      final response = await downloadPhoto(photoId);
+      return response.imageData;
+    } catch (e) {
+      _handleError('get photo bytes', e);
+      rethrow;
+    }
+  }
+
+  void _handleError(String operation, dynamic error) {
+    print('$operation error: $error');
+    throw Exception('Failed to $operation photo: $error');
+  }
+
+  // 6. 사진 삭제
+  Future<void> deletePhoto(int photoId, int userId) async {
+    final uri = Uri.parse('$baseUrl/photo-store/photos/$photoId')
+        .replace(queryParameters: {'userId': userId.toString()});
+
+    await http.delete(uri);
+  }
+
+
+  // 단순 이미지 바이너리 형태로 다운로드
   Future<Uint8List> downloadPhoto22(int photoId) async {
     final uri = Uri.parse('$baseUrl/photo-store/photos/download/$photoId');
     final response = await http.get(uri);
@@ -95,13 +141,5 @@ class PhotoStoreService {
     } else {
       throw Exception('Failed to download photo');
     }
-  }
-
-  // 6. 사진 삭제
-  Future<void> deletePhoto(int photoId, int userId) async {
-    final uri = Uri.parse('$baseUrl/photo-store/photos/$photoId')
-        .replace(queryParameters: {'userId': userId.toString()});
-
-    await http.delete(uri);
   }
 }

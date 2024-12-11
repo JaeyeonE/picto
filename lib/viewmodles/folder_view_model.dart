@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:picto/models/folder/invite_model.dart';
 import 'dart:io';
@@ -134,74 +136,86 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  // 폴더 내 사진 목록 로드
   Future<void> loadPhotos(int folderId) async {
-  _isLoading = true;
-  notifyListeners();
-  
-  try {
-    final photos = await _folderService.getPhotos(user.userId, folderId);
-    if (photos != null) {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      print("check point 첫번째");
+      final photos = await _folderService.getPhotos(user.userId, folderId);
+      if (photos == null) {
+        _photos = [];
+        return;
+      }
+
+      // 각 사진의 이미지 데이터 로드
       for (var photo in photos) {
         if (photo.photoId == null) continue;
-        
+
         try {
+          // PhotoService의 downloadPhoto 메서드를 사용하여 이미지 데이터 가져오기
           final response = await _photoStoreService.downloadPhoto(photo.photoId);
-          print('----- loadPhotos ----');
-          print('Response status: ${response.statusCode}');
-          print('Response body: ${response.body}');
-          print('Parsed URL: ${photo.photoPath}');
-          if (response.statusCode == 200) {
-            // Base64 데이터가 이미 포함된 응답을 그대로 사용
-            photo.photoPath = response.body;
-          } else {
-            // 에러 응답의 경우 빈 이미지 데이터로 설정
-            photo.photoPath = ''; // PhotoListWidget에서 처리할 수 있도록
-          }
+
+          // Photo 객체에 이미지 데이터와 컨텐츠 타입 저장
+          photo.imageData = response.imageData as Uint8List?;
+          photo.contentType = response.contentType;
+          photo.errorMessage = null;
         } catch (e) {
-          print('Error downloading photo ${photo.photoId}: $e');
-          photo.photoPath = ''; // 에러 시 빈 이미지 데이터
+          print('사진 ${photo.photoId} 다운로드 실패: $e');
+          photo.errorMessage = '이미지를 불러올 수 없습니다';
+          photo.imageData = null;
         }
       }
-      _photos = photos;
-    } else {
-      _photos = [];
-    }
-    _currentFolderId = folderId;
-  } catch (e) {
-    print('Error loading photos: $e');
-    _photos = [];
-  } finally {
-    _isLoading = false;
-    notifyListeners();
-  }
-}
 
-  //유저가 업로드한 사진 가져오기
+      _photos = photos;
+      _currentFolderId = folderId;
+
+    } catch (e) {
+      print('폴더 사진 목록 로드 실패: $e');
+      _photos = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+
+//유저가 업로드한 사진 가져오기
   Future<void> loadUserPhotos(int userId) async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
-      final userInfo = await _userManagerService.getUserAllInfo(1);
+      final userInfo = await _userManagerService.getUserAllInfo(userId);
       _userInfo = userInfo;
-      
-      // 사진 경로 로드
-      final List<Photo> photos = [];
+
+      if (userInfo.photos.isEmpty) {
+        _photos = [];
+        return;
+      }
+
+      // 각 사진의 이미지 데이터 로드
       for (var photo in userInfo.photos) {
         try {
           final response = await _photoStoreService.downloadPhoto(photo.photoId);
-          if (response.statusCode == 200) {
-            photo.photoPath = response.body;
-            photos.add(photo);
-          }
+
+          // Photo 객체에 이미지 데이터와 컨텐츠 타입 저장
+          photo.imageData = response.imageData;
+          photo.contentType = response.contentType;
+          photo.errorMessage = null;
+          print('폴더에서 사진 다운로드 !');
         } catch (e) {
-          print('Error downloading photo ${photo.photoId}: $e');
+          print('사진 ${photo.photoId} 다운로드 실패: $e');
+          photo.errorMessage = '이미지를 불러올 수 없습니다';
+          photo.imageData = null;
         }
       }
-      _photos = photos;
+
+      // 성공적으로 로드된 사진만 필터링하여 저장
+      _photos = userInfo.photos.where((photo) => photo.imageData != null).toList();
+
     } catch (e) {
-      print('Error loading user photos: $e');
+      print('사용자 사진 로드 실패: $e');
       _photos = [];
       _userInfo = null;
     } finally {
@@ -250,22 +264,6 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  // // 사진 업로드
-  // Future<void> uploadPhoto(int folderId, File photo, Map<String, dynamic> metadata) async {
-  //   _isLoading = true;
-  //   notifyListeners();
-    
-  //   try {
-  //     await _folderService.uploadPhoto(folderId, photo, metadata);
-  //     await loadPhotos(folderId);
-  //   } catch (e) {
-  //     print('Error uploading photo: $e');
-  //   } finally {
-  //     _isLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
-
   // 사진 삭제
   Future<void> deletePhoto(int? folderId, int photoId) async {
     _isLoading = true;
@@ -282,6 +280,7 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
+  // 폴더 초대 함수
   Future<void> inviteUserToFolder(int receiverId, int? folderId) async {
     _isLoading = true;
     notifyListeners();

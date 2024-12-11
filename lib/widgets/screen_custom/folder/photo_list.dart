@@ -173,17 +173,66 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
   }
 
   Widget _buildImage(Photo photo) {
-    if (photo.photoPath.isEmpty) {
-      // 이미지가 없거나 로드 실패 시 회색 화면 표시
+    // 이미지 로딩 중
+    if (photo.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    // 에러 발생
+    if (photo.errorMessage != null) {
       return Container(
         color: Colors.grey[300],
-        child: Icon(
-          Icons.image_not_supported,
-          color: Colors.grey[400],
-          size: 32,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Colors.grey[400],
+              size: 32,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              photo.errorMessage!,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
+
+    // 이미지 데이터가 있는 경우
+    if (photo.imageData != null) {
+      return Image.memory(
+        photo.imageData!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey[300],
+            child: Icon(
+              Icons.broken_image,
+              color: Colors.grey[400],
+              size: 32,
+            ),
+          );
+        },
+      );
+    }
+
+    // 이미지 데이터가 없는 경우
+    return Container(
+      color: Colors.grey[300],
+      child: Icon(
+        Icons.image_not_supported,
+        color: Colors.grey[400],
+        size: 32,
+      ),
+    );
 
     try {
       List<String> parts = photo.photoPath.split(',');

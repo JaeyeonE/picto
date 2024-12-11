@@ -44,53 +44,104 @@ class _FeedState extends State<Feed> {
     super.dispose();
   }
 
+  // 실제 이미지 바이너리 데이터 사용 - Base64가 아닌 Uint8List 사용
   Widget _buildImageView(Photo photo) {
-    if (photo.photoPath.isEmpty) {
+    if (photo.isLoading) {
       return Container(
         color: Colors.grey[900],
-        child: Center(
-          child: Icon(
-            Icons.image_not_supported,
-            color: Colors.grey[400],
-            size: 48,
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
           ),
         ),
       );
     }
 
-    try {
-      // Base64 디코딩 시도
-      List<String> parts = photo.photoPath.split(',');
-      String base64Data = parts.length > 1 ? parts[1] : photo.photoPath;
-      
+    if (photo.errorMessage != null) {
+      return Container(
+        color: Colors.grey[900],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.grey[400],
+                size: 48,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  photo.errorMessage!,
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (photo.imageData != null) {
       return Image.memory(
-        base64Decode(base64Data),
+        photo.imageData!,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {
           return Container(
             color: Colors.grey[900],
             child: Center(
-              child: Icon(
-                Icons.broken_image,
-                color: Colors.grey[400],
-                size: 48,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.broken_image,
+                    color: Colors.grey[400],
+                    size: 48,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '이미지를 표시할 수 없습니다',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
         },
       );
-    } catch (e) {
-      return Container(
-        color: Colors.grey[900],
-        child: Center(
-          child: Icon(
-            Icons.error_outline,
-            color: Colors.grey[400],
-            size: 48,
-          ),
-        ),
-      );
     }
+
+    return Container(
+      color: Colors.grey[900],
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_not_supported,
+              color: Colors.grey[400],
+              size: 48,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '이미지를 찾을 수 없습니다',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showOptionsMenu(BuildContext context) {
