@@ -135,6 +135,7 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
     );
   }
 
+  // 폴더 이미지 클릭했을 때 나오는 화면
   Widget _buildPhotoItem(Photo photo, int index) {
     return InkWell(
       onTap: () {
@@ -153,68 +154,148 @@ class _PhotoListWidgetState extends State<PhotoListWidget> {
           ),
         );
       },
-      onLongPress: widget.type == PhotoListType.folder 
-        ? () => _showPhotoOptions(photo)
-        : null,
+      onLongPress: widget.type == PhotoListType.folder
+          ? () => _showPhotoOptions(photo)
+          : null,
       child: AspectRatio(
         aspectRatio: 1,
         child: Container(
           decoration: BoxDecoration(
+            border: Border.all(width: 2, color: Colors.black),
             borderRadius: BorderRadius.circular(8),
-            color: Colors.grey[200], // 기본 배경색 설정
+            color: Colors.grey[200],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: _buildImage(photo),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // 이미지 또는 플레이스홀더
+                if (photo.isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (photo.errorMessage != null)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.grey[400],
+                          size: 24,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '이미지를 불러올 수 없습니다',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                else if (photo.imageData != null)
+                    Image.memory(
+                      photo.imageData!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey[400],
+                            size: 24,
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: Colors.grey[400],
+                        size: 24,
+                      ),
+                    ),
+
+                // 선택적: 로딩 오버레이
+                if (photo.isLoading)
+                  Container(
+                    color: Colors.black.withOpacity(0.3),
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // 폴더 안의 이미지 빌드
   Widget _buildImage(Photo photo) {
-    if (photo.photoPath.isEmpty) {
-      // 이미지가 없거나 로드 실패 시 회색 화면 표시
+    // 이미지 데이터가 없거나 로딩 중인 경우
+    if (photo.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    // 에러가 있는 경우
+    if (photo.errorMessage != null) {
       return Container(
         color: Colors.grey[300],
-        child: Icon(
-          Icons.image_not_supported,
-          color: Colors.grey[400],
-          size: 32,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Colors.grey[600],
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              photo.errorMessage!,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
 
-    try {
-      List<String> parts = photo.photoPath.split(',');
-      String base64Data = parts.length > 1 ? parts[1] : photo.photoPath;
-      
+    // 이미지 데이터가 있는 경우
+    if (photo.imageData != null) {
       return Image.memory(
-        base64Decode(base64Data),
+        photo.imageData!,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // 이미지 로드 실패 시 회색 화면 표시
           return Container(
             color: Colors.grey[300],
             child: Icon(
               Icons.broken_image,
-              color: Colors.grey[400],
+              color: Colors.grey[600],
               size: 32,
             ),
           );
         },
       );
-    } catch (e) {
-      // Base64 디코딩 실패 시 회색 화면 표시
-      return Container(
-        color: Colors.grey[300],
-        child: Icon(
-          Icons.error_outline,
-          color: Colors.grey[400],
-          size: 32,
-        ),
-      );
     }
+
+    // 이미지 데이터가 없는 경우 (기본 상태)
+    return Container(
+      color: Colors.grey[300],
+      child: Icon(
+        Icons.image_not_supported,
+        color: Colors.grey[600],
+        size: 32,
+      ),
+    );
   }
 
   void _uploadPhoto() async {

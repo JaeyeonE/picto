@@ -156,27 +156,28 @@ class SessionService {
 
   void _setupHeartbeat() {
     _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (_isConnected) {
-        try {
-          final message = {
-            'type': 'PING',
-            'timestamp': DateTime.now().toUtc().toIso8601String(),
-          };
-          final destination = '/send/session/ping';
-          final body = jsonEncode(message);
-
-          _logger.onSend(destination, body);
-          _stompClient?.send(
-            destination: destination,
-            body: body,
-          );
-        } catch (e) {
-          _logger.onError('세션 하트비트 실패: $e');
-          _handleConnectionError();
-        }
-      }
-    });
+    // 아직 서버에 별도 핑을 받는 로직 존재 X
+    // _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    //   if (_isConnected) {
+    //     try {
+    //       final message = {
+    //         'type': 'PING',
+    //         'timestamp': DateTime.now().toUtc().toIso8601String(),
+    //       };
+    //       final destination = '/send/session/ping';
+    //       final body = jsonEncode(message);
+    //
+    //       _logger.onSend(destination, body);
+    //       _stompClient?.send(
+    //         destination: destination,
+    //         body: body,
+    //       );
+    //     } catch (e) {
+    //       _logger.onError('세션 하트비트 실패: $e');
+    //       _handleConnectionError();
+    //     }
+    //   }
+    // });
   }
 
   Future<void> sendLocation(int senderId, double lat, double lng) async {

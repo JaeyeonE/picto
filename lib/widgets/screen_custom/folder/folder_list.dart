@@ -109,7 +109,7 @@ class _FolderListState extends State<FolderList> {
               MaterialPageRoute(
                 builder: (context) => ChangeNotifierProvider.value(
                   value: viewModel,
-                  child: Folder(folderId: folder.folderId!),
+                  child: Folder(folderId: folder.folderId),
                 ),
               ),
             );
