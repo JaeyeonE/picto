@@ -105,29 +105,22 @@ class MarkerManager {
         }
       }
 
-      try {
-        // photo 객체를 전달하여 마커 아이콘 생성
-        final markerIcon = await MarkerImageProcessor.createMarkerIcon(
-            photo.userId == currentUserId,
-            photo: photo  // Photo 객체 전달
-        );
+      // 새로운 마커 생성
+      final markerIcon = await MarkerImageProcessor.createMarkerIcon(
+        photo.userId == currentUserId, photo
+      );
 
-        final marker = Marker(
-          markerId: markerId,
-          position: LatLng(photo.lat!, photo.lng!),
-          icon: markerIcon,
-          infoWindow: InfoWindow(
-            title: photo.location ?? '위치 정보 없음',
-            snippet: "tag[${photo.tag}] likes [${photo.likes}]" ?? '',
-          ),
-        );
+      final marker = Marker(
+        markerId: markerId,
+        position: LatLng(photo.lat!, photo.lng!),
+        icon: markerIcon,
+        infoWindow: InfoWindow(
+          title: photo.location ?? '위치 정보 없음',
+          snippet: photo.tag ?? '',
+        ),
+      );
 
-        newMarkers.add(marker);
-      } catch (e) {
-        print("마커 생성 실패 - photoId: ${photo.photoId}, error: $e");
-        // 에러가 발생해도 계속 진행
-        continue;
-      }
+      newMarkers.add(marker);
     }
 
     // 위치 타입에 따라 적절한 Set에 저장

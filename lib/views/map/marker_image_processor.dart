@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image/image.dart' as img;
 import 'package:picto/models/photo_manager/photo.dart';
 import 'package:picto/utils/app_color.dart';
+import 'package:http/http.dart' as http;
 
 class MarkerImageProcessor {
   static const double MARKER_SIZE = 110.0;
@@ -20,12 +21,46 @@ class MarkerImageProcessor {
   /// [isCurrentUser] - 현재 사용자의 마커인지 여부
   /// [photo] - 마커에 표시할 사진 데이터 (선택적)
   static Future<BitmapDescriptor> createMarkerIcon(
-      bool isCurrentUser,
-      {Photo? photo}
-      ) async {
+    bool isCurrentUser, 
+    Photo photo
+  ) async {
     try {
-      // 1. 이미지 데이터 준비
-      final img.Image sourceImage = await _prepareSourceImage(photo);
+      late final Uint8List photoBytes;
+      late final img.Image? decodedPhoto;
+
+      if (photo.photoPath.trim().isNotEmpty) {
+        try {
+          print("=======marker_image_processor.dart S3 이미지 로드 시도 =========");
+          print("S3 photoPath: ${photo.photoPath}");
+          
+          // http 패키지를 사용하여 S3 이미지 다운로드
+          final response = await http.get(Uri.parse(photo.photoPath));
+          
+          if (response.statusCode != 200) {
+            throw Exception('S3 이미지 다운로드 실패: ${response.statusCode}');
+          }
+          
+          photoBytes = response.bodyBytes;
+          decodedPhoto = img.decodeImage(photoBytes);
+          
+          if (decodedPhoto == null) {
+            throw Exception('S3 이미지 디코딩 실패');
+          }
+          
+          print("S3 이미지 로드 성공!");
+        } catch (e) {
+          print("S3 이미지 로드 실패: $e");
+          // S3 이미지 로드 실패시 폴백 이미지 사용
+          final defaultBytes = await rootBundle.load(FALLBACK_IMAGE);
+          photoBytes = defaultBytes.buffer.asUint8List();
+          decodedPhoto = img.decodeImage(photoBytes);
+        }
+      } else {
+        // photoPath가 비어있을 경우 폴백 이미지 사용
+        final defaultBytes = await rootBundle.load(FALLBACK_IMAGE);
+        photoBytes = defaultBytes.buffer.asUint8List();
+        decodedPhoto = img.decodeImage(photoBytes);
+      }
 
       // 2. 마커 이미지 생성
       final img.Image markerImage = await _createMarkerImage(
@@ -33,15 +68,27 @@ class MarkerImageProcessor {
         isCurrentUser: isCurrentUser,
       );
 
-      // 3. 최종 변환 및 반환
-      return await _convertToBitmapDescriptor(markerImage);
+      final paddingColor = isCurrentUser 
+          ? img.ColorRgba8(112, 56, 255, 255) // 보라
+          : img.ColorRgba8(255, 255, 255, 255); // 하양
+      
+      img.fill(composite, color: paddingColor);
 
-    } catch (e) {
-      print("마커 아이콘 생성 실패: $e");
-      // 에러 발생 시 기본 마커 반환
-      return BitmapDescriptor.defaultMarker;
-    }
-  }
+      for (var y = 0; y < paddedSize.toInt(); y++) {
+        for (var x = 0; x < paddedSize.toInt(); x++) {
+          final maskColor = mask.getPixel(x, y);
+          if (maskColor == 0) {
+            composite.setPixel(x, y, img.ColorRgba8(0, 0, 0, 0));
+          }
+        }
+      }
+      
+      img.compositeImage(
+        composite,
+        resizedPhoto,
+        dstX: PADDING.toInt(),
+        dstY: PADDING.toInt()
+      );
 
   /// 소스 이미지 준비
   static Future<img.Image> _prepareSourceImage(Photo? photo) async {
@@ -124,26 +171,5 @@ class MarkerImageProcessor {
         }
       }
     }
-  }
-
-  /// 테두리 색상 적용
-  static void _applyBorder(img.Image image, Color color) {
-    img.fill(
-      image,
-      color: img.ColorRgba8(
-        color.red,
-        color.green,
-        color.blue,
-        color.alpha,
-      ),
-    );
-  }
-
-  /// 최종 BitmapDescriptor 변환
-  static Future<BitmapDescriptor> _convertToBitmapDescriptor(
-      img.Image image,
-      ) async {
-    final bytes = img.encodePng(image);
-    return BitmapDescriptor.fromBytes(bytes);
   }
 }

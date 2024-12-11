@@ -98,7 +98,7 @@ class PhotoManagerService {
   }
 
   // 특정 사진 조회
-  Future<List<Photo>> getPhotos({
+  Future<List<Photo>> getPhotos(int userId, String s, int photoId, {
     required int senderId,
     required String eventType,
     required int eventTypeId,
