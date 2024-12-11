@@ -22,7 +22,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<String> selectedTags = [];
+  List<String> selectedTags = [];
   final UserManagerService _userManagerService = UserManagerService();
 
   @override
@@ -66,7 +66,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _clearTags() {
     setState(() {
-      selectedTags.clear();
+      selectedTags = [
+          '강아지', '고양이', '다람쥐', '햄스터', '새', '곤충', 
+          '파충류', '해양생물', '물고기', '산', '바다', 
+          '호수/강', '들판', '숲', '하늘'
+        ];
       _searchController.clear();
       _userManagerService.saveSearchFilters([]);
     });

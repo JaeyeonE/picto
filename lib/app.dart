@@ -38,7 +38,6 @@ class _PhotoSharingAppState extends State<PhotoSharingApp> {
     }, onError: (error) {
       debugPrint('WebSocket Message Error: $error');
     });
-
   }
 
 

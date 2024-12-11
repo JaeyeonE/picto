@@ -8,7 +8,6 @@ import 'package:picto/services/photo_manager_service.dart';
 import 'package:picto/services/session/location_webSocket_handler.dart';
 import 'package:picto/services/session/session_service.dart';
 import 'package:picto/services/user_manager_service.dart';
-import 'package:picto/utils/app_color.dart';
 import 'package:picto/views/map/zoom_position.dart';
 import 'package:picto/views/upload/upload.dart';
 import 'package:picto/widgets/common/actual_tag_list.dart';
@@ -32,7 +31,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   // 상태 변수들 정의
   int selectedIndex = 2;
-  List<String> selectedTags = ['전체'];
+  List<String> selectedFilter = ['전체']; //지도맵 위의 필터
   bool _isLoading = false;
   final _searchController = TextEditingController();
 
@@ -47,7 +46,6 @@ class _MapScreenState extends State<MapScreen> {
   StreamSubscription<Position>? _positionStreamSubscription;
   LatLng? _lastRefreshLocation;
   String _currentLocationType = 'large';
-  String? _previousLocationType;
   static const double _minimumRefreshDistance = 10.0;
 
   // 서비스 인스턴스
@@ -57,29 +55,10 @@ class _MapScreenState extends State<MapScreen> {
   late final LocationWebSocketHandler _locationHandler;
 
   final defaultTags = [
-<<<<<<< HEAD
-    '강아지',
-    '고양이',
-    '다람쥐',
-    '햄스터',
-    '새',
-    '곤충',
-    '파충류',
-    '해양생물',
-    '물고기',
-    '산',
-    '바다',
-    '호수/강',
-    '들판',
-    '숲',
-    '하늘'
-  ];
-=======
           '강아지', '고양이', '다람쥐', '햄스터', '새', '곤충', 
           '파충류', '해양생물', '물고기', '산', '바다', 
           '호수/강', '들판', '숲', '하늘'
         ];
->>>>>>> main
 
   // 사용자 데이터
   User? currentUser;
@@ -249,7 +228,11 @@ class _MapScreenState extends State<MapScreen> {
 
   // 대표사진 가져오기
   Future<void> _loadRepresentativePhotos() async {
-    if (_isLoading || currentUser == null || _markerManager == null) return;
+    if (_isLoading || currentUser == null || _markerManager == null) {
+      print("로드될 마커가 없습니다. ");
+      return;
+    }
+    
     setState(() => _isLoading = true);
 
     try {
@@ -260,8 +243,7 @@ class _MapScreenState extends State<MapScreen> {
 
       final filteredPhotos = photos
           .where((photo) => 
-              (selectedTags.any((tag) => defaultTags.contains(tag)) && // 선택된 태그 중 하나가 기본 태그에 있고
-              (photo.tag != null && selectedTags.contains(photo.tag!)))) // 해당 사진의 태그가 선택된 태그에 포함됨
+              (photo.tag != null && defaultTags.contains((photo.tag))))
           .toList();
 
       final newMarkers = await _markerManager!
@@ -323,13 +305,12 @@ class _MapScreenState extends State<MapScreen> {
       
       // 디버깅을 위한 로그 추가
       print('Retrieved photos: ${photos.length}');
-      print('Selected tags: $selectedTags');
+      print('Selected tags: $selectedFilter');
       print('Default tags: $defaultTags');
 
       final filteredPhotos = photos
           .where((photo) => 
-              (selectedTags.any((tag) => defaultTags.contains(tag)) && // 선택된 태그 중 하나가 기본 태그에 있고
-              (photo.tag != null && selectedTags.contains(photo.tag!)))) // 해당 사진의 태그가 선택된 태그에 포함됨
+              (photo.tag != null && defaultTags.contains((photo.tag))))
           .toList();
 
       print('Filtered photos: ${filteredPhotos.length}');
@@ -474,7 +455,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void onTagsSelected(List<String> tags) {
     setState(() {
-      selectedTags = tags;
+      selectedFilter = tags;
     });
     _loadNearbyPhotos();
   }
@@ -529,17 +510,14 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final userId = await _userService.getUserId();
       if (userId != null) {
-<<<<<<< HEAD
-=======
         
         
->>>>>>> main
         await _userService.updateTags(
           userId: userId,
           tagNames: defaultTags,
         );
         setState(() {
-          selectedTags = ['전체'];
+          selectedFilter = ['전체'];
         });
       }
     } catch (e) {
@@ -625,10 +603,10 @@ class _MapScreenState extends State<MapScreen> {
                   RepaintBoundary(
                     child: TagSelector(
                       userId: widget.initialUser.userId,
-                      selectedTags: selectedTags,
+                      selectedTags: selectedFilter,
                       onTagsSelected: (tags) {
                         setState(() {
-                          selectedTags = tags;
+                          selectedFilter = tags;
                         });
                         _refreshMap();
                       },
