@@ -26,8 +26,8 @@ class SessionMessage {
     return SessionMessage(
       messagetype: json['messageType'] ?? json['type'],  // messageType 체크 추가
       senderId: json['senderId'],
-      lat: json['lat']?.toDouble(),
-      lng: json['lng']?.toDouble(),
+      lat: json['lat']?.toDouble() ?? 678,
+      lng: json['lng']?.toDouble() ?? 678,
       sendDateTime: json['sendDateTime'],
       photoId: json['photoId'],
     );

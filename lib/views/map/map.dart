@@ -71,6 +71,16 @@ class _MapScreenState extends State<MapScreen> {
     _resetUserTags();
     _initializeLocationServices();
     _locationHandler = LocationWebSocketHandler(_sessionService);
+  
+    // 5초마다 새로고침
+    Future.delayed(Duration.zero, () async {
+      while (mounted) {
+        await Future.delayed(const Duration(seconds: 5));
+        if (mounted && !_isLoading) {
+          _refreshMap();
+        }
+      }
+    });
 
     _sessionService.getSessionStream().listen((message) async {
       if (message.messagetype == 'LOCATION' &&
@@ -478,17 +488,18 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _refreshMap() async {
-    if (_isLoading) return;
+    //if (_isLoading) return;
+    await _loadNearbyPhotos();
 
-    if (_currentLocationType == 'small') {
-      await _loadNearbyPhotos();
-    } else {
-      await _loadRepresentativePhotos();
-    }
+    // if (_currentLocationType == 'small') {
+    //   await _loadNearbyPhotos();
+    // } else {
+    //   await _loadRepresentativePhotos();s
+    // }
 
-    if (currentLocation != null) {
-      _lastRefreshLocation = currentLocation;
-    }
+    // if (currentLocation != null) {
+    //   _lastRefreshLocation = currentLocation;
+    // }
   }
 
   Future<void> _initializeLocationServices() async {
@@ -554,6 +565,8 @@ class _MapScreenState extends State<MapScreen> {
       }
     }
   }
+
+  
 
   Future<void> _resetUserTags() async {
     try {
