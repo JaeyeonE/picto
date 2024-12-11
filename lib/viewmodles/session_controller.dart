@@ -84,7 +84,7 @@ class SessionController extends ChangeNotifier {
   void _handleMessage(SessionMessage message) {
     _messages.add(message);
     
-    if (message.messagetype == 'EXIT' && message.senderId == _userId) {
+    if (message.messageType == 'EXIT' && message.senderId == _userId) {
       _isInSession = false;
     }
     
@@ -122,11 +122,12 @@ class SessionController extends ChangeNotifier {
     }
   }
 
+  // 요구 사항 아님
   Future<void> sharePhoto(int photoId, double lat, double lng) async {
     if (!isConnected || !_isInSession) return;
 
     try {
-      await _sessionService.sharePhoto(_userId, photoId, lat, lng);
+      // await _sessionService.sharePhoto(_userId, photoId, lat, lng);
     } catch (e) {
       print('사진 공유 오류: $e');
       _handleError(e);

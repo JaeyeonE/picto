@@ -11,9 +11,11 @@ import 'package:picto/services/user_manager_service.dart';
 import 'package:picto/views/map/zoom_position.dart';
 import 'package:picto/views/upload/upload.dart';
 import 'package:picto/widgets/common/actual_tag_list.dart';
+import '../../models/photo_manager/photo.dart';
 import '../map/search_screen.dart';
 import '../../widgets/common/map_header.dart';
 import '../../widgets/common/navigation.dart';
+import 'marker_image_processor.dart';
 import 'marker_manager.dart';
 
 class MapScreen extends StatefulWidget {
@@ -73,22 +75,23 @@ class _MapScreenState extends State<MapScreen> {
     _locationHandler = LocationWebSocketHandler(_sessionService);
   
     // 5초마다 새로고침
-    Future.delayed(Duration.zero, () async {
-      while (mounted) {
-        await Future.delayed(const Duration(seconds: 5));
-        if (mounted && !_isLoading) {
-          _refreshMap();
-        }
-      }
-    });
+    // Future.delayed(Duration.zero, () async {
+    //   while (mounted) {
+    //     await Future.delayed(const Duration(seconds: 5));
+    //     if (mounted && !_isLoading) {
+    //       _refreshMap();
+    //     }
+    //   }
+    // });
 
     _sessionService.getSessionStream().listen((message) async {
-      if (message.messagetype == 'LOCATION' &&
+      if (message.messageType == 'SHARE' &&  // 'SHARE' 메시지 타입으로 변경
           message.lat != null &&
           message.lng != null &&
           message.photoId != null &&
           message.senderId != null &&
           currentLocation != null) {
+
         final photoLocation = LatLng(message.lat!, message.lng!);
         final distanceInMeters = Geolocator.distanceBetween(
           currentLocation!.latitude,
@@ -97,32 +100,46 @@ class _MapScreenState extends State<MapScreen> {
           photoLocation.longitude,
         );
 
+        // 3km 이내의 사진만 처리
         if (distanceInMeters <= 3000) {
           try {
-            // getPhotos를 named parameters로 호출
-            final photos = await _photoService.getPhotos(
-              message.senderId, 
-              'Photo', 
-              message.photoId!, 
-              senderId: message.senderId, 
-              eventType: 'Photo', 
-              eventTypeId: message.photoId!,
+            // 공유된 사진 정보로 Photo 객체 생성
+            final photo = Photo(
+                photoId: message.photoId!,
+                userId: message.senderId,
+                photoPath: "http://52.78.237.242:8084/photo-store/photos/download/${message.photoId}",  // 실제 S3 경로
+                lat: message.lat,
+                lng: message.lng,
+                registerDatetime: message.sendDatetime,
+                updateDatetime: message.sendDatetime,
+                likes: 0,  // 초기값
+                views: 0   // 초기값
             );
 
             // 현재 줌 레벨이 small(상세)일 때만 마커 추가
-            if (_currentLocationType == 'small' && photos.isNotEmpty) {
-              final newMarkers = await _markerManager?.createMarkersFromPhotos(
-                  photos, 'small');
+            if (_currentLocationType == 'small') {
+              final newMarker = Marker(
+                markerId: MarkerId('small_${photo.photoId}'),
+                position: photoLocation,
+                icon: await MarkerImageProcessor.createMarkerIcon(
+                    photo.userId == currentUser?.userId,
+                    photo
+                ),
+                infoWindow: InfoWindow(
+                  title: photo.location ?? '위치 정보 없음',
+                  snippet: "[tag:${photo.tag}/likes:${photo.likes}]",
+                ),
+              );
 
-              if (newMarkers != null && mounted) {
+              if (mounted) {
                 setState(() {
-                  // 새 마커 추가
-                  markers.addAll(newMarkers);
+                  markers.add(newMarker);
+                  print("실시간 공유 사진 성공!");
                 });
               }
             }
           } catch (e) {
-            debugPrint('실시간 사진 마커 생성 실패: $e');
+            print('실시간 사진 마커 생성 실패: $e');
           }
         }
       }
@@ -438,6 +455,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  //
   Future<void> _refreshMap() async {
     //if (_isLoading) return;
     await _loadNearbyPhotos();

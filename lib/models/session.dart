@@ -6,40 +6,40 @@ enum WebSocketStatus {
 }
 
 class SessionMessage {
-  final String messagetype;
+  final String messageType;
   final int senderId;       
   final double? lat;
   final double? lng;
-  final String sendDateTime;
+  final int sendDatetime;
   final int? photoId;
 
   SessionMessage({
-    required this.messagetype,
+    required this.messageType,
     required this.senderId,  
     this.lat,
     this.lng,
-    required this.sendDateTime,
+    required this.sendDatetime,
     this.photoId,
   });
 
   factory SessionMessage.fromJson(Map<String, dynamic> json) {
     return SessionMessage(
-      messagetype: json['messageType'] ?? json['type'],  // messageType 체크 추가
+      messageType: json['messageType'] ?? json['type'],  // messageType 체크 추가
       senderId: json['senderId'],
       lat: json['lat']?.toDouble() ?? 678,
       lng: json['lng']?.toDouble() ?? 678,
-      sendDateTime: json['sendDateTime'],
+      sendDatetime: json['sendDatetime'],
       photoId: json['photoId'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'messageType': messagetype,  // type을 messageType으로 변경
+      'messageType': messageType,  // type을 messageType으로 변경
       'senderId': senderId,
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-      'sendDateTime': sendDateTime,
+      'sendDateTime': sendDatetime,
       if (photoId != null) 'photoId': photoId,
     };
   }

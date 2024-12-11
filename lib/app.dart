@@ -34,7 +34,7 @@ class _PhotoSharingAppState extends State<PhotoSharingApp> {
     });
 
     _sessionService.getSessionStream().listen((message) {
-      debugPrint('Received message: ${message.messagetype}');
+      debugPrint('Received message: ${message.messageType}');
     }, onError: (error) {
       debugPrint('WebSocket Message Error: $error');
     });

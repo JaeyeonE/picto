@@ -52,9 +52,7 @@ class SessionService {
 
     final url = 'http://52.79.109.62:8085/session-scheduler';
     try {
-      _stompClient?.deactivate();
-      _logger.onConnect(url, null);
-
+      // _logger.onConnect(url, null);
       _stompClient = StompClient(
         config: StompConfig.sockJS(
           url: url,
@@ -62,6 +60,7 @@ class SessionService {
           beforeConnect: () async {
             // Future<void>를 명시적으로 반환
             _logger.onConnect(url, null);
+
             return; // 또는 return Future<void>.value();
           },
           onWebSocketError: (dynamic error) {
@@ -69,6 +68,14 @@ class SessionService {
             _handleConnectionError();
           },
           onDisconnect: (_) {
+            _stompClient?.send(
+                destination: "/send/session/enter",
+                body: json.encode({
+                  "senderId": _currentSessionId,
+                  "messageType" : "EXIT"
+                })
+            );
+
             _logger.onDisconnect();
             _isConnected = false;
             _statusController?.add(WebSocketStatus.disconnected);
@@ -92,13 +99,12 @@ class SessionService {
     _isConnected = true;
     _reconnectAttempts = 0;
     _isReconnecting = false;
-    _setupHeartbeat();
+    // _setupHeartbeat();
     _statusController?.add(WebSocketStatus.connected);
 
     // 세션 메시지 구독
     final destination = '/session/${_currentSessionId}';
     _logger.onSubscribe(destination);
-
     _stompClient?.subscribe(
       destination: destination,
       callback: (StompFrame frame) {
@@ -106,6 +112,7 @@ class SessionService {
           if (frame.body != null) {
             _logger.onMessage(destination, frame.body!);
             final jsonData = jsonDecode(frame.body!);
+            print("세션으로부터 메시지 전달 받음");
             final message = SessionMessage.fromJson(jsonData);
             _messageController?.add(message);
           }
@@ -114,8 +121,16 @@ class SessionService {
         }
       },
     );
-
     print('세션 구독 성공');
+
+    _stompClient?.send(
+        destination: "/send/session/enter",
+        body: json.encode({
+          "senderId": _currentSessionId,
+          "messageType" : "ENTER"
+        })
+    );
+    print('입장 메시지 전송 성공');
 
     // 연결 완료 알림
     _connectionCompleter?.complete();
@@ -185,11 +200,11 @@ class SessionService {
 
     try {
       final message = SessionMessage(
-        messagetype: 'LOCATION',
+        messageType: 'LOCATION',
         senderId: senderId,
         lat: lat,
         lng: lng,
-        sendDateTime: DateTime.now().toUtc().toIso8601String(),
+        sendDatetime: DateTime.now().toUtc().millisecondsSinceEpoch,
       );
 
       final destination = '/send/session/location';
@@ -207,36 +222,6 @@ class SessionService {
     }
   }
 
-  Future<void> sharePhoto(
-      int senderId, int photoId, double lat, double lng) async {
-    print('사진 공유 중 - 사용자: $senderId, 사진ID: $photoId, 위도: $lat, 경도: $lng');
-    _validateConnection();
-
-    try {
-      final message = SessionMessage(
-        messagetype: 'SHARE',
-        senderId: senderId,
-        photoId: photoId,
-        lat: lat,
-        lng: lng,
-        sendDateTime: DateTime.now().toUtc().toIso8601String(),
-      );
-
-      final destination = '/send/session/shared';
-      final body = jsonEncode(message.toJson());
-
-      _logger.onSend(destination, body);
-      _stompClient?.send(
-        destination: destination,
-        body: body,
-      );
-      print('사진 공유 성공');
-    } catch (e) {
-      _logger.onError('사진 공유 실패: $e');
-      throw SessionServiceException('사진 공유 실패: ${e.toString()}');
-    }
-  }
-
   // enterSession 메서드 수정
   Future<void> enterSession(int senderId) async {
     print('사용자 세션 입장 시도: $senderId');
@@ -251,9 +236,9 @@ class SessionService {
 
     try {
       final message = SessionMessage(
-        messagetype: 'ENTER',
+        messageType: 'ENTER',
         senderId: senderId,
-        sendDateTime: DateTime.now().toUtc().toIso8601String(),
+        sendDatetime: DateTime.now().millisecondsSinceEpoch,
       );
 
       final destination = '/send/session/enter';
@@ -277,9 +262,9 @@ class SessionService {
 
     try {
       final message = SessionMessage(
-        messagetype: 'EXIT',
+        messageType: 'EXIT',
         senderId: senderId,
-        sendDateTime: DateTime.now().toUtc().toIso8601String(),
+        sendDatetime: DateTime.now().toUtc().millisecondsSinceEpoch,
       );
 
       final destination = '/send/session/exit';

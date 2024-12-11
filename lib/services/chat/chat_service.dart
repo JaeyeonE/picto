@@ -41,6 +41,8 @@ class ChatService {
     );
 
     print('ChatService initialized for user: $_senderId');
+
+
   }
 
   Future<void> connect(int folderId) async {
